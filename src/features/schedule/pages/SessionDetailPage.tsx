@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import { ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { getErrorMessage } from '../../../utils/errors'
-import { formatDateTime } from '../../../utils/format'
+import { formatDateTime, formatSessionTimeRange } from '../../../utils/format'
 import { getSession, listSessionChanges, restoreSession, stopSession } from '../api/scheduleService'
 import { RescheduleSessionForm } from '../components/RescheduleSessionForm'
 import { canRestoreSession, canStopSession } from '../scheduleActions'
@@ -69,8 +69,8 @@ export function SessionDetailPage() {
         <span className={`session-status status-${data.status}`}>{statusLabels[data.status]}</span>
       </div>
       <dl className="details-card">
-        <div><dt>目前时间</dt><dd>{formatDateTime(data.current_start_at)} – {formatDateTime(data.current_end_at)}</dd></div>
-        {wasRescheduled && <div><dt>原定时间</dt><dd>{formatDateTime(data.original_start_at)} – {formatDateTime(data.original_end_at)}</dd></div>}
+        <div><dt>目前时间</dt><dd>{formatSessionTimeRange(data.current_start_at, data.current_end_at)}</dd></div>
+        {wasRescheduled && <div><dt>原定时间</dt><dd>{formatSessionTimeRange(data.original_start_at, data.original_end_at)}</dd></div>}
         <div><dt>课程类型</dt><dd>{data.session_type === 'extra' ? '额外补课' : '常态课程'}</dd></div>
       </dl>
 

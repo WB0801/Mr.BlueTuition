@@ -70,11 +70,11 @@ export function ScheduleChangeForm({ classId, currentRule }: ScheduleChangeFormP
         </label>
         <label className="field">
           <span>开始时间</span>
-          <input type="time" value={form.start_time} onChange={(event) => setForm({ ...form, start_time: event.target.value })} required />
+          <input type="time" lang="en-GB" value={form.start_time} onChange={(event) => setForm({ ...form, start_time: event.target.value })} required />
         </label>
         <label className="field">
           <span>结束时间</span>
-          <input type="time" value={form.end_time} onChange={(event) => setForm({ ...form, end_time: event.target.value })} required />
+          <input type="time" lang="en-GB" value={form.end_time} onChange={(event) => setForm({ ...form, end_time: event.target.value })} required />
         </label>
       </div>
       <label className="field field-small">

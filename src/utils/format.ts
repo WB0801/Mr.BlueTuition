@@ -7,20 +7,24 @@ const dateFormatter = new Intl.DateTimeFormat('zh-MY', {
 
 const timeFormatter = new Intl.DateTimeFormat('en-MY', {
   timeZone: 'Asia/Kuala_Lumpur',
-  hour: 'numeric',
+  hour: '2-digit',
   minute: '2-digit',
-  hour12: true,
+  hourCycle: 'h23',
 })
 
-const dateTimeFormatter = new Intl.DateTimeFormat('zh-MY', {
+const dateTimePartsFormatter = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'Asia/Kuala_Lumpur',
   year: 'numeric',
   month: 'numeric',
   day: 'numeric',
-  weekday: 'short',
-  hour: 'numeric',
+  hour: '2-digit',
   minute: '2-digit',
-  hour12: true,
+  hourCycle: 'h23',
+})
+
+const weekdayFormatter = new Intl.DateTimeFormat('zh-CN', {
+  timeZone: 'Asia/Kuala_Lumpur',
+  weekday: 'short',
 })
 
 export const weekdayLabels: Record<number, string> = {
@@ -61,7 +65,19 @@ export function todayInMalaysia() {
 }
 
 export function formatDateTime(value: string) {
-  return dateTimeFormatter.format(new Date(value))
+  const parts = malaysiaDateTimeParts(value)
+  return `${parts.date}${parts.weekday} ${parts.time}`
+}
+
+export function formatSessionTimeRange(startAt: string, endAt: string) {
+  const start = malaysiaDateTimeParts(startAt)
+  const end = malaysiaDateTimeParts(endAt)
+
+  if (start.date === end.date) {
+    return `${start.date}${start.weekday} ${start.time} – ${end.time}`
+  }
+
+  return `${start.date}${start.weekday} ${start.time} – ${end.date}${end.weekday} ${end.time}`
 }
 
 export function addCalendarDays(value: string, days: number) {
@@ -100,4 +116,16 @@ export function toMalaysiaTimeInput(value: string) {
   const hour = parts.find((part) => part.type === 'hour')?.value ?? '00'
   const minute = parts.find((part) => part.type === 'minute')?.value ?? '00'
   return `${hour}:${minute}`
+}
+
+function malaysiaDateTimeParts(value: string) {
+  const date = new Date(value)
+  const parts = dateTimePartsFormatter.formatToParts(date)
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? ''
+
+  return {
+    date: `${part('year')}/${Number(part('month'))}/${Number(part('day'))}`,
+    weekday: weekdayFormatter.format(date),
+    time: `${part('hour')}:${part('minute')}`,
+  }
 }

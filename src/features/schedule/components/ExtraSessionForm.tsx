@@ -51,11 +51,11 @@ export function ExtraSessionForm({ classId, defaultStartTime, defaultEndTime }: 
         </label>
         <label className="field">
           <span>开始时间</span>
-          <input type="time" value={startTime} onChange={(event) => setStartTime(event.target.value)} required />
+          <input type="time" lang="en-GB" value={startTime} onChange={(event) => setStartTime(event.target.value)} required />
         </label>
         <label className="field">
           <span>结束时间</span>
-          <input type="time" value={endTime} onChange={(event) => setEndTime(event.target.value)} required />
+          <input type="time" lang="en-GB" value={endTime} onChange={(event) => setEndTime(event.target.value)} required />
         </label>
       </div>
       {error && <p className="form-error" role="alert">{error}</p>}

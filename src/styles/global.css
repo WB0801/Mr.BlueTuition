@@ -378,7 +378,7 @@ a.record-card:hover { border-color: #a9bfee; background: #fbfdff; }
 
 .schedule-section { padding-top: 2px; }
 .schedule-rule-card { margin-bottom: 0; }
-.schedule-actions-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.schedule-actions-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
 .schedule-actions-grid .action-panel,
 .schedule-actions-grid .danger-panel { margin-top: 16px; }
 .compact-copy { margin: 0; }

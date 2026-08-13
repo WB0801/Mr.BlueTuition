@@ -3,6 +3,7 @@ import {
   formatDate,
   formatDateTime,
   formatMoney,
+  formatSessionTimeRange,
   formatTime,
   malaysiaDateTime,
   startOfWeekInMalaysia,
@@ -14,7 +15,7 @@ import {
 describe('format helpers', () => {
   it('formats class schedule fields for the requested UI', () => {
     expect(weekdayLabels[6]).toBe('星期六')
-    expect(formatTime('14:00:00')).toBe('2:00 pm')
+    expect(formatTime('14:00:00')).toBe('14:00')
     expect(formatMoney(100)).toBe('RM100')
     expect(formatMoney(50.5)).toBe('RM50.50')
   })
@@ -36,5 +37,9 @@ describe('format helpers', () => {
     expect(toMalaysiaDateInput(value)).toBe('2026-08-15')
     expect(toMalaysiaTimeInput(value)).toBe('14:00')
     expect(formatDateTime(value)).toContain('2026')
+    expect(formatDateTime(value)).toBe('2026/8/15周六 14:00')
+    expect(formatSessionTimeRange(value, malaysiaDateTime('2026-08-15', '15:30'))).toBe(
+      '2026/8/15周六 14:00 – 15:30',
+    )
   })
 })
