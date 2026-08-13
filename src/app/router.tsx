@@ -16,6 +16,8 @@ const ClassesListPage = lazy(() => import('../features/classes/pages/ClassesList
 const ClassFormPage = lazy(() => import('../features/classes/pages/ClassFormPage').then((module) => ({ default: module.ClassFormPage })))
 const ClassDetailPage = lazy(() => import('../features/classes/pages/ClassDetailPage').then((module) => ({ default: module.ClassDetailPage })))
 const SubjectsPage = lazy(() => import('../features/classes/pages/SubjectsPage').then((module) => ({ default: module.SubjectsPage })))
+const AttendancePage = lazy(() => import('../features/schedule/pages/AttendancePage').then((module) => ({ default: module.AttendancePage })))
+const SessionDetailPage = lazy(() => import('../features/schedule/pages/SessionDetailPage').then((module) => ({ default: module.SessionDetailPage })))
 
 function routePage(page: React.ReactNode) {
   return <Suspense fallback={<FullPageLoading label="正在载入页面…" />}>{page}</Suspense>
@@ -39,7 +41,8 @@ export function AppRouter() {
             <Route path="classes/subjects" element={routePage(<SubjectsPage />)} />
             <Route path="classes/:classId" element={routePage(<ClassDetailPage />)} />
             <Route path="classes/:classId/edit" element={routePage(<ClassFormPage />)} />
-            <Route path="attendance/*" element={<PlaceholderPage title="点名" phase="Phase 4" />} />
+            <Route path="attendance" element={routePage(<AttendancePage />)} />
+            <Route path="attendance/session/:sessionId" element={routePage(<SessionDetailPage />)} />
             <Route path="fees/*" element={<PlaceholderPage title="学费" phase="Phase 5" />} />
             <Route path="grades/*" element={<PlaceholderPage title="成绩" phase="Phase 6" />} />
             <Route path="temporary-classes/*" element={<PlaceholderPage title="临时班" phase="Phase 7" />} />

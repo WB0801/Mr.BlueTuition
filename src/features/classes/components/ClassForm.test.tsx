@@ -38,4 +38,28 @@ describe('ClassForm', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('结束时间必须晚于开始时间')
     expect(onSubmit).not.toHaveBeenCalled()
   })
+
+  it('does not allow a normal class edit to bypass schedule history', () => {
+    render(
+      <ClassForm
+        subjects={[subject]}
+        initialValue={{
+          name: '高一会计学（1）',
+          subject_id: subject.id,
+          weekday: 6,
+          start_time: '14:00',
+          end_time: '15:30',
+          monthly_fee: 100,
+          start_date: '2026-08-01',
+        }}
+        submitLabel="保存修改"
+        isSubmitting={false}
+        isEditing
+        onSubmit={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByLabelText('固定星期')).not.toBeInTheDocument()
+    expect(screen.getByText(/使用“修改未来固定课表”/)).toBeInTheDocument()
+  })
 })

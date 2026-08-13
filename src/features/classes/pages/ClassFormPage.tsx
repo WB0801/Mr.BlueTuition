@@ -81,6 +81,7 @@ export function ClassFormPage() {
           initialValue={initialValue}
           submitLabel={isEditing ? '保存修改' : '新增班级'}
           isSubmitting={save.isPending}
+          isEditing={isEditing}
           error={error}
           onSubmit={async (input) => {
             setError('')

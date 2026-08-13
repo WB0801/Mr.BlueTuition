@@ -5,9 +5,10 @@ import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedba
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { StatusBadge } from '../../../components/shared/StatusBadge'
 import { getErrorMessage } from '../../../utils/errors'
-import { formatDate, formatMoney, formatTime, todayInMalaysia, weekdayLabels } from '../../../utils/format'
+import { formatDate, formatMoney, todayInMalaysia } from '../../../utils/format'
 import { listClassEnrollments } from '../../enrollments/api/enrollmentsService'
 import { EndEnrollmentAction } from '../../enrollments/components/EndEnrollmentAction'
+import { ClassScheduleSection } from '../../schedule/components/ClassScheduleSection'
 import { StudentIdentity } from '../../students/components/StudentIdentity'
 import { endClass, getClass } from '../api/classesService'
 import { getEndClassConfirmationMessage } from '../classActions'
@@ -61,11 +62,12 @@ export function ClassDetailPage() {
         <StatusBadge status={data.status} />
       </div>
       <dl className="details-card details-grid">
-        <div><dt>固定时间</dt><dd>{weekdayLabels[data.weekday]} · {formatTime(data.start_time)} – {formatTime(data.end_time)}</dd></div>
         <div><dt>每月学费</dt><dd>{formatMoney(data.monthly_fee)}</dd></div>
         <div><dt>开始日期</dt><dd>{formatDate(data.start_date)}</dd></div>
         <div><dt>结束日期</dt><dd>{formatDate(data.end_date)}</dd></div>
       </dl>
+
+      <ClassScheduleSection tuitionClass={data} />
 
       {data.status === 'active' && (
         <details className="action-panel">

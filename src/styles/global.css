@@ -16,7 +16,7 @@
 * { box-sizing: border-box; }
 html { min-width: 320px; background: #f7f8fa; }
 body { margin: 0; min-width: 320px; min-height: 100vh; }
-button, input { font: inherit; }
+button, input, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 a { color: inherit; }
 
@@ -257,6 +257,7 @@ h1 { margin: 0; font-size: clamp(1.65rem, 4vw, 2rem); line-height: 1.25; }
 .form-grid-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .form-actions { display: flex; justify-content: flex-end; }
 .form-success { margin: 0; color: #067647; font-size: 0.9rem; }
+.inline-notice { margin: 0; }
 .horizontal-form { grid-template-columns: minmax(0, 1fr) auto; align-items: end; margin-bottom: 22px; }
 .grow-field { min-width: 0; }
 
@@ -375,6 +376,83 @@ a.record-card:hover { border-color: #a9bfee; background: #fbfdff; }
 }
 .segmented-control button.active { color: #172033; background: #fff; font-weight: 700; }
 
+.schedule-section { padding-top: 2px; }
+.schedule-rule-card { margin-bottom: 0; }
+.schedule-actions-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.schedule-actions-grid .action-panel,
+.schedule-actions-grid .danger-panel { margin-top: 16px; }
+.compact-copy { margin: 0; }
+.nested-section { margin-top: 28px; }
+.session-card { min-height: 82px; }
+.cancelled-session { color: #687386; background: #f5f6f8; }
+.session-labels { display: flex; flex-wrap: wrap; gap: 7px; }
+.session-type-label,
+.session-status {
+  display: inline-flex;
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+.session-type-label { color: #1e40af; background: #eaf2ff; }
+.session-status.status-scheduled { color: #05603a; background: #e9f8f0; }
+.session-status.status-cancelled { color: #7a271a; background: #fff0ed; }
+.session-status.status-completed { color: #475467; background: #eef0f4; }
+.simple-history-list,
+.schedule-change-list { display: grid; gap: 0; }
+.simple-history-list > div,
+.schedule-change-list > div {
+  padding: 12px 0;
+  display: grid;
+  gap: 4px;
+  border-bottom: 1px solid #edf0f4;
+}
+.simple-history-list > div:last-child,
+.schedule-change-list > div:last-child { border-bottom: 0; }
+.simple-history-list span,
+.schedule-change-list span,
+.schedule-change-list small { color: var(--muted); font-size: 0.86rem; line-height: 1.45; }
+.session-cancel-panel { border-color: #f2c7c4; }
+.phase-placeholder {
+  margin-top: 28px;
+  padding: 20px;
+  color: #667085;
+  background: #f1f3f6;
+  border-radius: 10px;
+}
+.phase-placeholder p { margin: 5px 0 0; }
+.text-link { display: inline-block; margin-top: 18px; color: var(--blue-dark); font-weight: 650; }
+.all-day-stop-panel { margin: 0 0 20px; }
+.all-day-session-list { display: grid; gap: 8px; }
+.all-day-session-row {
+  min-height: 62px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #f8f9fb;
+  border: 1px solid #e5e8ee;
+  border-radius: 8px;
+}
+.all-day-session-row > span:first-child { min-width: 0; display: grid; gap: 3px; }
+.all-day-session-row small { color: var(--blue-dark); font-size: 0.78rem; }
+.all-day-session-row > span:last-child { flex: 0 0 auto; color: var(--muted); font-size: 0.88rem; }
+.restore-session-panel {
+  margin-top: 22px;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px 18px;
+  background: var(--surface);
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+}
+.restore-session-panel p { margin: 5px 0 0; color: var(--muted); line-height: 1.5; }
+.restore-session-panel .form-error { grid-column: 1 / -1; }
+
 @media (max-width: 560px) {
   .header-inner, .page-container { width: min(100% - 24px, 880px); }
   .page-container { padding-top: 28px; }
@@ -394,6 +472,10 @@ a.record-card:hover { border-color: #a9bfee; background: #fbfdff; }
   .horizontal-form { grid-template-columns: 1fr; align-items: stretch; }
   .inline-edit-form { grid-template-columns: 1fr auto auto; }
   .search-result-action { align-items: center; }
+  .schedule-actions-grid { grid-template-columns: 1fr; }
+  .all-day-session-row { align-items: flex-start; flex-direction: column; gap: 6px; }
+  .restore-session-panel { grid-template-columns: 1fr; }
+  .restore-session-panel .button { width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -6,17 +6,18 @@ interface ClassFormProps {
   initialValue: ClassInput
   submitLabel: string
   isSubmitting: boolean
+  isEditing?: boolean
   error?: string
   onSubmit: (input: ClassInput) => Promise<void>
 }
 
-export function ClassForm({ subjects, initialValue, submitLabel, isSubmitting, error, onSubmit }: ClassFormProps) {
+export function ClassForm({ subjects, initialValue, submitLabel, isSubmitting, isEditing = false, error, onSubmit }: ClassFormProps) {
   const [form, setForm] = useState(initialValue)
   const [validationError, setValidationError] = useState('')
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (form.end_time <= form.start_time) {
+    if (!isEditing && form.end_time <= form.start_time) {
       setValidationError('结束时间必须晚于开始时间。')
       return
     }
@@ -48,28 +49,32 @@ export function ClassForm({ subjects, initialValue, submitLabel, isSubmitting, e
           {subjects.map((subject) => <option value={subject.id} key={subject.id}>{subject.name}</option>)}
         </select>
       </label>
-      <div className="form-grid form-grid-three">
-        <label className="field">
-          <span>固定星期</span>
-          <select value={form.weekday} onChange={(event) => setForm({ ...form, weekday: Number(event.target.value) })} required>
-            <option value={1}>星期一</option>
-            <option value={2}>星期二</option>
-            <option value={3}>星期三</option>
-            <option value={4}>星期四</option>
-            <option value={5}>星期五</option>
-            <option value={6}>星期六</option>
-            <option value={7}>星期日</option>
-          </select>
-        </label>
-        <label className="field">
-          <span>开始时间</span>
-          <input type="time" value={form.start_time} onChange={(event) => setForm({ ...form, start_time: event.target.value })} required />
-        </label>
-        <label className="field">
-          <span>结束时间</span>
-          <input type="time" value={form.end_time} onChange={(event) => setForm({ ...form, end_time: event.target.value })} required />
-        </label>
-      </div>
+      {isEditing ? (
+        <p className="notice inline-notice">固定星期与时间请回到班级页面，使用“修改未来固定课表”，以保留课表历史。</p>
+      ) : (
+        <div className="form-grid form-grid-three">
+          <label className="field">
+            <span>固定星期</span>
+            <select value={form.weekday} onChange={(event) => setForm({ ...form, weekday: Number(event.target.value) })} required>
+              <option value={1}>星期一</option>
+              <option value={2}>星期二</option>
+              <option value={3}>星期三</option>
+              <option value={4}>星期四</option>
+              <option value={5}>星期五</option>
+              <option value={6}>星期六</option>
+              <option value={7}>星期日</option>
+            </select>
+          </label>
+          <label className="field">
+            <span>开始时间</span>
+            <input type="time" value={form.start_time} onChange={(event) => setForm({ ...form, start_time: event.target.value })} required />
+          </label>
+          <label className="field">
+            <span>结束时间</span>
+            <input type="time" value={form.end_time} onChange={(event) => setForm({ ...form, end_time: event.target.value })} required />
+          </label>
+        </div>
+      )}
       <div className="form-grid">
         <label className="field">
           <span>每月学费（RM）</span>
