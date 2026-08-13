@@ -1,0 +1,131 @@
+import { useState, type FormEvent } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
+import { PageHeader } from '../../../components/shared/PageHeader'
+import { StatusBadge } from '../../../components/shared/StatusBadge'
+import { getErrorMessage } from '../../../utils/errors'
+import { formatDate, formatMoney, formatTime, todayInMalaysia, weekdayLabels } from '../../../utils/format'
+import { listClassEnrollments } from '../../enrollments/api/enrollmentsService'
+import { EndEnrollmentAction } from '../../enrollments/components/EndEnrollmentAction'
+import { StudentIdentity } from '../../students/components/StudentIdentity'
+import { endClass, getClass } from '../api/classesService'
+import { AddStudentToClass } from '../components/AddStudentToClass'
+
+export function ClassDetailPage() {
+  const { classId = '' } = useParams()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const [endDate, setEndDate] = useState(todayInMalaysia())
+  const [error, setError] = useState('')
+  const tuitionClass = useQuery({ queryKey: ['class', classId], queryFn: () => getClass(classId) })
+  const enrollments = useQuery({
+    queryKey: ['enrollments', 'class', classId],
+    queryFn: () => listClassEnrollments(classId),
+  })
+  const endClassMutation = useMutation({
+    mutationFn: () => endClass(classId, endDate),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['classes'] })
+      await queryClient.invalidateQueries({ queryKey: ['enrollments'] })
+      navigate('/classes', { replace: true })
+    },
+    onError: (caughtError) => setError(getErrorMessage(caughtError, '结束班级失败，请重试。')),
+  })
+
+  if (tuitionClass.isLoading) return <LoadingBlock />
+  if (tuitionClass.isError || !tuitionClass.data) return <ErrorBlock message="找不到这个班级，或资料载入失败。" />
+
+  const data = tuitionClass.data
+  const current = enrollments.data?.filter((item) => item.status === 'active') ?? []
+  const history = enrollments.data?.filter((item) => item.status === 'ended') ?? []
+
+  async function handleEndClass(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const message = current.length > 0
+      ? `确定结束此班吗？${current.length} 位当前学生的报读也会在同一天结束，历史资料会保留。`
+      : '确定结束此班吗？历史资料会保留。'
+    if (!window.confirm(message)) return
+    setError('')
+    try { await endClassMutation.mutateAsync() } catch { /* mutation displays the error */ }
+  }
+
+  return (
+    <section>
+      <PageHeader
+        title={data.name}
+        backTo="/classes"
+        backLabel="班级"
+        actions={<Link className="button button-secondary" to={`/classes/${classId}/edit`}>编辑班级</Link>}
+      />
+      <div className="detail-title-row compact-title-row">
+        <p className="eyebrow">{data.subject?.name}</p>
+        <StatusBadge status={data.status} />
+      </div>
+      <dl className="details-card details-grid">
+        <div><dt>固定时间</dt><dd>{weekdayLabels[data.weekday]} · {formatTime(data.start_time)} – {formatTime(data.end_time)}</dd></div>
+        <div><dt>每月学费</dt><dd>{formatMoney(data.monthly_fee)}</dd></div>
+        <div><dt>开始日期</dt><dd>{formatDate(data.start_date)}</dd></div>
+        <div><dt>结束日期</dt><dd>{formatDate(data.end_date)}</dd></div>
+      </dl>
+
+      {data.status === 'active' && (
+        <details className="action-panel">
+          <summary>加入学生</summary>
+          <AddStudentToClass classId={classId} enrolledStudentIds={current.map((item) => item.student_id)} />
+        </details>
+      )}
+
+      <section className="content-section">
+        <h2>当前学生</h2>
+        {enrollments.isLoading && <LoadingBlock />}
+        {enrollments.isError && <ErrorBlock message="学生名单载入失败。" />}
+        {!enrollments.isLoading && current.length === 0 && <EmptyBlock message="目前没有在读学生。" />}
+        <div className="record-list">
+          {current.map((item) => item.student && (
+            <div className="record-card static-card class-student-row" key={item.id}>
+              <Link className="identity-link" to={`/students/${item.student.id}`}>
+                <StudentIdentity student={item.student} />
+              </Link>
+              <EndEnrollmentAction enrollmentId={item.id} studentName={item.student.name} />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {history.length > 0 && (
+        <details className="history-panel">
+          <summary>历史报读（{history.length}）</summary>
+          <div className="record-list">
+            {history.map((item) => item.student && (
+              <Link className="record-card" to={`/students/${item.student.id}/enrollments/${item.id}`} key={item.id}>
+                <span className="record-main">
+                  <StudentIdentity student={item.student} />
+                  <span className="record-meta">{formatDate(item.join_date)} – {formatDate(item.end_date)}</span>
+                </span>
+                <span className="chevron" aria-hidden="true">›</span>
+              </Link>
+            ))}
+          </div>
+        </details>
+      )}
+
+      {data.status === 'active' && (
+        <details className="danger-panel">
+          <summary>结束此班</summary>
+          <p className="muted">班级、学生名单及所有历史关系都会保留。</p>
+          <form className="compact-form" onSubmit={handleEndClass}>
+            <label className="field">
+              <span>结束日期</span>
+              <input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} required />
+            </label>
+            {error && <p className="form-error" role="alert">{error}</p>}
+            <button className="button button-danger" type="submit" disabled={endClassMutation.isPending}>
+              {endClassMutation.isPending ? '处理中…' : '结束班级'}
+            </button>
+          </form>
+        </details>
+      )}
+    </section>
+  )
+}

@@ -1,14 +1,22 @@
 import { render, screen } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { HomePage } from './HomePage'
 
-describe('HomePage', () => {
-  it('shows exactly the seven requested primary entries', () => {
-    render(
+function renderHome() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return render(
+    <QueryClientProvider client={client}>
       <MemoryRouter>
         <HomePage />
-      </MemoryRouter>,
-    )
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+}
+
+describe('HomePage', () => {
+  it('shows exactly the seven requested primary entries', () => {
+    renderHome()
 
     const navigation = screen.getByRole('navigation', { name: '主要功能' })
     expect(navigation.querySelectorAll('a')).toHaveLength(7)
@@ -21,13 +29,9 @@ describe('HomePage', () => {
     expect(screen.getByRole('link', { name: /设置/ })).toBeInTheDocument()
   })
 
-  it('keeps student search disabled until Phase 2', () => {
-    render(
-      <MemoryRouter>
-        <HomePage />
-      </MemoryRouter>,
-    )
+  it('enables student search in Phase 2', () => {
+    renderHome()
 
-    expect(screen.getByRole('searchbox', { name: '搜索学生' })).toBeDisabled()
+    expect(screen.getByRole('searchbox', { name: '搜索学生' })).toBeEnabled()
   })
 })

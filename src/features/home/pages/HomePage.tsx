@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { GlobalStudentSearch } from '../../students/components/GlobalStudentSearch'
 
 const entries = [
   { label: '学生', description: '学生资料与报读', path: '/students', icon: '学' },
@@ -22,10 +23,7 @@ export function HomePage() {
         <h1 id="home-title">蓝老师补习班</h1>
       </div>
 
-      <div className="student-search" aria-disabled="true">
-        <span className="search-icon" aria-hidden="true">⌕</span>
-        <input type="search" placeholder="搜索学生" aria-label="搜索学生" disabled title="学生搜索将在 Phase 2 提供" />
-      </div>
+      <GlobalStudentSearch />
 
       <nav className="home-grid" aria-label="主要功能">
         {entries.map((entry) => (
