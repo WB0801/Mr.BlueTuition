@@ -33,8 +33,8 @@ export function StudentDetailPage() {
       />
 
       <dl className="details-card">
-        <div><dt>学校班级</dt><dd>{student.data.school_class}</dd></div>
-        <div><dt>联系电话</dt><dd>{student.data.phone}</dd></div>
+        <div><dt>学校班级</dt><dd>{student.data.school_class || '未填写'}</dd></div>
+        <div><dt>联系电话</dt><dd>{student.data.phone || '未填写'}</dd></div>
       </dl>
 
       <details className="action-panel">

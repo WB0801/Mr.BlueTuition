@@ -38,7 +38,11 @@ export function StudentFormPage() {
   if (isEditing && student.isError) return <ErrorBlock message="找不到这位学生，或资料载入失败。" />
 
   const initialValue = student.data
-    ? { name: student.data.name, school_class: student.data.school_class, phone: student.data.phone }
+    ? {
+        name: student.data.name,
+        school_class: student.data.school_class ?? '',
+        phone: student.data.phone ?? '',
+      }
     : undefined
 
   return (

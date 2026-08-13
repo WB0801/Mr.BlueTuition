@@ -46,10 +46,10 @@ export async function updateStudent(studentId: string, input: StudentInput): Pro
   return data as Student
 }
 
-function trimStudentInput(input: StudentInput): StudentInput {
+function trimStudentInput(input: StudentInput) {
   return {
     name: input.name.trim(),
-    school_class: input.school_class.trim(),
-    phone: input.phone.trim(),
+    school_class: input.school_class.trim() || null,
+    phone: input.phone.trim() || null,
   }
 }

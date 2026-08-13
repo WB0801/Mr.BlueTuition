@@ -36,21 +36,19 @@ export function StudentForm({ initialValue = emptyStudent, submitLabel, isSubmit
         />
       </label>
       <label className="field">
-        <span>学校班级</span>
+        <span>学校班级 <small className="optional-label">选填</small></span>
         <input
           value={form.school_class}
           onChange={(event) => setForm({ ...form, school_class: event.target.value })}
-          required
           maxLength={100}
           placeholder="例如：高一商仁"
         />
       </label>
       <label className="field">
-        <span>联系电话</span>
+        <span>联系电话 <small className="optional-label">选填</small></span>
         <input
           value={form.phone}
           onChange={(event) => setForm({ ...form, phone: event.target.value })}
-          required
           maxLength={50}
           inputMode="tel"
           autoComplete="tel"

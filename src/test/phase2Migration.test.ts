@@ -4,6 +4,10 @@ const migration = readFileSync(
   `${process.cwd()}/supabase/migrations/202608130002_phase2_students_classes_enrollments.sql`,
   'utf8',
 )
+const optionalDetailsMigration = readFileSync(
+  `${process.cwd()}/supabase/migrations/202608130003_optional_student_details.sql`,
+  'utf8',
+)
 
 describe('Phase 2 migration', () => {
   it.each(['students', 'subjects', 'classes', 'enrollments'])('enables RLS on %s', (table) => {
@@ -37,5 +41,12 @@ describe('Phase 2 migration', () => {
 
   it('does not grant permanent delete access', () => {
     expect(migration).not.toMatch(/grant[^;]*delete/i)
+  })
+
+  it('makes school class and phone optional after acceptance feedback', () => {
+    expect(optionalDetailsMigration).toContain('alter column school_class drop not null')
+    expect(optionalDetailsMigration).toContain('alter column phone drop not null')
+    expect(optionalDetailsMigration).toContain("school_class is null or btrim(school_class) <> ''")
+    expect(optionalDetailsMigration).toContain("phone is null or btrim(phone) <> ''")
   })
 })

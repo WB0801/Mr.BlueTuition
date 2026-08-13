@@ -15,4 +15,10 @@ describe('StudentIdentity', () => {
     expect(screen.getByText('高一商孝 · 017-2222222')).toBeInTheDocument()
     expect(document.body).not.toHaveTextContent('student_id')
   })
+
+  it('clearly shows when optional details have not been entered', () => {
+    render(<StudentIdentity student={{ name: '庄阅浩', school_class: null, phone: null }} />)
+
+    expect(screen.getByText('学校班级未填写 · 电话未填写')).toBeInTheDocument()
+  })
 })

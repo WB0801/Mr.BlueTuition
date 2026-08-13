@@ -2,8 +2,8 @@ export interface Student {
   id: string
   owner_id: string
   name: string
-  school_class: string
-  phone: string
+  school_class: string | null
+  phone: string | null
   created_at: string
   updated_at: string
 }
