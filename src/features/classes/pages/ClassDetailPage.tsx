@@ -10,6 +10,7 @@ import { listClassEnrollments } from '../../enrollments/api/enrollmentsService'
 import { EndEnrollmentAction } from '../../enrollments/components/EndEnrollmentAction'
 import { StudentIdentity } from '../../students/components/StudentIdentity'
 import { endClass, getClass } from '../api/classesService'
+import { getEndClassConfirmationMessage } from '../classActions'
 import { AddStudentToClass } from '../components/AddStudentToClass'
 
 export function ClassDetailPage() {
@@ -42,10 +43,7 @@ export function ClassDetailPage() {
 
   async function handleEndClass(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const message = current.length > 0
-      ? `确定结束此班吗？${current.length} 位当前学生的报读也会在同一天结束，历史资料会保留。`
-      : '确定结束此班吗？历史资料会保留。'
-    if (!window.confirm(message)) return
+    if (!window.confirm(getEndClassConfirmationMessage(current.length))) return
     setError('')
     try { await endClassMutation.mutateAsync() } catch { /* mutation displays the error */ }
   }
@@ -114,6 +112,7 @@ export function ClassDetailPage() {
         <details className="danger-panel">
           <summary>结束此班</summary>
           <p className="muted">班级、学生名单及所有历史关系都会保留。</p>
+          <p className="impact-notice">结束此班将同时结束 <strong>{current.length}</strong> 位当前学生的报读。</p>
           <form className="compact-form" onSubmit={handleEndClass}>
             <label className="field">
               <span>结束日期</span>

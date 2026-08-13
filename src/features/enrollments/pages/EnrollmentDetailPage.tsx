@@ -39,7 +39,7 @@ export function EnrollmentDetailPage() {
 
   async function handleTransfer(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!window.confirm('确定转班吗？旧报读会结束，并建立一段新的报读记录。')) return
+    if (!window.confirm('确定转班吗？新班从所选转班日期生效，旧报读会在前一天结束。')) return
     setError('')
     try {
       await transfer.mutateAsync()
@@ -93,6 +93,7 @@ export function EnrollmentDetailPage() {
                 <label className="field">
                   <span>转班日期</span>
                   <input type="date" value={transferDate} onChange={(event) => setTransferDate(event.target.value)} required />
+                  <small className="field-hint">新班从此日生效；旧报读结束于前一天。</small>
                 </label>
                 {error && <p className="form-error" role="alert">{error}</p>}
                 <button className="button button-primary" type="submit" disabled={transfer.isPending}>

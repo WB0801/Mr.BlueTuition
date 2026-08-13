@@ -239,6 +239,7 @@ h1 { margin: 0; font-size: clamp(1.65rem, 4vw, 2rem); line-height: 1.25; }
 }
 .search-field input { min-height: 48px; padding-inline: 14px; }
 .field { display: grid; gap: 7px; min-width: 0; font-size: 0.92rem; font-weight: 650; }
+.field-hint { color: var(--muted); font-size: 0.8rem; font-weight: 500; line-height: 1.45; }
 .field-small { max-width: 220px; }
 .form-card,
 .compact-form {
@@ -331,6 +332,7 @@ a.record-card:hover { border-color: #a9bfee; background: #fbfdff; }
 .action-card[open] > summary { margin-bottom: 16px; }
 .danger-panel { margin-top: 36px; border-color: #f2c7c4; }
 .danger-panel > summary { color: var(--danger); }
+.impact-notice { padding: 11px 13px; color: #7a271a; background: #fff4f2; border-radius: 8px; line-height: 1.5; }
 .history-panel .record-list { margin-top: 14px; }
 .action-stack { display: grid; gap: 12px; }
 .action-card { margin-top: 0; }

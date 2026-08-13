@@ -19,7 +19,7 @@ export function getErrorMessage(error: unknown, fallback = '操作失败，请�
   }
 
   if (databaseError?.message?.includes('Invalid transfer date')) {
-    return '转班日期不能早于旧报读加入日期或新班开始日期。'
+    return '转班日期必须晚于旧报读加入日期，也不能早于新班开始日期。'
   }
 
   return fallback

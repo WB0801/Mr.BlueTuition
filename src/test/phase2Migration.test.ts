@@ -17,6 +17,24 @@ describe('Phase 2 migration', () => {
     expect(migration).toContain('function public.end_class')
   })
 
+  it('stores every required regular class field on classes', () => {
+    const classTable = migration.slice(
+      migration.indexOf('create table public.classes'),
+      migration.indexOf('create table public.enrollments'),
+    )
+
+    expect(classTable).toContain('weekday smallint not null')
+    expect(classTable).toContain('start_time time not null')
+    expect(classTable).toContain('end_time time not null')
+    expect(classTable).toContain('monthly_fee numeric(10, 2) not null')
+    expect(classTable).toContain('start_date date not null')
+  })
+
+  it('ends the old enrollment one day before the transfer takes effect', () => {
+    expect(migration).toContain('p_transfer_date <= v_old.join_date')
+    expect(migration).toContain("set status = 'ended', end_date = p_transfer_date - 1")
+  })
+
   it('does not grant permanent delete access', () => {
     expect(migration).not.toMatch(/grant[^;]*delete/i)
   })

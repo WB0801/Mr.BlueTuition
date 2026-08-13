@@ -277,12 +277,15 @@ begin
     raise exception 'Destination class must be different';
   end if;
 
-  if p_transfer_date < v_old.join_date or p_transfer_date < v_new_class.start_date then
+  -- The transfer date is the first day in the destination class. The old
+  -- enrollment therefore has to contain at least one day and ends one day
+  -- before the transfer takes effect.
+  if p_transfer_date <= v_old.join_date or p_transfer_date < v_new_class.start_date then
     raise exception 'Invalid transfer date';
   end if;
 
   update public.enrollments
-  set status = 'ended', end_date = p_transfer_date
+  set status = 'ended', end_date = p_transfer_date - 1
   where id = v_old.id;
 
   insert into public.enrollments (owner_id, student_id, class_id, join_date)
