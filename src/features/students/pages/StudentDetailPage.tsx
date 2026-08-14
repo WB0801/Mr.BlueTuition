@@ -6,6 +6,7 @@ import { listClasses } from '../../classes/api/classesService'
 import { listStudentEnrollments } from '../../enrollments/api/enrollmentsService'
 import { EnrollmentCard } from '../../enrollments/components/EnrollmentCard'
 import { NewEnrollmentForm } from '../../enrollments/components/NewEnrollmentForm'
+import { StudentGradesSection } from '../../grades/components/StudentGradesSection'
 import { getStudent } from '../api/studentsService'
 
 export function StudentDetailPage() {
@@ -59,6 +60,8 @@ export function StudentDetailPage() {
           {current.map((item) => <EnrollmentCard enrollment={item} key={item.id} />)}
         </div>
       </section>
+
+      <StudentGradesSection studentId={studentId} />
 
       <section className="content-section">
         <h2>历史报读</h2>

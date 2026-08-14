@@ -111,13 +111,15 @@ export async function saveSchoolExamScores(examId: string, scores: ScorePayload[
   return Number(data ?? 0)
 }
 
-export async function listStudentSchoolExamScores(studentId: string, subjectId: string) {
-  const { data, error } = await requireSupabase()
+export async function listStudentSchoolExamScores(studentId: string, subjectId?: string) {
+  let query = requireSupabase()
     .from('school_exam_scores')
     .select(`*, exam:school_exams!inner(${schoolExamSelection})`)
     .eq('student_id', studentId)
-    .eq('exam.subject_id', subjectId)
     .order('created_at', { ascending: false })
+
+  if (subjectId) query = query.eq('exam.subject_id', subjectId)
+  const { data, error } = await query
   if (error) throw error
   return (data ?? []).map((row) => ({
     ...mapSchoolExamScore(row),
@@ -195,6 +197,19 @@ export async function listEnrollmentTuitionQuizScores(enrollmentId: string) {
     .from('tuition_quiz_scores')
     .select(`*, quiz:tuition_quizzes!inner(${quizSelection})`)
     .eq('enrollment_id', enrollmentId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data ?? []).map((row) => ({
+    ...mapTuitionQuizScore(row),
+    quiz: row.quiz ? mapTuitionQuiz(row.quiz) : null,
+  })) as TuitionQuizScore[]
+}
+
+export async function listStudentTuitionQuizScores(studentId: string) {
+  const { data, error } = await requireSupabase()
+    .from('tuition_quiz_scores')
+    .select(`*, quiz:tuition_quizzes!inner(${quizSelection})`)
+    .eq('student_id', studentId)
     .order('created_at', { ascending: false })
   if (error) throw error
   return (data ?? []).map((row) => ({
