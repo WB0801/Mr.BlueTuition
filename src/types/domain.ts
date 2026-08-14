@@ -119,6 +119,10 @@ export interface ClassSessionWithClass extends ClassSession {
   }) | null
 }
 
+export interface AllDayStopSession extends ClassSessionWithClass {
+  has_valid_attendance: boolean
+}
+
 export interface SessionScheduleChange {
   id: string
   owner_id: string
@@ -140,4 +144,84 @@ export interface ScheduleChangeInput {
   start_time: string
   end_time: string
   effective_from: string
+}
+
+export type ParticipationType = 'regular' | 'makeup' | 'extra'
+export type SigningType = 'checkin' | 'backfill'
+export type AttendanceStatus = 'valid' | 'voided'
+export type CaptureSource = 'server' | 'device_offline'
+
+export interface AttendanceRecord {
+  id: string
+  owner_id: string
+  student_id: string
+  session_id: string
+  makeup_link_id: string | null
+  client_request_id: string
+  participation_type: ParticipationType
+  signing_type: SigningType
+  captured_at: string
+  synced_at: string
+  capture_source: CaptureSource
+  signature_path: string
+  signature_mime_type: 'image/png'
+  signature_byte_size: number | null
+  status: AttendanceStatus
+  voided_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface SessionRosterEntry {
+  student_id: string
+  student_name: string
+  school_class: string | null
+  phone: string | null
+  participation_type: ParticipationType
+  makeup_link_id: string | null
+  source_session_id: string | null
+  attendance_record_id: string | null
+  captured_at: string | null
+  synced_at: string | null
+  capture_source: CaptureSource | null
+  signing_type: SigningType | null
+  signature_path: string | null
+  made_up_session_id: string | null
+  made_up_at: string | null
+}
+
+export interface CrossClassCandidate {
+  source_enrollment_id: string
+  student_id: string
+  student_name: string
+  school_class: string | null
+  phone: string | null
+  source_class_id: string
+  source_class_name: string
+}
+
+export interface MakeupSourceSession {
+  session_id: string
+  session_start_at: string
+  class_name: string
+}
+
+export interface MakeupLink {
+  id: string
+  owner_id: string
+  student_id: string
+  source_enrollment_id: string
+  target_session_id: string
+  source_session_id: string | null
+  link_type: 'makeup' | 'extra'
+  created_at: string
+}
+
+export interface AttendanceCorrection {
+  id: string
+  owner_id: string
+  attendance_record_id: string
+  correction_type: 'voided'
+  corrected_at: string
+  created_at: string
 }

@@ -18,16 +18,18 @@ export function AllDayStopPanel() {
   const stopMutation = useMutation({
     mutationFn: () => stopSessionsForDate(date),
     onSuccess: async (stoppedCount) => {
-      setSuccess(`已将 ${stoppedCount} 堂课程标记为停课。`)
+      const protectedCount = sessions.data?.filter((session) => session.has_valid_attendance).length ?? 0
+      setSuccess(`已停课 ${stoppedCount} 堂；因已有签到而保留 ${protectedCount} 堂。`)
       await queryClient.invalidateQueries({ queryKey: ['sessions'] })
     },
     onError: (caughtError) => setError(getErrorMessage(caughtError, '全日停课失败，请重试。')),
   })
 
   async function handleStopAll() {
-    const count = sessions.data?.length ?? 0
-    if (count === 0) return
-    if (!window.confirm(getAllDayStopConfirmationMessage(formatDate(date), count))) return
+    const stoppableCount = sessions.data?.filter((session) => !session.has_valid_attendance).length ?? 0
+    const protectedCount = sessions.data?.filter((session) => session.has_valid_attendance).length ?? 0
+    if (stoppableCount === 0) return
+    if (!window.confirm(getAllDayStopConfirmationMessage(formatDate(date), stoppableCount, protectedCount))) return
 
     setError('')
     setSuccess('')
@@ -57,10 +59,11 @@ export function AllDayStopPanel() {
       )}
       <div className="all-day-session-list">
         {sessions.data?.map((session) => (
-          <div className="all-day-session-row" key={session.id}>
+          <div className={`all-day-session-row${session.has_valid_attendance ? ' protected-session-row' : ''}`} key={session.id}>
             <span>
               <strong>{session.class?.name ?? '未知班级'}</strong>
               {session.session_type === 'extra' && <small>额外补课</small>}
+              <small>{session.has_valid_attendance ? '已有签到 · 保留上课' : '将停课'}</small>
             </span>
             <span>{formatTime(toMalaysiaTimeInput(session.current_start_at))} – {formatTime(toMalaysiaTimeInput(session.current_end_at))}</span>
           </div>
@@ -72,10 +75,12 @@ export function AllDayStopPanel() {
       <button
         className="button button-danger"
         type="button"
-        disabled={stopMutation.isPending || sessions.isLoading || (sessions.data?.length ?? 0) === 0}
+        disabled={stopMutation.isPending || sessions.isLoading || !sessions.data?.some((session) => !session.has_valid_attendance)}
         onClick={handleStopAll}
       >
-        {stopMutation.isPending ? '处理中…' : `将当天 ${sessions.data?.length ?? 0} 堂课程标记为停课`}
+        {stopMutation.isPending
+          ? '处理中…'
+          : `停课 ${sessions.data?.filter((session) => !session.has_valid_attendance).length ?? 0} 堂 · 保留 ${sessions.data?.filter((session) => session.has_valid_attendance).length ?? 0} 堂`}
       </button>
     </div>
   )

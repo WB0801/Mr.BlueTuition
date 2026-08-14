@@ -17,6 +17,7 @@
 html { min-width: 320px; background: #f7f8fa; }
 body { margin: 0; min-width: 320px; min-height: 100vh; }
 button, input, select { font: inherit; }
+fieldset { min-width: 0; }
 button, a { -webkit-tap-highlight-color: transparent; }
 a { color: inherit; }
 
@@ -439,6 +440,7 @@ a.record-card:hover { border-color: #a9bfee; background: #fbfdff; }
 .all-day-session-row > span:first-child { min-width: 0; display: grid; gap: 3px; }
 .all-day-session-row small { color: var(--blue-dark); font-size: 0.78rem; }
 .all-day-session-row > span:last-child { flex: 0 0 auto; color: var(--muted); font-size: 0.88rem; }
+.protected-session-row { background: #f0fdf4; border-color: #bbf7d0; }
 .restore-session-panel {
   margin-top: 22px;
   padding: 18px;
@@ -452,6 +454,125 @@ a.record-card:hover { border-color: #a9bfee; background: #fbfdff; }
 }
 .restore-session-panel p { margin: 5px 0 0; color: var(--muted); line-height: 1.5; }
 .restore-session-panel .form-error { grid-column: 1 / -1; }
+
+.attendance-section { margin-top: 30px; }
+.attendance-roster { display: grid; gap: 10px; }
+.attendance-student-card {
+  min-height: 94px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+}
+.attendance-student-main { min-width: 0; display: grid; gap: 5px; }
+.attendance-student-main > span:not(.attendance-label) { color: var(--muted); font-size: 0.88rem; }
+.attendance-label {
+  display: inline-flex;
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+.attendance-present { color: #05603a; background: #e9f8f0; }
+.attendance-absent { color: #7a271a; background: #fff0ed; }
+.attendance-backfill { color: #854d0e; background: #fef3c7; }
+.makeup-complete-note { color: #1e40af; font-weight: 650; }
+.signed-time, .future-attendance-note, .offline-signature-note { color: var(--muted); font-size: 0.82rem; }
+.offline-signature-note { color: #854d0e; font-weight: 650; }
+.attendance-sign-button { min-width: 112px; min-height: 50px; }
+
+.cross-class-form { margin-top: 4px; }
+.selected-student-card {
+  padding: 13px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background: #f8f9fb;
+  border-radius: 9px;
+}
+.selected-student-card > span { display: grid; gap: 4px; }
+.selected-student-card small { color: var(--muted); }
+.choice-group {
+  margin: 0;
+  padding: 14px;
+  display: grid;
+  gap: 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+.choice-group legend { padding: 0 6px; font-weight: 700; }
+.choice-group label { min-height: 34px; display: flex; align-items: center; gap: 9px; line-height: 1.4; }
+.choice-group input { width: 20px; height: 20px; flex: 0 0 auto; }
+
+.signature-page { width: min(100%, 980px); margin: 0 auto; }
+.signature-context {
+  margin: -8px 0 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  color: var(--muted);
+}
+.signature-context strong { color: #172033; }
+.signature-card {
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 13px;
+}
+.signature-instruction { margin: 0 0 12px; font-weight: 700; }
+.signature-canvas {
+  width: 100%;
+  height: clamp(300px, 48vh, 440px);
+  display: block;
+  background: #fff;
+  border: 2px solid #aeb7c5;
+  border-radius: 10px;
+  cursor: crosshair;
+  touch-action: none;
+  user-select: none;
+}
+.signature-actions { margin-top: 16px; display: grid; grid-template-columns: 1fr 2fr; gap: 12px; }
+.signature-actions .button { min-height: 56px; font-size: 1.05rem; }
+.sync-warning {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  color: #854d0e;
+  background: #fffbeb;
+  border-radius: 8px;
+  font-weight: 650;
+}
+.signature-card .form-error { margin-top: 12px; }
+.saved-signature-card {
+  padding: 18px;
+  display: grid;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+}
+.saved-signature-card img {
+  width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid #d8dde6;
+  border-radius: 8px;
+}
+.correction-history {
+  margin-top: 16px;
+  padding: 16px 18px;
+  color: #7a271a;
+  background: #fff4f2;
+  border-radius: 9px;
+}
+.correction-history p { margin: 7px 0 0; }
 
 @media (max-width: 560px) {
   .header-inner, .page-container { width: min(100% - 24px, 880px); }
@@ -476,6 +597,18 @@ a.record-card:hover { border-color: #a9bfee; background: #fbfdff; }
   .all-day-session-row { align-items: flex-start; flex-direction: column; gap: 6px; }
   .restore-session-panel { grid-template-columns: 1fr; }
   .restore-session-panel .button { width: 100%; }
+  .attendance-student-card { align-items: stretch; flex-direction: column; }
+  .attendance-student-card .button { width: 100%; }
+  .signature-card { padding: 14px; }
+  .signature-canvas { height: 340px; }
+  .signature-actions { grid-template-columns: 1fr; }
+}
+
+@media (min-width: 700px) and (pointer: coarse) {
+  .page-container { width: min(100% - 40px, 980px); }
+  .attendance-student-card { min-height: 108px; padding: 19px 21px; }
+  .attendance-sign-button { min-width: 132px; min-height: 56px; }
+  .signature-canvas { height: min(52vh, 480px); }
 }
 
 @media (prefers-reduced-motion: reduce) {

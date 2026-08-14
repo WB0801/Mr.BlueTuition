@@ -3,6 +3,7 @@ import type {
   ClassScheduleRule,
   ClassSession,
   ClassSessionWithClass,
+  AllDayStopSession,
   ScheduleChangeInput,
   ScheduleChangePreview,
   SessionScheduleChange,
@@ -119,17 +120,31 @@ async function queryScheduledRange(from: string, to: string): Promise<ClassSessi
   return (data ?? []) as unknown as ClassSessionWithClass[]
 }
 
-export async function listScheduledSessionsForDate(date: string): Promise<ClassSessionWithClass[]> {
+export async function listScheduledSessionsForDate(date: string): Promise<AllDayStopSession[]> {
   const { error } = await requireSupabase().rpc('ensure_class_sessions', {
     p_from_date: date,
     p_to_date: date,
   })
   if (error) throw error
 
-  return queryScheduledRange(
+  const sessions = await queryScheduledRange(
     malaysiaDateTime(date, '00:00'),
     malaysiaDateTime(addCalendarDays(date, 1), '00:00'),
   )
+  if (sessions.length === 0) return []
+
+  const { data, error: attendanceError } = await requireSupabase()
+    .from('attendance_records')
+    .select('session_id')
+    .in('session_id', sessions.map((session) => session.id))
+    .eq('status', 'valid')
+
+  if (attendanceError) throw attendanceError
+  const protectedIds = new Set((data ?? []).map((record) => record.session_id as string))
+  return sessions.map((session) => ({
+    ...session,
+    has_valid_attendance: protectedIds.has(session.id),
+  }))
 }
 
 export async function getSession(sessionId: string): Promise<ClassSessionWithClass> {

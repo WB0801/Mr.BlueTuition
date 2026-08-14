@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { createHashRouter, Navigate, RouterProvider } from 'react-router-dom'
 import { AppLayout } from '../components/layout/AppLayout'
 import { FullPageLoading } from '../components/feedback/FullPageLoading'
 import { ProtectedRoute } from '../features/auth/ProtectedRoute'
@@ -18,40 +18,46 @@ const ClassDetailPage = lazy(() => import('../features/classes/pages/ClassDetail
 const SubjectsPage = lazy(() => import('../features/classes/pages/SubjectsPage').then((module) => ({ default: module.SubjectsPage })))
 const AttendancePage = lazy(() => import('../features/schedule/pages/AttendancePage').then((module) => ({ default: module.AttendancePage })))
 const SessionDetailPage = lazy(() => import('../features/schedule/pages/SessionDetailPage').then((module) => ({ default: module.SessionDetailPage })))
+const SignaturePage = lazy(() => import('../features/attendance/pages/SignaturePage').then((module) => ({ default: module.SignaturePage })))
+const AttendanceRecordPage = lazy(() => import('../features/attendance/pages/AttendanceRecordPage').then((module) => ({ default: module.AttendanceRecordPage })))
 
 function routePage(page: React.ReactNode) {
   return <Suspense fallback={<FullPageLoading label="正在载入页面…" />}>{page}</Suspense>
 }
 
+const router = createHashRouter([
+  { path: '/login', element: <LoginPage /> },
+  {
+    element: <ProtectedRoute />,
+    children: [{
+      element: <AppLayout />,
+      children: [
+        { index: true, element: <HomePage /> },
+        { path: 'students', element: routePage(<StudentListPage />) },
+        { path: 'students/new', element: routePage(<StudentFormPage />) },
+        { path: 'students/:studentId', element: routePage(<StudentDetailPage />) },
+        { path: 'students/:studentId/edit', element: routePage(<StudentFormPage />) },
+        { path: 'students/:studentId/enrollments/:enrollmentId', element: routePage(<EnrollmentDetailPage />) },
+        { path: 'classes', element: routePage(<ClassesListPage />) },
+        { path: 'classes/new', element: routePage(<ClassFormPage />) },
+        { path: 'classes/subjects', element: routePage(<SubjectsPage />) },
+        { path: 'classes/:classId', element: routePage(<ClassDetailPage />) },
+        { path: 'classes/:classId/edit', element: routePage(<ClassFormPage />) },
+        { path: 'attendance', element: routePage(<AttendancePage />) },
+        { path: 'attendance/session/:sessionId', element: routePage(<SessionDetailPage />) },
+        { path: 'attendance/session/:sessionId/sign/:studentId', element: routePage(<SignaturePage />) },
+        { path: 'attendance/session/:sessionId/record/:attendanceId', element: routePage(<AttendanceRecordPage />) },
+        { path: 'fees/*', element: <PlaceholderPage title="学费" phase="Phase 5" /> },
+        { path: 'grades/*', element: <PlaceholderPage title="成绩" phase="Phase 6" /> },
+        { path: 'temporary-classes/*', element: <PlaceholderPage title="临时班" phase="Phase 7" /> },
+        { path: 'settings/*', element: <PlaceholderPage title="设置" phase="Phase 8" /> },
+        { path: 'home', element: <Navigate to="/" replace /> },
+        { path: '*', element: <NotFoundPage /> },
+      ],
+    }],
+  },
+])
+
 export function AppRouter() {
-  return (
-    <HashRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route element={<ProtectedRoute />}>
-          <Route element={<AppLayout />}>
-            <Route index element={<HomePage />} />
-            <Route path="students" element={routePage(<StudentListPage />)} />
-            <Route path="students/new" element={routePage(<StudentFormPage />)} />
-            <Route path="students/:studentId" element={routePage(<StudentDetailPage />)} />
-            <Route path="students/:studentId/edit" element={routePage(<StudentFormPage />)} />
-            <Route path="students/:studentId/enrollments/:enrollmentId" element={routePage(<EnrollmentDetailPage />)} />
-            <Route path="classes" element={routePage(<ClassesListPage />)} />
-            <Route path="classes/new" element={routePage(<ClassFormPage />)} />
-            <Route path="classes/subjects" element={routePage(<SubjectsPage />)} />
-            <Route path="classes/:classId" element={routePage(<ClassDetailPage />)} />
-            <Route path="classes/:classId/edit" element={routePage(<ClassFormPage />)} />
-            <Route path="attendance" element={routePage(<AttendancePage />)} />
-            <Route path="attendance/session/:sessionId" element={routePage(<SessionDetailPage />)} />
-            <Route path="fees/*" element={<PlaceholderPage title="学费" phase="Phase 5" />} />
-            <Route path="grades/*" element={<PlaceholderPage title="成绩" phase="Phase 6" />} />
-            <Route path="temporary-classes/*" element={<PlaceholderPage title="临时班" phase="Phase 7" />} />
-            <Route path="settings/*" element={<PlaceholderPage title="设置" phase="Phase 8" />} />
-            <Route path="home" element={<Navigate to="/" replace />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-        </Route>
-      </Routes>
-    </HashRouter>
-  )
+  return <RouterProvider router={router} />
 }

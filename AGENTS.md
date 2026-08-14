@@ -36,4 +36,11 @@
 - 转班日期是新班生效日；旧报读 `end_date` 是转班日期前一天。
 - Phase 3 起真正课表的 source of truth 是 `class_schedule_rules`；同班可有多条并行规则。`classes.id` 保持稳定，旧星期与时间字段只作为由数据库 transaction 同步的兼容镜像，不能用于生成 Session。
 - Phase 3 的课程停止操作在 UI 统一称为「停课」；底层使用 `class_sessions.status = 'cancelled'`，不要求理由、不删除 Session，也不自动建立补课。支持单堂及单一日期全日停课，不做日期范围；单堂停课可恢复上课，必须复用原 Session 并保留时间与改期历史。
+- 缺席永远由 Session 当日有效报读名单减去有效签到动态推导，不建立缺席记录；停课 Session 不允许点名。
+- 签名图片只存于 private `signatures` Storage bucket。有效签到每生每堂最多一笔；签错只能作废并保留原图、原时间与修正轨迹，不能覆盖或删除。
+- 签名确认前先保存到 IndexedDB，再上传 Storage 和调用幂等 RPC；上传失败必须保留本机图片并允许重新同步。
+- 在线签到的 `captured_at` 使用可信服务器时间；离线重传分别保留设备捕获 `captured_at` 与服务器 `synced_at`，并在 UI 标示「离线签名」。
+- 跨班补课只新增 `makeup_links`，继续引用学生原报读、原缺席 Session 与目标 Session；不得修改正式 enrollment 或把原缺席改成出席。
+- 跨班 makeup／extra 候选必须在目标 Session 日期仍有其他班有效 enrollment，且其他班与目标班使用相同 `subject_id`。
+- 全日停课必须保护已有有效签到的 Session，同时原子停掉当天其余符合条件的 Session；确认画面分别显示停课与保留堂数。
 - 结束班级会同日结束所有当前报读，操作前必须明确显示受影响学生人数。

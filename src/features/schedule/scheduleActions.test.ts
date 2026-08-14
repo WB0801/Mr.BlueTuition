@@ -18,9 +18,11 @@ describe('getScheduleChangeConfirmationMessage', () => {
   })
 
   it('clearly confirms the selected date and all affected sessions for a full-day stop', () => {
-    expect(getAllDayStopConfirmationMessage('2026/8/20', 3)).toBe(
-      '2026/8/20 共有 3 堂尚未停课的课程。确定全部标记为停课吗？课程不会删除，也不会自动建立补课。',
-    )
+    expect(getAllDayStopConfirmationMessage('2026/8/20', 3, 1)).toBe([
+      '2026/8/20 将停课 3 堂。',
+      '因已有签到而保留 1 堂。',
+      '确定继续吗？课程不会删除，也不会自动建立补课。',
+    ].join('\n'))
   })
 
   it('only offers stop and restore for the allowed lifecycle states', () => {

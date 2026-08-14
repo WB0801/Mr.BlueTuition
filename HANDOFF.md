@@ -24,6 +24,7 @@
 2. `202608130002_phase2_students_classes_enrollments.sql`
 3. `202608130003_optional_student_details.sql`
 4. `202608130004_phase3_schedules_sessions.sql`
+5. `202608140005_phase4_attendance_signatures.sql`
 
 这些 migration 已在生产执行，不要编辑旧文件。后续 schema 变化必须新增 migration。
 
@@ -50,9 +51,24 @@ Phase 3 结构决定：`class_schedule_rules` 是唯一课表真相来源。同�
 
 验收期间建立的额外补课及停课 Session 会按历史保留原则继续存在，不要直接从数据库删除。
 
-## 当前待办：Phase 4 尚未开始
+## 当前待办：Phase 4 前端发布与实际验收
 
-Phase 4 目标是点名、手写签名、签名 Storage、补签、作废修正与跨班补课逻辑。开始前必须取得用户明确确认；不要提前实现学费、成绩或后续 Phase。
+Phase 4 已在本地完成实现与自动化验证。第 5 份 production migration 已于 2026-08-14 成功执行，但前端尚未 push、发布或实际验收。
+
+部署后检查确认：学生 3、科目 1、班级 2、报读 3、课表规则 3；三张 Phase 4 表均存在并启用 RLS；`signatures` bucket 为 private、限制 2 MB，具有本人路径 upload/read 两条 policy。
+
+本地实现包括：
+
+- 根据 Session 当日有效 enrollment 动态产生名单；不保存缺席记录。
+- iPad 手指／Apple Pencil 签名画布、真实服务端签名时间及补签标记。
+- IndexedDB 先行暂存（包括设备 `captured_at`）、失败恢复、重新上传、离页提示与幂等提交；离线记录另存服务器 `synced_at`。
+- private `signatures` bucket、仅本人路径可读写、无前端覆盖／删除 policy。
+- 有效签到唯一约束、原签名查看、作废记录与修正轨迹。
+- 跨班 makeup／extra 学生、原 enrollment 与 source Session 关系、原缺席的补课显示；候选限目标日期仍有效且同科目的其他班学生。
+- 已有有效签到的 Session 不能改期或停课；全日停课与签到操作使用 Session row lock 防止竞态。
+- 全日停课会保留已有签到的 Session，并原子停掉当天其他可停课程；UI 分开显示两个数量。
+
+Phase 4 不包含学费、收据、成绩、临时班或 Phase 5 以后功能。下一步是 commit/push 当前前端，等待 GitHub Pages 成功发布后进行完整实际验收。
 
 ## 新 Windows 电脑开始步骤
 
@@ -91,7 +107,7 @@ pnpm dev
 
 6. 需要推送或检查部署时运行 `gh auth login`，再确认 `gh auth status`。
 
-现有生产 Supabase 已执行全部 migration。换电脑本地开发不需要重新执行它们；只有新增 migration 时才先在 Supabase 执行，再发布对应前端。
+现有生产 Supabase 已执行到第 5 份 migration。换电脑本地开发不需要重新执行；后续只有新增 migration 时才先在 Supabase 执行，再发布对应前端。
 
 ## GitHub 不会同步的资料
 
@@ -101,4 +117,4 @@ pnpm dev
 - `node_modules`、`dist` 和本机缓存：不会同步，也不需要带走，运行 `pnpm install` / `pnpm build` 可重建。
 - 当前旧电脑没有未提交的项目文件；业务数据在 Supabase，不在本机 repository。
 
-新电脑上的 Codex 应先阅读 `AGENTS.md`、`HANDOFF.md` 和原始开发规格，再检查 `git status` 与远程 `main`。Phase 3 已完成部署与实际验收；Phase 4 尚未开始，必须等待用户明确确认。
+新电脑上的 Codex 应先阅读 `AGENTS.md`、`HANDOFF.md` 和原始开发规格，再检查 `git status` 与远程 `main`。Phase 3 已完成部署与实际验收；Phase 4 本地实现尚未部署或验收，不得自动执行 migration、push 或开始 Phase 5。

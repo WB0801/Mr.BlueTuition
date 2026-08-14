@@ -5,6 +5,9 @@ import { ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryStat
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { getErrorMessage } from '../../../utils/errors'
 import { formatDateTime, formatSessionTimeRange } from '../../../utils/format'
+import { getSessionRoster } from '../../attendance/api/attendanceService'
+import { AttendanceRoster } from '../../attendance/components/AttendanceRoster'
+import { CrossClassGuestPanel } from '../../attendance/components/CrossClassGuestPanel'
 import { getSession, listSessionChanges, restoreSession, stopSession } from '../api/scheduleService'
 import { RescheduleSessionForm } from '../components/RescheduleSessionForm'
 import { canRestoreSession, canStopSession } from '../scheduleActions'
@@ -26,6 +29,10 @@ export function SessionDetailPage() {
   const changes = useQuery({
     queryKey: ['session', sessionId, 'changes'],
     queryFn: () => listSessionChanges(sessionId),
+  })
+  const roster = useQuery({
+    queryKey: ['attendance', sessionId, 'roster'],
+    queryFn: () => getSessionRoster(sessionId),
   })
   const stopMutation = useMutation({
     mutationFn: () => stopSession(sessionId),
@@ -49,6 +56,7 @@ export function SessionDetailPage() {
 
   const data = session.data
   const wasRescheduled = data.original_start_at !== data.current_start_at || data.original_end_at !== data.current_end_at
+  const hasValidAttendance = roster.data?.some((entry) => entry.attendance_record_id) ?? false
 
   async function handleStop() {
     if (!window.confirm('确定将这堂课程标记为停课？课程不会删除，并会保留在历史中。')) return
@@ -90,7 +98,7 @@ export function SessionDetailPage() {
         </details>
       )}
 
-      {canStopSession(data.status) && (
+      {canStopSession(data.status) && !hasValidAttendance && (
         <div className="schedule-actions-grid">
           <details className="action-panel">
             <summary>只修改这一次</summary>
@@ -107,6 +115,10 @@ export function SessionDetailPage() {
         </div>
       )}
 
+      {hasValidAttendance && data.status === 'scheduled' && (
+        <p className="notice">这堂课程已有有效签到，为保护签名事实，不能再改期或停课。</p>
+      )}
+
       {canRestoreSession(data.status, data.class?.status) && (
         <div className="restore-session-panel">
           <div>
@@ -120,10 +132,19 @@ export function SessionDetailPage() {
         </div>
       )}
 
-      <div className="phase-placeholder">
-        <strong>学生签到</strong>
-        <p>签到与手写签名将在 Phase 4 开发。</p>
-      </div>
+      <section className="content-section attendance-section">
+        <h2>学生点名</h2>
+        {roster.isLoading && <LoadingBlock />}
+        {roster.isError && <ErrorBlock message="点名名单载入失败，请重试。" />}
+        {roster.data && <AttendanceRoster session={data} entries={roster.data} />}
+      </section>
+
+      {data.status === 'scheduled' && (
+        <details className="action-panel">
+          <summary>添加跨班补课学生</summary>
+          <CrossClassGuestPanel sessionId={data.id} />
+        </details>
+      )}
       {data.class && <Link className="text-link" to={`/classes/${data.class.id}`}>查看班级</Link>}
     </section>
   )

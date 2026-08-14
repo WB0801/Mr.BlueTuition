@@ -16,6 +16,10 @@ export function getScheduleChangeConfirmationMessage(preview: ScheduleChangePrev
   ].join('\n')
 }
 
-export function getAllDayStopConfirmationMessage(dateLabel: string, sessionCount: number) {
-  return `${dateLabel} 共有 ${sessionCount} 堂尚未停课的课程。确定全部标记为停课吗？课程不会删除，也不会自动建立补课。`
+export function getAllDayStopConfirmationMessage(dateLabel: string, stoppableCount: number, protectedCount: number) {
+  return [
+    `${dateLabel} 将停课 ${stoppableCount} 堂。`,
+    `因已有签到而保留 ${protectedCount} 堂。`,
+    '确定继续吗？课程不会删除，也不会自动建立补课。',
+  ].join('\n')
 }
