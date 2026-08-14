@@ -112,7 +112,9 @@ export function EnrollmentDetailPage() {
         <h2>这段报读的资料</h2>
         <div className="future-links" aria-label="后续阶段功能">
           <span>出席 <small>已可在课程点名查看</small></span>
-          <a href="#enrollment-fees">学费 <small>查看这段报读的月费</small></a>
+          <button type="button" onClick={() => document.getElementById('enrollment-fees')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+            学费 <small>查看这段报读的月费</small>
+          </button>
           <span>成绩 <small>Phase 6</small></span>
         </div>
       </section>

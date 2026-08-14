@@ -1,14 +1,20 @@
 import { requireSupabase } from '../../../lib/requireSupabase'
-import type { EnsureMonthlyFeesResult, MonthlyFee, MonthlyFeeDetails } from '../../../types/domain'
+import type { EnsureMonthlyFeesResult, MonthlyFee, MonthlyFeeDetails, Student } from '../../../types/domain'
 
 const feeSelection = `
   *,
-  student:students(id,name,school_class,phone),
   enrollment:enrollments!inner(
     id,class_id,join_date,end_date,status,
+    student:students(id,name,school_class,phone),
     class:classes(id,name,status)
   )
 `
+
+type FeeQueryRow = MonthlyFee & {
+  enrollment: (MonthlyFeeDetails['enrollment'] & {
+    student: Pick<Student, 'id' | 'name' | 'school_class' | 'phone'> | null
+  }) | null
+}
 
 interface FeeFilters {
   feeMonth?: string
@@ -46,7 +52,7 @@ export async function listMonthlyFees(filters: FeeFilters = {}): Promise<Monthly
 
   const { data, error } = await query
   if (error) throw error
-  return (data ?? []).map(normalizeFee) as unknown as MonthlyFeeDetails[]
+  return (data ?? []).map((row) => mapMonthlyFeeDetails(row as unknown as FeeQueryRow))
 }
 
 export async function listPendingReceipts(): Promise<MonthlyFeeDetails[]> {
@@ -59,7 +65,7 @@ export async function listPendingReceipts(): Promise<MonthlyFeeDetails[]> {
     .order('paid_at', { ascending: true })
 
   if (error) throw error
-  return (data ?? []).map(normalizeFee) as unknown as MonthlyFeeDetails[]
+  return (data ?? []).map((row) => mapMonthlyFeeDetails(row as unknown as FeeQueryRow))
 }
 
 export async function countPendingReceipts(): Promise<number> {
@@ -117,5 +123,26 @@ function normalizeFee<T extends Partial<MonthlyFee>>(fee: T): T {
     ...fee,
     normal_amount: Number(fee.normal_amount ?? 0),
     actual_amount: Number(fee.actual_amount ?? 0),
+  }
+}
+
+export function mapMonthlyFeeDetails(row: FeeQueryRow): MonthlyFeeDetails {
+  const nestedEnrollment = row.enrollment
+  const student = nestedEnrollment?.student ?? null
+  const enrollment = nestedEnrollment
+    ? {
+        id: nestedEnrollment.id,
+        class_id: nestedEnrollment.class_id,
+        join_date: nestedEnrollment.join_date,
+        end_date: nestedEnrollment.end_date,
+        status: nestedEnrollment.status,
+        class: nestedEnrollment.class,
+      }
+    : null
+
+  return {
+    ...normalizeFee(row),
+    student,
+    enrollment,
   }
 }
