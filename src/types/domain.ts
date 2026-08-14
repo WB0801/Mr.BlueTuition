@@ -256,3 +256,84 @@ export interface MonthlyFeeDetails extends MonthlyFee {
 export interface EnsureMonthlyFeesResult {
   created_count: number
 }
+
+export interface SchoolExam {
+  id: string
+  owner_id: string
+  subject_id: string
+  year: number
+  exam_date: string
+  name: string
+  max_score: number
+  created_at: string
+  updated_at: string
+  subject?: Pick<Subject, 'id' | 'name'> | null
+}
+
+export interface SchoolExamScore {
+  id: string
+  owner_id: string
+  exam_id: string
+  student_id: string
+  score: number
+  created_at: string
+  updated_at: string
+  exam?: SchoolExam | null
+}
+
+export interface SchoolExamRosterEntry {
+  student_id: string
+  student_name: string
+  school_class: string | null
+  phone: string | null
+  class_id: string
+  class_name: string
+  enrollment_id: string
+}
+
+export interface SchoolExamHistoricalCandidate {
+  student_id: string
+  student_name: string
+  school_class: string | null
+  phone: string | null
+}
+
+export interface TuitionQuiz {
+  id: string
+  owner_id: string
+  class_id: string
+  name: string
+  quiz_date: string
+  max_score: number
+  created_at: string
+  updated_at: string
+  class?: TuitionClass | null
+}
+
+export interface TuitionQuizScore {
+  id: string
+  owner_id: string
+  quiz_id: string
+  student_id: string
+  enrollment_id: string
+  score: number
+  created_at: string
+  updated_at: string
+  quiz?: TuitionQuiz | null
+}
+
+export interface TuitionQuizRosterEntry {
+  student_id: string
+  student_name: string
+  school_class: string | null
+  phone: string | null
+  enrollment_id: string
+}
+
+export interface GradeEntryRow {
+  student_id: string
+  student_name: string
+  school_class: string | null
+  phone: string | null
+  enrollment_id?: string
+}

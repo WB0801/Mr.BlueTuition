@@ -10,6 +10,7 @@ import { formatDate, todayInMalaysia } from '../../../utils/format'
 import { getEnrollment, transferEnrollment } from '../api/enrollmentsService'
 import { EndEnrollmentAction } from '../components/EndEnrollmentAction'
 import { EnrollmentFeesSection } from '../../fees/components/EnrollmentFeesSection'
+import { EnrollmentGradesSection } from '../../grades/components/EnrollmentGradesSection'
 
 export function EnrollmentDetailPage() {
   const { studentId = '', enrollmentId = '' } = useParams()
@@ -115,10 +116,13 @@ export function EnrollmentDetailPage() {
           <button type="button" onClick={() => document.getElementById('enrollment-fees')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
             学费 <small>查看这段报读的月费</small>
           </button>
-          <span>成绩 <small>Phase 6</small></span>
+          <button type="button" onClick={() => document.getElementById('enrollment-grades')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+            成绩 <small>查看学校考试与补习班小测</small>
+          </button>
         </div>
       </section>
       <EnrollmentFeesSection enrollment={data} />
+      <EnrollmentGradesSection enrollment={data} />
     </section>
   )
 }

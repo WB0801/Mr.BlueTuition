@@ -71,6 +71,7 @@ export function ClassDetailPage() {
       </dl>
       <div className="secondary-actions">
         <Link to={`/fees?classId=${classId}`}>查看本班学费</Link>
+        <Link to="/grades">查看成绩</Link>
       </div>
 
       <ClassFixedScheduleSection tuitionClass={data} />

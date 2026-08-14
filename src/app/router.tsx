@@ -23,6 +23,14 @@ const SignaturePage = lazy(() => import('../features/attendance/pages/SignatureP
 const AttendanceRecordPage = lazy(() => import('../features/attendance/pages/AttendanceRecordPage').then((module) => ({ default: module.AttendanceRecordPage })))
 const MonthlyFeesPage = lazy(() => import('../features/fees/pages/MonthlyFeesPage').then((module) => ({ default: module.MonthlyFeesPage })))
 const ReceiptsPage = lazy(() => import('../features/fees/pages/ReceiptsPage').then((module) => ({ default: module.ReceiptsPage })))
+const GradesHomePage = lazy(() => import('../features/grades/pages/GradesHomePage').then((module) => ({ default: module.GradesHomePage })))
+const SchoolExamsPage = lazy(() => import('../features/grades/pages/SchoolExamsPage').then((module) => ({ default: module.SchoolExamsPage })))
+const SchoolExamFormPage = lazy(() => import('../features/grades/pages/SchoolExamFormPage').then((module) => ({ default: module.SchoolExamFormPage })))
+const SchoolExamDetailPage = lazy(() => import('../features/grades/pages/SchoolExamDetailPage').then((module) => ({ default: module.SchoolExamDetailPage })))
+const SchoolExamEntryPage = lazy(() => import('../features/grades/pages/SchoolExamEntryPage').then((module) => ({ default: module.SchoolExamEntryPage })))
+const TuitionQuizzesPage = lazy(() => import('../features/grades/pages/TuitionQuizzesPage').then((module) => ({ default: module.TuitionQuizzesPage })))
+const TuitionQuizFormPage = lazy(() => import('../features/grades/pages/TuitionQuizFormPage').then((module) => ({ default: module.TuitionQuizFormPage })))
+const TuitionQuizDetailPage = lazy(() => import('../features/grades/pages/TuitionQuizDetailPage').then((module) => ({ default: module.TuitionQuizDetailPage })))
 
 function routePage(page: React.ReactNode) {
   return <Suspense fallback={<FullPageLoading label="正在载入页面…" />}>{page}</Suspense>
@@ -55,7 +63,14 @@ const router = createHashRouter([
         { path: 'fees/unpaid', element: routePage(<MonthlyFeesPage view="unpaid" />) },
         { path: 'fees/receipts', element: routePage(<ReceiptsPage />) },
         { path: 'fees/history', element: routePage(<MonthlyFeesPage view="history" />) },
-        { path: 'grades/*', element: <PlaceholderPage title="成绩" phase="Phase 6" /> },
+        { path: 'grades', element: routePage(<GradesHomePage />) },
+        { path: 'grades/school', element: routePage(<SchoolExamsPage />) },
+        { path: 'grades/school/new', element: routePage(<SchoolExamFormPage />) },
+        { path: 'grades/school/:examId', element: routePage(<SchoolExamDetailPage />) },
+        { path: 'grades/school/:examId/classes/:classId', element: routePage(<SchoolExamEntryPage />) },
+        { path: 'grades/quizzes', element: routePage(<TuitionQuizzesPage />) },
+        { path: 'grades/quizzes/new', element: routePage(<TuitionQuizFormPage />) },
+        { path: 'grades/quizzes/:quizId', element: routePage(<TuitionQuizDetailPage />) },
         { path: 'temporary-classes/*', element: <PlaceholderPage title="临时班" phase="Phase 7" /> },
         { path: 'settings/*', element: <PlaceholderPage title="设置" phase="Phase 8" /> },
         { path: 'home', element: <Navigate to="/" replace /> },
