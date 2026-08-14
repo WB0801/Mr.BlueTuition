@@ -71,15 +71,15 @@ export function SessionDetailPage() {
 
   return (
     <section>
-      <PageHeader title={data.class?.name ?? '课程详情'} backTo="/attendance" backLabel="点名" />
+      <PageHeader title={data.class?.name ?? data.temporary_class?.name ?? '课程详情'} backTo="/attendance" backLabel="点名" />
       <div className="detail-title-row compact-title-row">
-        <p className="eyebrow">{data.class?.subject?.name}</p>
+        <p className="eyebrow">{data.class?.subject?.name ?? data.temporary_class?.subject?.name}</p>
         <span className={`session-status status-${data.status}`}>{statusLabels[data.status]}</span>
       </div>
       <dl className="details-card">
         <div><dt>目前时间</dt><dd>{formatSessionTimeRange(data.current_start_at, data.current_end_at)}</dd></div>
         {wasRescheduled && <div><dt>原定时间</dt><dd>{formatSessionTimeRange(data.original_start_at, data.original_end_at)}</dd></div>}
-        <div><dt>课程类型</dt><dd>{data.session_type === 'extra' ? '额外补课' : '常态课程'}</dd></div>
+        <div><dt>课程类型</dt><dd>{data.session_type === 'temporary' ? '临时班' : data.session_type === 'extra' ? '额外补课' : '常态课程'}</dd></div>
       </dl>
 
       {changes.isError && <ErrorBlock message="改期历史载入失败。" />}
@@ -100,10 +100,12 @@ export function SessionDetailPage() {
 
       {canStopSession(data.status) && !hasValidAttendance && (
         <div className="schedule-actions-grid">
-          <details className="action-panel">
-            <summary>只修改这一次</summary>
-            <RescheduleSessionForm session={data} />
-          </details>
+          {data.session_type !== 'temporary' && (
+            <details className="action-panel">
+              <summary>只修改这一次</summary>
+              <RescheduleSessionForm session={data} />
+            </details>
+          )}
           <details className="danger-panel session-cancel-panel">
             <summary>单堂停课</summary>
             <p className="muted">停课后不会出现在当天需要点名的课程中，历史仍会保留。</p>
@@ -119,7 +121,7 @@ export function SessionDetailPage() {
         <p className="notice">这堂课程已有有效签到，为保护签名事实，不能再改期或停课。</p>
       )}
 
-      {canRestoreSession(data.status, data.class?.status) && (
+      {canRestoreSession(data.status, data.class?.status ?? data.temporary_class?.status) && (
         <div className="restore-session-panel">
           <div>
             <strong>恢复这堂课程</strong>
@@ -139,13 +141,14 @@ export function SessionDetailPage() {
         {roster.data && <AttendanceRoster session={data} entries={roster.data} />}
       </section>
 
-      {data.status === 'scheduled' && (
+      {data.status === 'scheduled' && data.session_type !== 'temporary' && (
         <details className="action-panel">
           <summary>添加跨班补课学生</summary>
           <CrossClassGuestPanel sessionId={data.id} />
         </details>
       )}
       {data.class && <Link className="text-link" to={`/classes/${data.class.id}`}>查看班级</Link>}
+      {data.temporary_class && <Link className="text-link" to={`/temporary-classes/${data.temporary_class.id}`}>查看临时班</Link>}
     </section>
   )
 }

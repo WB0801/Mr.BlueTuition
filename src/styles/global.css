@@ -854,6 +854,62 @@ label.receipt-row { cursor: pointer; }
 .historical-score-form > div:first-child { display: grid; gap: 4px; }
 .historical-score-form .field { max-width: 230px; }
 
+.temporary-class-card { align-items: center; }
+.temporary-class-form { gap: 18px; }
+.temporary-class-time-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.temporary-class-date-field { grid-column: 1 / -1; }
+.temporary-registration-panel { margin-bottom: 16px; }
+.nested-action-panel {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #e6e9ef;
+}
+.nested-action-panel > summary { cursor: pointer; font-weight: 700; }
+.nested-action-panel .form-card { margin-top: 14px; padding: 0; border: 0; }
+.temporary-student-search-results,
+.temporary-enrollment-list { display: grid; gap: 10px; }
+.temporary-student-search-row {
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #f8f9fb;
+  border: 1px solid #e4e8ee;
+  border-radius: 9px;
+}
+.temporary-enrollment-row {
+  padding: 15px 16px;
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) minmax(180px, 0.8fr) auto;
+  align-items: center;
+  gap: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.temporary-payment-summary { display: grid; gap: 3px; }
+.temporary-payment-summary span,
+.temporary-payment-summary small { color: var(--muted); }
+.temporary-payment-summary small { font-size: 0.78rem; }
+.temporary-enrollment-row .form-error { grid-column: 1 / -1; margin: 0; }
+.temporary-attendance-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px 20px;
+}
+.temporary-attendance-summary h2 { grid-column: 1 / -1; margin-bottom: 0; }
+.temporary-attendance-summary > div { display: grid; gap: 5px; }
+.temporary-attendance-summary > div span { color: var(--muted); }
+.temporary-end-zone { margin-top: 38px; }
+.temporary-history-panel { margin-top: 28px; }
+.student-temporary-class-card { align-items: center; }
+
 @media (max-width: 560px) {
   .header-inner, .page-container { width: min(100% - 24px, 880px); }
   .page-container { padding-top: 28px; }
@@ -905,6 +961,15 @@ label.receipt-row { cursor: pointer; }
   .grade-save-bar { flex-direction: column; align-items: stretch; }
   .grade-save-bar .button { width: 100%; }
   .simple-grade-list > div { align-items: flex-start; }
+  .temporary-class-time-grid { grid-template-columns: 1fr; }
+  .temporary-class-date-field { grid-column: auto; }
+  .temporary-student-search-row { align-items: stretch; flex-direction: column; }
+  .temporary-student-search-row .button { width: 100%; }
+  .temporary-enrollment-row { grid-template-columns: 1fr; align-items: stretch; }
+  .temporary-enrollment-row .button { width: 100%; }
+  .temporary-attendance-summary { grid-template-columns: 1fr; }
+  .temporary-attendance-summary h2 { grid-column: auto; }
+  .temporary-attendance-summary .button { width: 100%; }
 }
 
 @media (min-width: 700px) and (pointer: coarse) {

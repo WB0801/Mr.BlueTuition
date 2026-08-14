@@ -15,7 +15,7 @@ import {
   todayInMalaysia,
 } from '../../../utils/format'
 
-const sessionSelection = '*, class:classes(id,name,status,subject:subjects(id,name))'
+const sessionSelection = '*, class:classes(id,name,status,subject:subjects(id,name)), temporary_class:temporary_classes(id,name,status,subject:subjects(id,name))'
 
 export type AttendanceView = 'today' | 'week' | 'history'
 

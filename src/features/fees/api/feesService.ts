@@ -1,5 +1,5 @@
 import { requireSupabase } from '../../../lib/requireSupabase'
-import type { EnsureMonthlyFeesResult, MonthlyFee, MonthlyFeeDetails, Student } from '../../../types/domain'
+import type { EnsureMonthlyFeesResult, MonthlyFee, MonthlyFeeDetails, ReceiptQueueItem, Student } from '../../../types/domain'
 
 const feeSelection = `
   *,
@@ -70,12 +70,43 @@ export async function listPendingReceipts(): Promise<MonthlyFeeDetails[]> {
 
 export async function countPendingReceipts(): Promise<number> {
   const { count, error } = await requireSupabase()
-    .from('monthly_fees')
-    .select('id', { count: 'exact', head: true })
-    .eq('payment_status', 'paid')
+    .from('receipt_queue')
+    .select('receipt_key', { count: 'exact', head: true })
     .eq('receipt_status', 'pending')
   if (error) throw error
   return count ?? 0
+}
+
+export async function listReceiptQueue(
+  receiptStatus: 'pending' | 'completed',
+  receiptPeriod?: string,
+): Promise<ReceiptQueueItem[]> {
+  let query = requireSupabase()
+    .from('receipt_queue')
+    .select('*')
+    .eq('receipt_status', receiptStatus)
+    .order('receipt_period', { ascending: receiptStatus === 'pending' })
+    .order('paid_at', { ascending: true })
+  if (receiptPeriod) query = query.eq('receipt_period', receiptPeriod)
+  const { data, error } = await query
+  if (error) throw error
+  return (data ?? []).map((item) => ({ ...item, amount: Number(item.amount) })) as ReceiptQueueItem[]
+}
+
+export async function completeReceipts(receiptKeys: string[]): Promise<number> {
+  const { data, error } = await requireSupabase().rpc('complete_receipts', {
+    p_receipt_keys: receiptKeys,
+  })
+  if (error) throw error
+  return Number(data ?? 0)
+}
+
+export async function restoreReceipt(receiptKey: string): Promise<boolean> {
+  const { data, error } = await requireSupabase().rpc('restore_receipt', {
+    p_receipt_key: receiptKey,
+  })
+  if (error) throw error
+  return Boolean(data)
 }
 
 export async function updateMonthlyFeeAmount(feeId: string, actualAmount: number) {

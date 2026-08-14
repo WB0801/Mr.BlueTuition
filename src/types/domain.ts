@@ -80,7 +80,7 @@ export interface ClassInput {
   start_date: string
 }
 
-export type SessionType = 'regular' | 'extra'
+export type SessionType = 'regular' | 'extra' | 'temporary'
 export type SessionStatus = 'scheduled' | 'cancelled' | 'completed'
 
 export interface ClassScheduleRule {
@@ -100,7 +100,8 @@ export interface ClassScheduleRule {
 export interface ClassSession {
   id: string
   owner_id: string
-  class_id: string
+  class_id: string | null
+  temporary_class_id?: string | null
   schedule_rule_id: string | null
   session_type: SessionType
   schedule_week: string | null
@@ -116,6 +117,9 @@ export interface ClassSession {
 
 export interface ClassSessionWithClass extends ClassSession {
   class: (Pick<TuitionClass, 'id' | 'name' | 'status'> & {
+    subject?: Pick<Subject, 'id' | 'name'> | null
+  }) | null
+  temporary_class?: (Pick<TemporaryClass, 'id' | 'name' | 'status'> & {
     subject?: Pick<Subject, 'id' | 'name'> | null
   }) | null
 }
@@ -336,4 +340,76 @@ export interface GradeEntryRow {
   school_class: string | null
   phone: string | null
   enrollment_id?: string
+}
+
+export type TemporaryClassStatus = 'active' | 'ended'
+export type TemporaryClassEnrollmentStatus = 'active' | 'ended'
+export type TemporaryPaymentStatus = 'unpaid' | 'paid'
+export type TemporaryReceiptStatus = 'not_applicable' | 'pending' | 'completed'
+
+export interface TemporaryClass {
+  id: string
+  owner_id: string
+  subject_id: string
+  name: string
+  start_at: string
+  end_at: string
+  fee_amount: number
+  status: TemporaryClassStatus
+  created_at: string
+  updated_at: string
+  subject?: Pick<Subject, 'id' | 'name'> | null
+}
+
+export interface TemporaryClassPayment {
+  id: string
+  owner_id: string
+  temporary_class_enrollment_id: string
+  amount: number
+  payment_status: TemporaryPaymentStatus
+  paid_at: string | null
+  receipt_status: TemporaryReceiptStatus
+  receipt_completed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface TemporaryClassEnrollment {
+  id: string
+  owner_id: string
+  temporary_class_id: string
+  student_id: string
+  joined_at: string
+  status: TemporaryClassEnrollmentStatus
+  created_at: string
+  student?: Pick<Student, 'id' | 'name' | 'school_class' | 'phone'> | null
+  payment?: TemporaryClassPayment | null
+  temporary_class?: TemporaryClass | null
+}
+
+export interface TemporaryClassInput {
+  subject_id: string
+  name: string
+  class_date: string
+  start_time: string
+  end_time: string
+  fee_amount: number
+}
+
+export interface ReceiptQueueItem {
+  receipt_key: string
+  source_type: 'monthly_fee' | 'temporary_class_payment'
+  source_id: string
+  owner_id: string
+  student_id: string
+  student_name: string
+  school_class: string | null
+  phone: string | null
+  source_name: string
+  amount: number
+  payment_status: 'paid'
+  receipt_status: 'pending' | 'completed'
+  paid_at: string
+  receipt_completed_at: string | null
+  receipt_period: string
 }

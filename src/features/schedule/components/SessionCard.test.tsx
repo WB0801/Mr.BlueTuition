@@ -35,4 +35,28 @@ describe('SessionCard', () => {
     expect(screen.getByText('停课')).toBeInTheDocument()
     expect(screen.getByRole('link')).toHaveAttribute('href', '/attendance/session/session-1')
   })
+
+  it('shows a temporary class as the Session source', () => {
+    const temporarySession: ClassSessionWithClass = {
+      ...extraSession,
+      id: 'temporary-session',
+      class_id: null,
+      temporary_class_id: 'temporary-class-1',
+      session_type: 'temporary',
+      status: 'scheduled',
+      cancelled_at: null,
+      class: null,
+      temporary_class: {
+        id: 'temporary-class-1',
+        name: '商业学冲刺班',
+        status: 'active',
+        subject: { id: 'subject-2', name: '商业学' },
+      },
+    }
+    render(<MemoryRouter><SessionCard session={temporarySession} showClass /></MemoryRouter>)
+
+    expect(screen.getByText('商业学冲刺班')).toBeInTheDocument()
+    expect(screen.getByText('临时班')).toBeInTheDocument()
+    expect(screen.getByText('已安排')).toBeInTheDocument()
+  })
 })

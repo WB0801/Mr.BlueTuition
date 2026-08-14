@@ -163,7 +163,7 @@ export function SignaturePage() {
         backLabel="课程点名"
       />
       <div className="signature-context">
-        <strong>{session.data.class?.name}</strong>
+        <strong>{session.data.class?.name ?? session.data.temporary_class?.name}</strong>
         <span>{formatSessionTimeRange(session.data.current_start_at, session.data.current_end_at)}</span>
         {isBackfill && <span className="attendance-label attendance-backfill">补签：保存实际签名时间</span>}
       </div>

@@ -7,6 +7,7 @@ import { listStudentEnrollments } from '../../enrollments/api/enrollmentsService
 import { EnrollmentCard } from '../../enrollments/components/EnrollmentCard'
 import { NewEnrollmentForm } from '../../enrollments/components/NewEnrollmentForm'
 import { StudentGradesSection } from '../../grades/components/StudentGradesSection'
+import { StudentTemporaryClassesSection } from '../../temporary-classes/components/StudentTemporaryClassesSection'
 import { getStudent } from '../api/studentsService'
 
 export function StudentDetailPage() {
@@ -70,6 +71,8 @@ export function StudentDetailPage() {
           {history.map((item) => <EnrollmentCard enrollment={item} key={item.id} />)}
         </div>
       </section>
+
+      <StudentTemporaryClassesSection studentId={studentId} />
     </section>
   )
 }
