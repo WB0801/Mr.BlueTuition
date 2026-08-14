@@ -8,7 +8,9 @@ import { getErrorMessage } from '../../../utils/errors'
 import { formatDate, formatMoney, todayInMalaysia } from '../../../utils/format'
 import { listClassEnrollments } from '../../enrollments/api/enrollmentsService'
 import { EndEnrollmentAction } from '../../enrollments/components/EndEnrollmentAction'
-import { ClassScheduleSection } from '../../schedule/components/ClassScheduleSection'
+import { ClassCourseSummary } from '../../schedule/components/ClassCourseSummary'
+import { ClassFixedScheduleSection } from '../../schedule/components/ClassFixedScheduleSection'
+import { ClassScheduleHistory } from '../../schedule/components/ClassScheduleHistory'
 import { StudentIdentity } from '../../students/components/StudentIdentity'
 import { endClass, getClass } from '../api/classesService'
 import { getEndClassConfirmationMessage } from '../classActions'
@@ -19,6 +21,7 @@ export function ClassDetailPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [endDate, setEndDate] = useState(todayInMalaysia())
+  const [showAddStudent, setShowAddStudent] = useState(false)
   const [error, setError] = useState('')
   const tuitionClass = useQuery({ queryKey: ['class', classId], queryFn: () => getClass(classId) })
   const enrollments = useQuery({
@@ -70,17 +73,27 @@ export function ClassDetailPage() {
         <Link to={`/fees?classId=${classId}`}>查看本班学费</Link>
       </div>
 
-      <ClassScheduleSection tuitionClass={data} />
-
-      {data.status === 'active' && (
-        <details className="action-panel">
-          <summary>加入学生</summary>
-          <AddStudentToClass classId={classId} enrolledStudentIds={current.map((item) => item.student_id)} />
-        </details>
-      )}
+      <ClassFixedScheduleSection tuitionClass={data} />
 
       <section className="content-section">
-        <h2>当前学生</h2>
+        <div className="section-heading-row">
+          <h2>当前学生 {current.length} 人</h2>
+          {data.status === 'active' && (
+            <button
+              className="button button-secondary compact-button"
+              type="button"
+              aria-expanded={showAddStudent}
+              onClick={() => setShowAddStudent((value) => !value)}
+            >
+              ＋ 加入学生
+            </button>
+          )}
+        </div>
+        {showAddStudent && data.status === 'active' && (
+          <div className="embedded-action-panel">
+            <AddStudentToClass classId={classId} enrolledStudentIds={current.map((item) => item.student_id)} />
+          </div>
+        )}
         {enrollments.isLoading && <LoadingBlock />}
         {enrollments.isError && <ErrorBlock message="学生名单载入失败。" />}
         {!enrollments.isLoading && current.length === 0 && <EmptyBlock message="目前没有在读学生。" />}
@@ -112,6 +125,10 @@ export function ClassDetailPage() {
           </div>
         </details>
       )}
+
+      <ClassCourseSummary classId={classId} />
+
+      <ClassScheduleHistory tuitionClass={data} />
 
       {data.status === 'active' && (
         <details className="danger-panel">

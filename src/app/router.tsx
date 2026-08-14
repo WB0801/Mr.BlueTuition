@@ -16,6 +16,7 @@ const ClassesListPage = lazy(() => import('../features/classes/pages/ClassesList
 const ClassFormPage = lazy(() => import('../features/classes/pages/ClassFormPage').then((module) => ({ default: module.ClassFormPage })))
 const ClassDetailPage = lazy(() => import('../features/classes/pages/ClassDetailPage').then((module) => ({ default: module.ClassDetailPage })))
 const SubjectsPage = lazy(() => import('../features/classes/pages/SubjectsPage').then((module) => ({ default: module.SubjectsPage })))
+const ClassSessionsPage = lazy(() => import('../features/schedule/pages/ClassSessionsPage').then((module) => ({ default: module.ClassSessionsPage })))
 const AttendancePage = lazy(() => import('../features/schedule/pages/AttendancePage').then((module) => ({ default: module.AttendancePage })))
 const SessionDetailPage = lazy(() => import('../features/schedule/pages/SessionDetailPage').then((module) => ({ default: module.SessionDetailPage })))
 const SignaturePage = lazy(() => import('../features/attendance/pages/SignaturePage').then((module) => ({ default: module.SignaturePage })))
@@ -45,6 +46,7 @@ const router = createHashRouter([
         { path: 'classes/subjects', element: routePage(<SubjectsPage />) },
         { path: 'classes/:classId', element: routePage(<ClassDetailPage />) },
         { path: 'classes/:classId/edit', element: routePage(<ClassFormPage />) },
+        { path: 'classes/:classId/sessions', element: routePage(<ClassSessionsPage />) },
         { path: 'attendance', element: routePage(<AttendancePage />) },
         { path: 'attendance/session/:sessionId', element: routePage(<SessionDetailPage />) },
         { path: 'attendance/session/:sessionId/sign/:studentId', element: routePage(<SignaturePage />) },
