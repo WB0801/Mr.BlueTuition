@@ -1,15 +1,15 @@
 # 跨电脑开发交接
 
-更新时间：2026-08-13（Asia/Kuala_Lumpur）
+更新时间：2026-08-14（Asia/Kuala_Lumpur）
 
 ## 当前状态
 
 - Phase 1：已完成、部署并在电脑、iPad、手机验收通过。
 - Phase 2：已完成、部署并在电脑、iPad、手机验收通过。
-- Phase 3：本地实现与自动化验证已完成；生产 migration 已执行且资料完整性检查通过，尚未发布、尚未实际验收。
+- Phase 3：已完成、部署并在电脑、iPad、手机验收通过。
 - GitHub repository：<https://github.com/WB0801/Mr.BlueTuition>
 - 生产分支：`main`
-- 最后已验收功能提交：`2a42837`（Allow optional student details）
+- 最后已验收功能提交：`73c7fd2`（Fix schedule time layout and formatting）
 - 线上网站：<https://wb0801.github.io/Mr.BlueTuition/>
 - GitHub Pages：由 `.github/workflows/deploy-pages.yml` 在推送 `main` 后自动测试、构建和发布；最近发布成功。
 - Supabase Project URL：`https://ldobzxvxccdowkvwgydt.supabase.co`
@@ -27,17 +27,11 @@
 
 这些 migration 已在生产执行，不要编辑旧文件。后续 schema 变化必须新增 migration。
 
-## 当前待办：Phase 3 部署与验收
+## Phase 3 完成状态
 
-本地新增 migration：
+`202608130004_phase3_schedules_sessions.sql` 已于 2026-08-14 在生产执行。执行后的完整性检查结果为学生 3、科目 1、班级 2、报读 3、首条课表规则 2，课表迁移错误 0、断裂报读关系 0。
 
-4. `202608130004_phase3_schedules_sessions.sql`（已于 2026-08-14 在生产执行）
-
-生产 migration 已执行成功；检查结果为学生 3、科目 1、班级 2、报读 3、首条课表规则 2，课表迁移错误 0、断裂报读关系 0。下一步是推送含 Phase 3 前端的 `main`，等待 GitHub Pages 发布后进行实际验收。
-
-Phase 3 本地实现只包括：
-
-Phase 3 目标只包括：
+已实现并实际验收：
 
 - `class_schedule_rules` 与课表历史。
 - 根据固定课表按需、滚动且幂等地产生实际 `class_sessions`。
@@ -46,10 +40,19 @@ Phase 3 目标只包括：
 - 从某堂开始永久修改未来课表。
 - 单堂停课、单堂恢复上课与全日停课（底层状态为 `cancelled`，无理由字段；不做全日恢复）。
 - 额外补课 Session。
+- 课程时间统一按 Asia/Kuala_Lumpur 显示，并使用 24 小时制的同日时间范围。
 
 Phase 3 不实现签到、签名、学费或成绩。当前 `classes` 的 `weekday`、`start_time`、`end_time` 可迁移成第一条 schedule rule；稳定关系继续使用 `classes.id`。
 
 Phase 3 结构决定：`class_schedule_rules` 是唯一课表真相来源。同班数据库层可有多条并行 weekly schedule slots；当前 UI 仍只维护一条。regular Session 防重复使用 `schedule_rule_id + original_start_at`，不使用整个班级加教学周。`classes` 的旧时间字段由 `schedule_summary_rule_id` 明确指向并通过数据库 transaction 保持一致，只作兼容镜像。
+
+验收还确认：同一堂课程可连续改期且保留完整历史；永久改课表不会覆盖人工调整；停课 Session 留在历史并离开正常点名列表；恢复上课复用原 Session；全日停课会列出并原子停止当天所有尚未停课课程。`completed` Session 的停课／恢复保护由 RPC 状态约束与自动化测试验证，因为 Phase 3 尚无把 Session 标记为 completed 的用户操作。
+
+验收期间建立的额外补课及停课 Session 会按历史保留原则继续存在，不要直接从数据库删除。
+
+## 当前待办：Phase 4 尚未开始
+
+Phase 4 目标是点名、手写签名、签名 Storage、补签、作废修正与跨班补课逻辑。开始前必须取得用户明确确认；不要提前实现学费、成绩或后续 Phase。
 
 ## 新 Windows 电脑开始步骤
 
@@ -98,4 +101,4 @@ pnpm dev
 - `node_modules`、`dist` 和本机缓存：不会同步，也不需要带走，运行 `pnpm install` / `pnpm build` 可重建。
 - 当前旧电脑没有未提交的项目文件；业务数据在 Supabase，不在本机 repository。
 
-新电脑上的 Codex 应先阅读 `AGENTS.md`、`HANDOFF.md` 和原始开发规格，再检查 `git status` 与远程 `main`。Phase 3 尚待生产 migration、发布和实际验收；不要开始 Phase 4。
+新电脑上的 Codex 应先阅读 `AGENTS.md`、`HANDOFF.md` 和原始开发规格，再检查 `git status` 与远程 `main`。Phase 3 已完成部署与实际验收；Phase 4 尚未开始，必须等待用户明确确认。
