@@ -20,6 +20,8 @@ const AttendancePage = lazy(() => import('../features/schedule/pages/AttendanceP
 const SessionDetailPage = lazy(() => import('../features/schedule/pages/SessionDetailPage').then((module) => ({ default: module.SessionDetailPage })))
 const SignaturePage = lazy(() => import('../features/attendance/pages/SignaturePage').then((module) => ({ default: module.SignaturePage })))
 const AttendanceRecordPage = lazy(() => import('../features/attendance/pages/AttendanceRecordPage').then((module) => ({ default: module.AttendanceRecordPage })))
+const MonthlyFeesPage = lazy(() => import('../features/fees/pages/MonthlyFeesPage').then((module) => ({ default: module.MonthlyFeesPage })))
+const ReceiptsPage = lazy(() => import('../features/fees/pages/ReceiptsPage').then((module) => ({ default: module.ReceiptsPage })))
 
 function routePage(page: React.ReactNode) {
   return <Suspense fallback={<FullPageLoading label="正在载入页面…" />}>{page}</Suspense>
@@ -47,7 +49,10 @@ const router = createHashRouter([
         { path: 'attendance/session/:sessionId', element: routePage(<SessionDetailPage />) },
         { path: 'attendance/session/:sessionId/sign/:studentId', element: routePage(<SignaturePage />) },
         { path: 'attendance/session/:sessionId/record/:attendanceId', element: routePage(<AttendanceRecordPage />) },
-        { path: 'fees/*', element: <PlaceholderPage title="学费" phase="Phase 5" /> },
+        { path: 'fees', element: routePage(<MonthlyFeesPage view="current" />) },
+        { path: 'fees/unpaid', element: routePage(<MonthlyFeesPage view="unpaid" />) },
+        { path: 'fees/receipts', element: routePage(<ReceiptsPage />) },
+        { path: 'fees/history', element: routePage(<MonthlyFeesPage view="history" />) },
         { path: 'grades/*', element: <PlaceholderPage title="成绩" phase="Phase 6" /> },
         { path: 'temporary-classes/*', element: <PlaceholderPage title="临时班" phase="Phase 7" /> },
         { path: 'settings/*', element: <PlaceholderPage title="设置" phase="Phase 8" /> },

@@ -9,6 +9,7 @@ import { getErrorMessage } from '../../../utils/errors'
 import { formatDate, todayInMalaysia } from '../../../utils/format'
 import { getEnrollment, transferEnrollment } from '../api/enrollmentsService'
 import { EndEnrollmentAction } from '../components/EndEnrollmentAction'
+import { EnrollmentFeesSection } from '../../fees/components/EnrollmentFeesSection'
 
 export function EnrollmentDetailPage() {
   const { studentId = '', enrollmentId = '' } = useParams()
@@ -35,7 +36,9 @@ export function EnrollmentDetailPage() {
   if (enrollment.isError || !enrollment.data) return <ErrorBlock message="找不到这段报读，或资料载入失败。" />
 
   const data = enrollment.data
-  const transferTargets = classes.data?.filter((item) => item.id !== data.class_id) ?? []
+  const transferTargets = classes.data?.filter((item) => (
+    item.id !== data.class_id && item.subject_id === data.class?.subject_id
+  )) ?? []
 
   async function handleTransfer(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -80,7 +83,7 @@ export function EnrollmentDetailPage() {
             <summary>转班</summary>
             {classes.isLoading && <LoadingBlock message="正在载入班级…" />}
             {classes.isError && <ErrorBlock message="班级载入失败。" />}
-            {!classes.isLoading && transferTargets.length === 0 && <EmptyBlock message="目前没有其他可转入的班级。" />}
+            {!classes.isLoading && transferTargets.length === 0 && <EmptyBlock message="目前没有其他相同科目的班级可转入。" />}
             {transferTargets.length > 0 && (
               <form className="compact-form" onSubmit={handleTransfer}>
                 <label className="field">
@@ -108,11 +111,12 @@ export function EnrollmentDetailPage() {
       <section className="content-section">
         <h2>这段报读的资料</h2>
         <div className="future-links" aria-label="后续阶段功能">
-          <span>出席 <small>Phase 4</small></span>
-          <span>学费 <small>Phase 5</small></span>
+          <span>出席 <small>已可在课程点名查看</small></span>
+          <a href="#enrollment-fees">学费 <small>查看这段报读的月费</small></a>
           <span>成绩 <small>Phase 6</small></span>
         </div>
       </section>
+      <EnrollmentFeesSection enrollment={data} />
     </section>
   )
 }

@@ -64,6 +64,25 @@ export function todayInMalaysia() {
   }).format(new Date())
 }
 
+export function currentMonthInMalaysia() {
+  return `${todayInMalaysia().slice(0, 7)}-01`
+}
+
+export function normalizeMonthInput(value: string) {
+  return `${value.slice(0, 7)}-01`
+}
+
+export function formatFeeMonth(value: string) {
+  const [year, month] = value.split('-').map(Number)
+  return `${year}年${month}月`
+}
+
+export function formatMalaysiaDateTime(value: string | null | undefined) {
+  if (!value) return '—'
+  const parts = malaysiaDateTimeParts(value)
+  return `${parts.date} ${parts.time}`
+}
+
 export function formatDateTime(value: string) {
   const parts = malaysiaDateTimeParts(value)
   return `${parts.date}${parts.weekday} ${parts.time}`

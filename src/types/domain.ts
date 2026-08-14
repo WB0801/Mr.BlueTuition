@@ -48,6 +48,7 @@ export interface Enrollment {
   status: EnrollmentStatus
   created_at: string
   updated_at: string
+  transferred_from_enrollment_id?: string | null
 }
 
 export interface EnrollmentWithClass extends Enrollment {
@@ -224,4 +225,34 @@ export interface AttendanceCorrection {
   correction_type: 'voided'
   corrected_at: string
   created_at: string
+}
+
+export type MonthlyFeePaymentStatus = 'unpaid' | 'paid' | 'waived'
+export type MonthlyFeeReceiptStatus = 'not_applicable' | 'pending' | 'completed'
+
+export interface MonthlyFee {
+  id: string
+  owner_id: string
+  student_id: string
+  enrollment_id: string
+  fee_month: string
+  normal_amount: number
+  actual_amount: number
+  payment_status: MonthlyFeePaymentStatus
+  paid_at: string | null
+  receipt_status: MonthlyFeeReceiptStatus
+  receipt_completed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface MonthlyFeeDetails extends MonthlyFee {
+  student: Pick<Student, 'id' | 'name' | 'school_class' | 'phone'> | null
+  enrollment: (Pick<Enrollment, 'id' | 'class_id' | 'join_date' | 'end_date' | 'status'> & {
+    class: Pick<TuitionClass, 'id' | 'name' | 'status'> | null
+  }) | null
+}
+
+export interface EnsureMonthlyFeesResult {
+  created_count: number
 }

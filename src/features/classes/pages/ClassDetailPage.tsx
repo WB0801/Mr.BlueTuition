@@ -66,6 +66,9 @@ export function ClassDetailPage() {
         <div><dt>开始日期</dt><dd>{formatDate(data.start_date)}</dd></div>
         <div><dt>结束日期</dt><dd>{formatDate(data.end_date)}</dd></div>
       </dl>
+      <div className="secondary-actions">
+        <Link to={`/fees?classId=${classId}`}>查看本班学费</Link>
+      </div>
 
       <ClassScheduleSection tuitionClass={data} />
 

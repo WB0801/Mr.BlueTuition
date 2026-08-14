@@ -50,10 +50,11 @@ export async function createEnrollment(studentId: string, classId: string, joinD
   if (error) throw error
 }
 
-export async function endEnrollment(enrollmentId: string, endDate: string) {
-  const { error } = await requireSupabase().rpc('end_enrollment', {
+export async function endEnrollment(enrollmentId: string, endDate: string, waiveFinalMonth = false) {
+  const { error } = await requireSupabase().rpc('end_enrollment_with_fee', {
     p_enrollment_id: enrollmentId,
     p_end_date: endDate,
+    p_waive_final_month: waiveFinalMonth,
   })
   if (error) throw error
 }

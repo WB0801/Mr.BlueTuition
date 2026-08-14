@@ -13,13 +13,15 @@ interface EndEnrollmentActionProps {
 export function EndEnrollmentAction({ enrollmentId, studentName, onSuccess }: EndEnrollmentActionProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [endDate, setEndDate] = useState(todayInMalaysia())
+  const [waiveFinalMonth, setWaiveFinalMonth] = useState(false)
   const [error, setError] = useState('')
   const queryClient = useQueryClient()
   const mutation = useMutation({
-    mutationFn: () => endEnrollment(enrollmentId, endDate),
+    mutationFn: () => endEnrollment(enrollmentId, endDate, waiveFinalMonth),
     onSuccess: async () => {
       setIsOpen(false)
       await queryClient.invalidateQueries({ queryKey: ['enrollments'] })
+      await queryClient.invalidateQueries({ queryKey: ['monthly-fees'] })
       onSuccess?.()
     },
     onError: (caughtError) => setError(getErrorMessage(caughtError, '结束报读失败，请重试。')),
@@ -49,6 +51,13 @@ export function EndEnrollmentAction({ enrollmentId, studentName, onSuccess }: En
       <label className="field field-small">
         <span>结束日期</span>
         <input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} required />
+      </label>
+      <label className="checkbox-field">
+        <input type="checkbox" checked={waiveFinalMonth} onChange={(event) => setWaiveFinalMonth(event.target.checked)} />
+        <span>
+          本月不再追缴
+          <small>结束月份的未缴学费会标记为不需处理。</small>
+        </span>
       </label>
       {error && <p className="form-error" role="alert">{error}</p>}
       <div className="inline-actions">

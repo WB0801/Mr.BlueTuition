@@ -346,7 +346,9 @@ a.record-card:hover { border-color: #a9bfee; background: #fbfdff; }
 .compact-title-row { align-items: flex-start; }
 .eyebrow { margin: 0; color: var(--muted); font-size: 0.85rem; font-weight: 650; }
 .future-links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.future-links > span { padding: 14px; display: flex; flex-direction: column; gap: 4px; background: #f1f3f6; border-radius: 8px; color: #667085; font-weight: 650; }
+.future-links > span,
+.future-links > a { padding: 14px; display: flex; flex-direction: column; gap: 4px; background: #f1f3f6; border-radius: 8px; color: #667085; font-weight: 650; }
+.future-links > a { color: var(--blue-dark); background: var(--blue-soft); text-decoration: none; }
 .future-links small { font-weight: 500; }
 
 .inline-action-form { display: grid; gap: 10px; }
@@ -574,6 +576,123 @@ a.record-card:hover { border-color: #a9bfee; background: #fbfdff; }
 }
 .correction-history p { margin: 7px 0 0; }
 
+.fees-nav {
+  margin: -8px 0 28px;
+  padding-bottom: 10px;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+}
+.fees-nav a {
+  min-height: 42px;
+  padding: 9px 13px;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  color: var(--muted);
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 650;
+}
+.fees-nav a.active { color: var(--blue-dark); background: var(--blue-soft); }
+.section-heading-row {
+  margin-bottom: 18px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.section-heading-row h2 { margin: 0; font-size: 1.2rem; }
+.section-heading-row p { margin: 4px 0 0; }
+.fees-filters {
+  margin-bottom: 20px;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 160px minmax(180px, 1fr) minmax(180px, 1fr);
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+}
+.fee-rule-notice { margin: 0 0 18px; }
+.fee-list { display: grid; gap: 10px; }
+.fee-card {
+  padding: 16px 18px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+}
+.fee-card-main { min-width: 0; display: grid; justify-items: start; gap: 5px; }
+.fee-amount-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; }
+.fee-amount-row strong { font-size: 1.08rem; }
+.fee-amount-row span { color: var(--muted); font-size: 0.82rem; }
+.fee-status {
+  padding: 4px 8px;
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+.fee-status-unpaid { color: #7a271a; background: #fff0ed; }
+.fee-status-paid { color: #05603a; background: #e9f8f0; }
+.fee-status-waived { color: #596273; background: #eef0f4; }
+.fee-actions { max-width: 250px; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.fee-amount-form { grid-column: 1 / -1; padding-top: 12px; display: grid; grid-template-columns: minmax(0, 280px) auto; align-items: end; gap: 12px; border-top: 1px solid var(--border); }
+.fee-card-error { grid-column: 1 / -1; }
+.checkbox-field { display: flex; align-items: flex-start; gap: 9px; line-height: 1.4; }
+.checkbox-field input { width: 20px; height: 20px; margin-top: 1px; flex: 0 0 auto; }
+.checkbox-field span { display: grid; gap: 3px; font-size: 0.9rem; font-weight: 650; }
+.checkbox-field small { color: var(--muted); font-size: 0.8rem; font-weight: 500; }
+.select-all-control { min-height: 42px; display: flex; align-items: center; gap: 8px; font-weight: 650; }
+.select-all-control input,
+.receipt-row > input { width: 21px; height: 21px; flex: 0 0 auto; }
+.receipt-groups { display: grid; gap: 24px; }
+.receipt-month h3 { margin: 0 0 10px; font-size: 1rem; }
+.receipt-list { display: grid; gap: 8px; }
+.receipt-row {
+  min-height: 80px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+label.receipt-row { cursor: pointer; }
+.receipt-details { min-width: 0; display: grid; gap: 4px; }
+.receipt-details > span,
+.receipt-details small { color: var(--muted); font-size: 0.86rem; }
+.receipt-batch-bar {
+  position: sticky;
+  bottom: 12px;
+  z-index: 5;
+  margin: 20px 0;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  color: #fff;
+  background: #172033;
+  border-radius: 11px;
+  box-shadow: 0 8px 24px rgb(23 32 51 / 16%);
+}
+.receipt-history-panel { margin-top: 34px; }
+.receipt-history-month { margin-bottom: 14px; }
+.completed-receipt-row { justify-content: space-between; }
+.enrollment-fee-history { display: grid; gap: 26px; }
+.enrollment-fee-year > h3 { margin: 0 0 11px; font-size: 1.05rem; }
+.enrollment-fee-year-list { display: grid; gap: 14px; }
+.enrollment-fee-row h4 { margin: 0 0 7px; color: var(--muted); font-size: 0.9rem; }
+.enrollment-fee-row .fee-card { grid-template-columns: minmax(0, 1fr) auto; }
+
 @media (max-width: 560px) {
   .header-inner, .page-container { width: min(100% - 24px, 880px); }
   .page-container { padding-top: 28px; }
@@ -602,6 +721,18 @@ a.record-card:hover { border-color: #a9bfee; background: #fbfdff; }
   .signature-card { padding: 14px; }
   .signature-canvas { height: 340px; }
   .signature-actions { grid-template-columns: 1fr; }
+  .fees-filters { grid-template-columns: 1fr; }
+  .fee-card,
+  .enrollment-fee-row .fee-card { grid-template-columns: 1fr; }
+  .fee-actions { width: 100%; max-width: none; justify-content: stretch; }
+  .fee-actions .button { flex: 1 1 auto; }
+  .fee-amount-form { grid-template-columns: 1fr; }
+  .receipts-heading { align-items: center; }
+  .receipt-row { align-items: flex-start; }
+  .completed-receipt-row { flex-direction: column; }
+  .completed-receipt-row .button { width: 100%; }
+  .receipt-batch-bar { bottom: 8px; flex-direction: column; align-items: stretch; }
+  .receipt-batch-bar .button { width: 100%; }
 }
 
 @media (min-width: 700px) and (pointer: coarse) {
