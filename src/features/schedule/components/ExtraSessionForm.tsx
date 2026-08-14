@@ -44,8 +44,8 @@ export function ExtraSessionForm({ classId, defaultStartTime, defaultEndTime }: 
   return (
     <form className="compact-form" onSubmit={handleSubmit}>
       <p className="muted compact-copy">额外补课不会改变固定课表，也不会产生额外月费。</p>
-      <div className="form-grid form-grid-three">
-        <label className="field">
+      <div className="form-grid extra-session-grid">
+        <label className="field extra-session-date">
           <span>日期</span>
           <input type="date" value={date} onChange={(event) => setDate(event.target.value)} required />
         </label>

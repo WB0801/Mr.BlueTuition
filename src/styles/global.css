@@ -381,10 +381,16 @@ a.record-card:hover { border-color: #a9bfee; background: #fbfdff; }
 
 .schedule-section { padding-top: 2px; }
 .schedule-rule-card { margin-bottom: 0; }
-.schedule-actions-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.schedule-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  gap: 12px;
+}
 .schedule-actions-grid .action-panel,
 .schedule-actions-grid .danger-panel { margin-top: 16px; }
 .compact-schedule-actions .action-panel { min-height: 56px; }
+.extra-session-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.extra-session-date { grid-column: 1 / -1; }
 .section-heading-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
 .section-heading-row h2 { margin-bottom: 0; }
 .compact-button { min-height: 40px; padding: 8px 13px; }
