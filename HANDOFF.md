@@ -7,6 +7,7 @@
 - Phase 1：已完成、部署并在电脑、iPad、手机验收通过。
 - Phase 2：已完成、部署并在电脑、iPad、手机验收通过。
 - Phase 3：已完成、部署并在电脑、iPad、手机验收通过。
+- Phase 4：已完成、部署并通过实际验收；离线签名恢复保留现有实现并由自动化测试覆盖，本阶段未人工实测且不作为阻塞项。
 - GitHub repository：<https://github.com/WB0801/Mr.BlueTuition>
 - 生产分支：`main`
 - 最后已验收功能提交：`73c7fd2`（Fix schedule time layout and formatting）
@@ -51,9 +52,9 @@ Phase 3 结构决定：`class_schedule_rules` 是唯一课表真相来源。同�
 
 验收期间建立的额外补课及停课 Session 会按历史保留原则继续存在，不要直接从数据库删除。
 
-## 当前待办：Phase 4 前端发布与实际验收
+## Phase 4 完成状态
 
-Phase 4 已在本地完成实现与自动化验证。第 5 份 production migration 已于 2026-08-14 成功执行，但前端尚未 push、发布或实际验收。
+Phase 4 已完成实现、production migration、GitHub Pages 发布及实际验收。第 5 份 production migration 已于 2026-08-14 成功执行。
 
 部署后检查确认：学生 3、科目 1、班级 2、报读 3、课表规则 3；三张 Phase 4 表均存在并启用 RLS；`signatures` bucket 为 private、限制 2 MB，具有本人路径 upload/read 两条 policy。
 
@@ -68,7 +69,13 @@ Phase 4 已在本地完成实现与自动化验证。第 5 份 production migrat
 - 已有有效签到的 Session 不能改期或停课；全日停课与签到操作使用 Session row lock 防止竞态。
 - 全日停课会保留已有签到的 Session，并原子停掉当天其他可停课程；UI 分开显示两个数量。
 
-Phase 4 不包含学费、收据、成绩、临时班或 Phase 5 以后功能。下一步是 commit/push 当前前端，等待 GitHub Pages 成功发布后进行完整实际验收。
+实际验收通过：正常名单与签到、iPad 手指／Apple Pencil、清除、补签、私人签名查看、作废修正、正确学生重签、跨班 makeup／extra、不同科目及无效报读候选限制、Phase 3 额外 Session 点名、停课／恢复、已有签到后的改期及停课保护、混合全日停课，以及电脑、iPad、手机主要显示。离线签名恢复未人工实测；用户确认保留现有 IndexedDB 实现并由自动化测试覆盖，不作为 Phase 4 阻塞项。
+
+Phase 4 不包含学费、收据、成绩、临时班或 Phase 5 以后功能。
+
+## 当前待办：Phase 5 尚未开始
+
+Phase 5 目标是常态班月费与全系统统一待开收据。开始前必须取得用户明确确认；不要提前实现成绩、临时班或后续 Phase。
 
 ## 新 Windows 电脑开始步骤
 
@@ -117,4 +124,4 @@ pnpm dev
 - `node_modules`、`dist` 和本机缓存：不会同步，也不需要带走，运行 `pnpm install` / `pnpm build` 可重建。
 - 当前旧电脑没有未提交的项目文件；业务数据在 Supabase，不在本机 repository。
 
-新电脑上的 Codex 应先阅读 `AGENTS.md`、`HANDOFF.md` 和原始开发规格，再检查 `git status` 与远程 `main`。Phase 3 已完成部署与实际验收；Phase 4 本地实现尚未部署或验收，不得自动执行 migration、push 或开始 Phase 5。
+新电脑上的 Codex 应先阅读 `AGENTS.md`、`HANDOFF.md` 和原始开发规格，再检查 `git status` 与远程 `main`。Phase 1–4 已完成部署与验收；Phase 5 尚未开始，必须等待用户明确确认。
