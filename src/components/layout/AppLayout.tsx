@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../features/auth/authContext'
+import { PwaUpdatePrompt } from '../../features/settings/pwa/PwaUpdatePrompt'
 
 export function AppLayout() {
   const { signOut } = useAuth()
@@ -32,6 +33,7 @@ export function AppLayout() {
       <main className="page-container">
         <Outlet />
       </main>
+      <PwaUpdatePrompt />
     </div>
   )
 }

@@ -5,7 +5,6 @@ import { FullPageLoading } from '../components/feedback/FullPageLoading'
 import { ProtectedRoute } from '../features/auth/ProtectedRoute'
 import { LoginPage } from '../features/auth/pages/LoginPage'
 import { HomePage } from '../features/home/pages/HomePage'
-import { PlaceholderPage } from '../features/home/pages/PlaceholderPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 
 const StudentListPage = lazy(() => import('../features/students/pages/StudentListPage').then((module) => ({ default: module.StudentListPage })))
@@ -34,6 +33,7 @@ const TuitionQuizDetailPage = lazy(() => import('../features/grades/pages/Tuitio
 const TemporaryClassesPage = lazy(() => import('../features/temporary-classes/pages/TemporaryClassesPage').then((module) => ({ default: module.TemporaryClassesPage })))
 const TemporaryClassFormPage = lazy(() => import('../features/temporary-classes/pages/TemporaryClassFormPage').then((module) => ({ default: module.TemporaryClassFormPage })))
 const TemporaryClassDetailPage = lazy(() => import('../features/temporary-classes/pages/TemporaryClassDetailPage').then((module) => ({ default: module.TemporaryClassDetailPage })))
+const SettingsPage = lazy(() => import('../features/settings/pages/SettingsPage').then((module) => ({ default: module.SettingsPage })))
 
 function routePage(page: React.ReactNode) {
   return <Suspense fallback={<FullPageLoading label="正在载入页面…" />}>{page}</Suspense>
@@ -78,7 +78,7 @@ const router = createHashRouter([
         { path: 'temporary-classes/new', element: routePage(<TemporaryClassFormPage />) },
         { path: 'temporary-classes/:temporaryClassId', element: routePage(<TemporaryClassDetailPage />) },
         { path: 'temporary-classes/:temporaryClassId/edit', element: routePage(<TemporaryClassFormPage />) },
-        { path: 'settings/*', element: <PlaceholderPage title="设置" phase="Phase 8" /> },
+        { path: 'settings', element: routePage(<SettingsPage />) },
         { path: 'home', element: <Navigate to="/" replace /> },
         { path: '*', element: <NotFoundPage /> },
       ],

@@ -910,6 +910,42 @@ label.receipt-row { cursor: pointer; }
 .temporary-history-panel { margin-top: 28px; }
 .student-temporary-class-card { align-items: center; }
 
+.settings-sections { display: grid; gap: 20px; }
+.settings-section { display: grid; gap: 16px; }
+.settings-section h2 { margin: 0 0 7px; }
+.settings-section p { margin: 0; }
+.settings-primary-action { width: fit-content; max-width: 100%; }
+.backup-progress { color: var(--blue-dark); font-weight: 650; }
+.settings-note { color: var(--muted); font-size: 0.86rem; }
+.settings-app-details { margin: 14px 0 0; display: grid; gap: 10px; }
+.settings-app-details > div { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 12px; }
+.settings-app-details dt { color: var(--muted); }
+.settings-app-details dd { margin: 0; font-weight: 650; }
+.settings-app-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.settings-activity-section > summary { cursor: pointer; font-weight: 750; }
+.settings-activity-section > .muted { margin: 10px 0 14px; }
+.settings-activity-list { display: grid; }
+.settings-activity-list > div { padding: 11px 0; display: grid; gap: 4px; border-bottom: 1px solid #edf0f4; }
+.settings-activity-list > div:last-child { border-bottom: 0; }
+.settings-activity-list time { color: var(--muted); font-size: 0.8rem; }
+.pwa-update-prompt {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 20;
+  max-width: min(380px, calc(100vw - 36px));
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: #fff;
+  background: #172033;
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgb(23 32 51 / 24%);
+}
+.pwa-update-prompt > span { flex: 1; font-weight: 700; }
+.pwa-update-prompt > div { display: flex; gap: 8px; }
+
 @media (max-width: 560px) {
   .header-inner, .page-container { width: min(100% - 24px, 880px); }
   .page-container { padding-top: 28px; }
@@ -970,6 +1006,11 @@ label.receipt-row { cursor: pointer; }
   .temporary-attendance-summary { grid-template-columns: 1fr; }
   .temporary-attendance-summary h2 { grid-column: auto; }
   .temporary-attendance-summary .button { width: 100%; }
+  .settings-primary-action,
+  .settings-app-actions .button { width: 100%; }
+  .settings-app-details > div { grid-template-columns: 105px minmax(0, 1fr); }
+  .pwa-update-prompt { left: 12px; right: 12px; bottom: 12px; max-width: none; align-items: stretch; flex-direction: column; }
+  .pwa-update-prompt > div { display: grid; grid-template-columns: 1fr 1fr; }
 }
 
 @media (min-width: 700px) and (pointer: coarse) {
