@@ -1,6 +1,7 @@
 import { useDeferredValue, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
+import { SearchInput } from '../../../components/ui'
 import { listStudents } from '../api/studentsService'
 import { StudentIdentity } from './StudentIdentity'
 
@@ -15,16 +16,13 @@ export function GlobalStudentSearch() {
 
   return (
     <div className="global-search">
-      <div className="student-search">
-        <span className="search-icon" aria-hidden="true">⌕</span>
-        <input
-          type="search"
-          placeholder="搜索学生"
-          aria-label="搜索学生"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
-      </div>
+      <SearchInput
+        aria-label="搜索学生"
+        containerClassName="student-search"
+        placeholder="搜索学生姓名……"
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+      />
       {deferredSearch && (
         <div className="search-results" aria-live="polite">
           {result.isLoading && <p className="search-note">搜索中…</p>}

@@ -10,7 +10,15 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['app-icon.svg', 'pwa-192x192.png', 'pwa-512x512.png'],
+      includeAssets: [
+        'favicon-32x32.png',
+        'apple-touch-icon.png',
+        'pwa-192x192.png',
+        'pwa-512x512.png',
+        'brand/app-icon.png',
+        'brand/full-logo.png',
+        'brand/monochrome-logo.png',
+      ],
       manifest: {
         name: '蓝老师补习班',
         short_name: '蓝老师补习班',
@@ -19,8 +27,8 @@ export default defineConfig({
         start_url: base,
         scope: base,
         display: 'standalone',
-        background_color: '#f5f7fa',
-        theme_color: '#2563eb',
+        background_color: '#fbf8f1',
+        theme_color: '#102743',
         icons: [
           { src: `${base}pwa-192x192.png`, sizes: '192x192', type: 'image/png' },
           { src: `${base}pwa-512x512.png`, sizes: '512x512', type: 'image/png' },

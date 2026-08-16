@@ -43,7 +43,9 @@ export function LoginPage() {
   return (
     <main className="login-page">
       <section className="login-card" aria-labelledby="login-title">
-        <div className="brand-mark" aria-hidden="true">蓝</div>
+        <div className="brand-mark" aria-hidden="true">
+          <img src={`${import.meta.env.BASE_URL}brand/app-icon.png`} alt="" />
+        </div>
         <h1 id="login-title">蓝老师补习班</h1>
         <p className="muted">请登录以继续</p>
 

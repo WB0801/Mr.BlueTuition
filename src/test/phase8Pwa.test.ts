@@ -16,6 +16,8 @@ describe('Phase 8 PWA configuration', () => {
     expect(viteConfig).toContain("name: '蓝老师补习班'")
     expect(viteConfig).toContain('pwa-192x192.png')
     expect(viteConfig).toContain('pwa-512x512.png')
+    expect(viteConfig).toContain('brand/app-icon.png')
+    expect(indexHtml).toContain('favicon-32x32.png')
     expect(indexHtml).toContain('apple-touch-icon')
   })
 
@@ -26,4 +28,3 @@ describe('Phase 8 PWA configuration', () => {
     expect(provider).toContain('updateServiceWorker(true)')
   })
 })
-

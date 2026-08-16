@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Link, Outlet, useNavigate } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../features/auth/authContext'
 import { PwaUpdatePrompt } from '../../features/settings/pwa/PwaUpdatePrompt'
+import { AppHeader } from './AppHeader'
 
 export function AppLayout() {
   const { signOut } = useAuth()
@@ -22,14 +23,7 @@ export function AppLayout() {
 
   return (
     <div className="app-shell">
-      <header className="app-header">
-        <div className="header-inner">
-          <Link className="header-brand" to="/" aria-label="返回首页">蓝老师补习班</Link>
-          <button className="button button-text" type="button" onClick={handleSignOut} disabled={isSigningOut}>
-            {isSigningOut ? '退出中…' : '退出'}
-          </button>
-        </div>
-      </header>
+      <AppHeader isSigningOut={isSigningOut} onSignOut={() => void handleSignOut()} />
       <main className="page-container">
         <Outlet />
       </main>

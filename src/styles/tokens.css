@@ -1,0 +1,78 @@
+:root {
+  color-scheme: light;
+
+  /* Color */
+  --color-bg: #fbf8f1;
+  --color-surface: #ffffff;
+  --color-surface-soft: #f7f3ea;
+  --color-surface-hover: #faf8f3;
+  --color-navy: #102743;
+  --color-navy-hover: #183957;
+  --color-primary-soft: #edf3f8;
+  --color-text-primary: #142033;
+  --color-text-secondary: #667085;
+  --color-text-tertiary: #8a93a2;
+  --color-brand-red: #d92d32;
+  --color-success: #176b4d;
+  --color-success-bg: #edf8f3;
+  --color-warning: #8a5a12;
+  --color-warning-bg: #fff7e6;
+  --color-danger: #b4232c;
+  --color-danger-hover: #921c24;
+  --color-danger-bg: #fff1f1;
+  --color-info: #285b82;
+  --color-info-bg: #edf5fb;
+  --color-border: #dedbd3;
+  --color-border-strong: #c9c5bb;
+  --color-focus: #316b9a;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 48px;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 11px;
+  --radius-lg: 15px;
+  --radius-round: 999px;
+
+  /* Shadow */
+  --shadow-card: 0 1px 2px rgb(16 39 67 / 4%);
+  --shadow-card-hover: 0 4px 12px rgb(16 39 67 / 7%);
+  --shadow-overlay: 0 12px 32px rgb(16 39 67 / 14%);
+
+  /* Typography */
+  --font-family-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --font-size-xs: 0.78rem;
+  --font-size-sm: 0.875rem;
+  --font-size-body: 1rem;
+  --font-size-card-title: 1rem;
+  --font-size-section-title: 1.2rem;
+  --font-size-page-title: clamp(1.75rem, 3vw, 2rem);
+  --line-height-body: 1.6;
+  --font-weight-medium: 550;
+  --font-weight-semibold: 650;
+  --font-weight-bold: 720;
+
+  /* Layout */
+  --max-width-content: 1040px;
+  --max-width-reading: 720px;
+  --breakpoint-mobile: 560px;
+  --breakpoint-tablet: 900px;
+
+  /* Legacy aliases while existing pages migrate in later UI phases. */
+  --blue: var(--color-navy);
+  --blue-dark: var(--color-navy-hover);
+  --blue-soft: var(--color-primary-soft);
+  --border: var(--color-border);
+  --muted: var(--color-text-secondary);
+  --surface: var(--color-surface);
+  --danger: var(--color-danger);
+}
