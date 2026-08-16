@@ -1,38 +1,48 @@
 # 蓝老师补习班
 
-单人使用的私人补习班管理系统。当前代码完成 Phase 1 基础工程与 Phase 2 学生、科目、常态班、报读关系，不包含 Phase 3 及之后的业务功能。
+蓝老师单人使用的轻量补习班管理系统，提供电脑、iPad 和手机共用的 Responsive Web App。当前仓库已实现至 Phase 8。
 
-## 全新 Windows 电脑
+## 主要功能
 
-需要先安装：
+- 学生资料、科目、常态班、报读历史、转班与结束班级
+- 固定课表、实际课程、改期、额外课程、停课与恢复
+- 动态点名名单、签名、离线暂存、作废修正及跨班补课
+- 常态班月费、缴费状态及统一待开收据队列
+- 学校考试、补习班小测及学生成绩历史
+- 临时班、报名、点名、一次性缴费与收据
+- 完整 ZIP 资料与签名备份导出（暂不支持恢复）
+- 可安装 PWA、Service Worker、应用更新提示及应用壳离线准备
 
-- [Git](https://git-scm.com/download/win)
-- [Node.js 22 LTS](https://nodejs.org/)
-- [GitHub CLI](https://cli.github.com/)（只在需要推送或检查部署时使用）
+## 技术栈
 
-Clone 项目：
+- React 19、TypeScript、Vite
+- Supabase Auth、Postgres、RLS、RPC 和 private Storage
+- TanStack Query、Vitest、Testing Library、ESLint
+- GitHub Pages、GitHub Actions、vite-plugin-pwa
+
+数据库 schema 由 `supabase/migrations/` 管理。前端只使用 Supabase publishable key，禁止提交 Secret Key、Service Role Key、数据库密码或用户密码。
+
+## 本地开发
+
+需要 Git、Node.js 22 LTS、Corepack 和 pnpm。Windows 项目目录为 `F:\Codex Projects\小工具开发`。
 
 ```powershell
-git clone https://github.com/WB0801/Mr.BlueTuition.git
-Set-Location Mr.BlueTuition
+Set-Location 'F:\Codex Projects\小工具开发'
 corepack enable
 corepack prepare pnpm@11.19.0 --activate
 pnpm install --frozen-lockfile
-```
-
-## 本地配置与启动
-
-1. 复制 `.env.example` 为 `.env.local`。
-2. 填入 Supabase Project URL 和前端可公开使用的 publishable key。
-3. 运行：
-
-```powershell
+Copy-Item .env.example .env.local
 pnpm dev
 ```
 
-不要把 Supabase Secret Key 或旧版 Service Role Key 放入 `.env.local`、前端代码或 GitHub Secrets。前端只使用 publishable key。
+`.env.local` 需要：
 
-现有生产 Supabase 已完成所有 migrations。换电脑继续开发时不要重新执行旧 migrations；只有重建全新 Supabase 项目时，才按文件名顺序执行 `supabase/migrations/` 内全部 SQL，并建立唯一登录账号、关闭公开注册。
+```text
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your-public-publishable-key
+```
+
+`.env.local` 已由 `.gitignore` 排除，不应提交。
 
 ## 验证
 
@@ -42,22 +52,15 @@ pnpm test
 pnpm build
 ```
 
-## GitHub Pages
+三项检查都必须通过后才能发布。
 
-仓库需要在 Settings → Pages 中选择 GitHub Actions，并建立以下 repository secrets：
+## GitHub Pages 与 PWA
+
+推送 `main` 后，`.github/workflows/deploy-pages.yml` 会依次安装锁定依赖、运行 lint、测试、生产构建，并在全部成功后部署 GitHub Pages。仓库需要配置以下 GitHub Actions secrets：
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
 
-应用使用 Hash Router，适合 GitHub Pages 静态托管和子页面刷新。
+应用使用 Hash Router，适合 GitHub Pages 子路径。生产构建会生成 Web App Manifest 和 Service Worker，可安装为 PWA，并在新版本可用时提示更新。PWA 的离线能力不代表所有依赖 Supabase 的业务操作都能离线完成。
 
-推送到 `main` 后，GitHub Actions 会自动测试、构建并发布。生产 migration 必须先于依赖它的前端执行。
-
-## 当前范围
-
-- Phase 1：登录、基础路由、首页、GitHub Pages 部署
-- Phase 2：学生、科目、常态班、报读与历史关系
-
-Session、点名、学费、收据、成绩、临时班、备份与 PWA 仍属于后续 Phase。
-
-跨电脑继续开发前请阅读 [AGENTS.md](AGENTS.md) 和 [HANDOFF.md](HANDOFF.md)。
+详细开发规则与交接信息见 [AGENTS.md](AGENTS.md) 和 [HANDOFF.md](HANDOFF.md)。

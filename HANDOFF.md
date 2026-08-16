@@ -1,127 +1,133 @@
-# 跨电脑开发交接
+# 蓝老师补习班：开发交接
 
-更新时间：2026-08-14（Asia/Kuala_Lumpur）
+更新时间：2026-08-16（Asia/Kuala_Lumpur）
 
-## 当前状态
+## 唯一本机开发基底
 
-- Phase 1：已完成、部署并在电脑、iPad、手机验收通过。
-- Phase 2：已完成、部署并在电脑、iPad、手机验收通过。
-- Phase 3：已完成、部署并在电脑、iPad、手机验收通过。
-- Phase 4：已完成、部署并通过实际验收；离线签名恢复保留现有实现并由自动化测试覆盖，本阶段未人工实测且不作为阻塞项。
+- Windows 本机开发目录固定为 `F:\Codex Projects\小工具开发`。
+- 不读取、修改、同步或参考其他磁盘上的旧项目副本。
 - GitHub repository：<https://github.com/WB0801/Mr.BlueTuition>
 - 生产分支：`main`
-- 最后已验收功能提交：`73c7fd2`（Fix schedule time layout and formatting）
 - 线上网站：<https://wb0801.github.io/Mr.BlueTuition/>
-- GitHub Pages：由 `.github/workflows/deploy-pages.yml` 在推送 `main` 后自动测试、构建和发布；最近发布成功。
 - Supabase Project URL：`https://ldobzxvxccdowkvwgydt.supabase.co`
-- Supabase Auth、RLS 与公开注册关闭状态已经过实际验收。
-- 生产数据库已有真实使用资料；不要重置、清空或重新建立现有 Supabase 项目。
+- 当前仓库提交：`4dde234`（`feat: add Phase 8 backup and PWA`）。
 
-## 已完成 migrations
+开始开发前必须先阅读 `AGENTS.md`、本文件及用户确认的规格，并执行 `git status`。不要在未获用户明确确认时进入下一 Phase 或扩大 Scope。
 
-生产 Supabase 已依次执行：
+## 当前代码状态
+
+仓库已实现至 Phase 8：
+
+1. **Phase 1：基础工程与登录**
+   - React、TypeScript、Vite、Supabase 和 GitHub Pages 基础工程。
+   - 单一用户登录、受保护路由、首页及 Responsive Web App 布局。
+2. **Phase 2：学生、科目、常态班与报读**
+   - 学生资料、科目、常态班、报读历史、结束报读、转班及结束班级。
+   - 学生姓名必填；学校班级和联系电话选填并以 `NULL` 保存空值。
+3. **Phase 3：课表与实际课程**
+   - `class_schedule_rules` 是真实课表来源；同班数据库层支持多条并行规则。
+   - 按需且幂等地产生 `class_sessions`，支持课表历史、单堂改期、永久改课表、额外课程、单堂停课/恢复和单日全日停课。
+   - `classes` 的旧星期和时间字段只是由数据库 transaction 同步的兼容镜像，不能用于产生 Session。
+4. **Phase 4：点名与签名**
+   - 按 Session 当日有效报读动态产生名单，不保存缺席记录。
+   - 支持签名、补签、private Storage 查看、签名作废与修正轨迹。
+   - 签名前先写入 IndexedDB；上传失败可保留并重新同步。离线记录区分设备捕获时间和服务器同步时间。
+   - 支持同科目的跨班 makeup/extra；已有有效签到的 Session 受到改期和停课保护。
+5. **Phase 5：常态班月费与收据**
+   - 产生月费快照，查看当月、未缴及历史月费。
+   - 支持调整实际金额、缴费、撤销缴费、免收，以及待开/已完成收据处理。
+   - 月中转班收费归属、`fee_month` 与 `paid_at`、历史金额快照等规则由 migration/RPC 约束。
+   - 设置页提供最近操作记录。
+6. **Phase 6：成绩**
+   - 学校考试按年份和科目管理，可为有效或有相应科目历史的学生录入成绩。
+   - 补习班小测按常态班管理，并按小测日期的有效报读名单录入成绩。
+   - 学生及报读详情可查看相关成绩历史。
+7. **Phase 7：临时班**
+   - 建立、编辑和结束一次性临时班，管理学生报名及一次性缴费。
+   - 临时班共用 Session、点名与签名流程。
+   - 临时班缴费与常态班月费进入统一待开收据队列。
+8. **Phase 8：备份与 PWA**
+   - 设置页可下载包含业务表资料、可读 CSV、manifest 与 private 签名文件的完整 ZIP 备份，并在客户端验证备份完整性。
+   - 当前只支持备份导出，尚未开放恢复功能。
+   - 应用提供 Web App Manifest、Service Worker、安装提示、更新检查/重新载入提示及应用壳离线准备状态。
+
+不要继续开发 Phase 9 或其他新功能，除非用户明确确认新的开发规格。
+
+## 已知部署与验收记录
+
+- Phase 1–3 已在电脑、iPad 和手机完成实际验收。
+- Phase 4 已完成生产部署与主要流程实际验收；IndexedDB 离线签名恢复由自动化测试覆盖，未作人工离线实测且不作为当时阻塞项。
+- 截至旧交接记录的 2026-08-14 生产核对，Supabase 已执行至 `202608140005_phase4_attendance_signatures.sql`，Auth、RLS、关闭公开注册和 private `signatures` bucket 已实际验收。
+- 当前仓库代码已推进至 Phase 8，但本地 repository 不能证明 Phase 5–8 的线上 migration、部署或人工验收状态；需要在相关发布或验收工作开始前从 Supabase 与 GitHub Pages 实际环境确认。
+
+## 数据库 migrations
+
+`supabase/migrations/` 内现有 migration 必须按文件名顺序保留：
 
 1. `202608130001_phase1_auth_foundation.sql`
 2. `202608130002_phase2_students_classes_enrollments.sql`
 3. `202608130003_optional_student_details.sql`
 4. `202608130004_phase3_schedules_sessions.sql`
 5. `202608140005_phase4_attendance_signatures.sql`
+6. `202608140006_phase5_monthly_fees_receipts.sql`
+7. `202608140007_phase6_grades.sql`
+8. `202608140008_phase7_temporary_classes.sql`
 
-这些 migration 已在生产执行，不要编辑旧文件。后续 schema 变化必须新增 migration。
+Phase 8 没有新增业务 schema migration；对应完整性审计位于 `supabase/checks/phase8_integrity_audit.sql`。
 
-## Phase 3 完成状态
+本地文件只能确认仓库所需 schema，不能证明生产数据库在上述旧核对后实际又执行到哪一份 migration。任何依赖 schema 的发布前，都必须先在 Supabase 核对生产 migration 状态，再执行尚未执行的新 migration，最后发布前端。生产数据库已有真实资料，不得重置、清空或重建；已执行的 migration 不得改写，修正必须新增 migration。
 
-`202608130004_phase3_schedules_sessions.sql` 已于 2026-08-14 在生产执行。执行后的完整性检查结果为学生 3、科目 1、班级 2、报读 3、首条课表规则 2，课表迁移错误 0、断裂报读关系 0。
+所有业务表继续使用 `owner_id` 和 RLS。前端只使用 Supabase publishable key；Secret Key、Service Role Key、数据库密码和用户密码不得进入 repository、前端或聊天。
 
-已实现并实际验收：
+## 关键业务与架构约定
 
-- `class_schedule_rules` 与课表历史。
-- 根据固定课表按需、滚动且幂等地产生实际 `class_sessions`。
-- 今天／本周／历史 Session 基础查看。
-- 单次改期与多次改期历史。
-- 从某堂开始永久修改未来课表。
-- 单堂停课、单堂恢复上课与全日停课（底层状态为 `cancelled`，无理由字段；不做全日恢复）。
-- 额外补课 Session。
-- 课程时间统一按 Asia/Kuala_Lumpur 显示，并使用 24 小时制的同日时间范围。
+- 数据关系一律使用 UUID，不以学生姓名或班级名称作为主键。
+- 历史资料优先结束、归档、作废或保留，不轻易删除。
+- 转班必须结束旧报读并建立新报读，只允许相同 `subject_id`；转班日是新班生效日，旧报读结束日是前一天。
+- 单堂停课底层使用 `class_sessions.status = 'cancelled'`，不删除 Session；恢复时复用原 Session 并保留改期历史。
+- 缺席由有效报读名单减去有效签到动态推导；停课 Session 不允许点名。
+- 有效签到每生每堂最多一笔。签错只能作废，不能覆盖或删除原签名。
+- 收费、收据、转班、停课、签到等关键多步骤操作使用数据库 transaction/RPC 保持原子性。
+- Supabase 查询集中在 feature service/API 层，避免散落组件；保持模块拆分和按需读取。
+- 电脑、iPad、手机共用同一套 Responsive Web App。
 
-Phase 3 不实现签到、签名、学费或成绩。当前 `classes` 的 `weekday`、`start_time`、`end_time` 可迁移成第一条 schedule rule；稳定关系继续使用 `classes.id`。
+## 本地开发
 
-Phase 3 结构决定：`class_schedule_rules` 是唯一课表真相来源。同班数据库层可有多条并行 weekly schedule slots；当前 UI 仍只维护一条。regular Session 防重复使用 `schedule_rule_id + original_start_at`，不使用整个班级加教学周。`classes` 的旧时间字段由 `schedule_summary_rule_id` 明确指向并通过数据库 transaction 保持一致，只作兼容镜像。
-
-验收还确认：同一堂课程可连续改期且保留完整历史；永久改课表不会覆盖人工调整；停课 Session 留在历史并离开正常点名列表；恢复上课复用原 Session；全日停课会列出并原子停止当天所有尚未停课课程。`completed` Session 的停课／恢复保护由 RPC 状态约束与自动化测试验证，因为 Phase 3 尚无把 Session 标记为 completed 的用户操作。
-
-验收期间建立的额外补课及停课 Session 会按历史保留原则继续存在，不要直接从数据库删除。
-
-## Phase 4 完成状态
-
-Phase 4 已完成实现、production migration、GitHub Pages 发布及实际验收。第 5 份 production migration 已于 2026-08-14 成功执行。
-
-部署后检查确认：学生 3、科目 1、班级 2、报读 3、课表规则 3；三张 Phase 4 表均存在并启用 RLS；`signatures` bucket 为 private、限制 2 MB，具有本人路径 upload/read 两条 policy。
-
-本地实现包括：
-
-- 根据 Session 当日有效 enrollment 动态产生名单；不保存缺席记录。
-- iPad 手指／Apple Pencil 签名画布、真实服务端签名时间及补签标记。
-- IndexedDB 先行暂存（包括设备 `captured_at`）、失败恢复、重新上传、离页提示与幂等提交；离线记录另存服务器 `synced_at`。
-- private `signatures` bucket、仅本人路径可读写、无前端覆盖／删除 policy。
-- 有效签到唯一约束、原签名查看、作废记录与修正轨迹。
-- 跨班 makeup／extra 学生、原 enrollment 与 source Session 关系、原缺席的补课显示；候选限目标日期仍有效且同科目的其他班学生。
-- 已有有效签到的 Session 不能改期或停课；全日停课与签到操作使用 Session row lock 防止竞态。
-- 全日停课会保留已有签到的 Session，并原子停掉当天其他可停课程；UI 分开显示两个数量。
-
-实际验收通过：正常名单与签到、iPad 手指／Apple Pencil、清除、补签、私人签名查看、作废修正、正确学生重签、跨班 makeup／extra、不同科目及无效报读候选限制、Phase 3 额外 Session 点名、停课／恢复、已有签到后的改期及停课保护、混合全日停课，以及电脑、iPad、手机主要显示。离线签名恢复未人工实测；用户确认保留现有 IndexedDB 实现并由自动化测试覆盖，不作为 Phase 4 阻塞项。
-
-Phase 4 不包含学费、收据、成绩、临时班或 Phase 5 以后功能。
-
-## 当前待办：Phase 5 尚未开始
-
-Phase 5 目标是常态班月费与全系统统一待开收据。开始前必须取得用户明确确认；不要提前实现成绩、临时班或后续 Phase。
-
-## 新 Windows 电脑开始步骤
-
-1. 安装 Git、Node.js 22 LTS 和 GitHub CLI。
-2. Clone 并进入项目：
+环境要求：Git、Node.js 22 LTS、Corepack，以及 repository 指定的 pnpm 版本。
 
 ```powershell
-git clone https://github.com/WB0801/Mr.BlueTuition.git
-Set-Location Mr.BlueTuition
-```
-
-3. 启用 repository 指定的 pnpm：
-
-```powershell
+Set-Location 'F:\Codex Projects\小工具开发'
 corepack enable
 corepack prepare pnpm@11.19.0 --activate
 pnpm install --frozen-lockfile
 ```
 
-4. 建立本机配置：
+复制 `.env.example` 为 `.env.local`，只填写：
 
-```powershell
-Copy-Item .env.example .env.local
+```text
+VITE_SUPABASE_URL
+VITE_SUPABASE_PUBLISHABLE_KEY
 ```
 
-在 `.env.local` 填入 `VITE_SUPABASE_URL` 与 `VITE_SUPABASE_PUBLISHABLE_KEY`。Project URL 已记录在上方；publishable key 可从 Supabase Dashboard 的 **Connect → React → Vite** 重新复制。
+`.env.local`、登录状态、密码、`node_modules`、`dist` 和本机缓存不会提交到 Git。启动开发服务器：
 
-5. 验证并启动：
+```powershell
+pnpm dev
+```
+
+## 测试与发布
+
+每次发布前必须全部通过：
 
 ```powershell
 pnpm lint
 pnpm test
 pnpm build
-pnpm dev
 ```
 
-6. 需要推送或检查部署时运行 `gh auth login`，再确认 `gh auth status`。
+GitHub Pages 由 `.github/workflows/deploy-pages.yml` 在推送 `main` 后执行 lint、测试、构建和部署。仓库需要配置：
 
-现有生产 Supabase 已执行到第 5 份 migration。换电脑本地开发不需要重新执行；后续只有新增 migration 时才先在 Supabase 执行，再发布对应前端。
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
 
-## GitHub 不会同步的资料
-
-- `.env.local`：故意被 `.gitignore` 排除。需要在新电脑重建；不要用 U 盘明文长期保存，优先从 Supabase Dashboard 重新复制 publishable key。
-- GitHub、Supabase、蓝老师网站登录密码及数据库密码：应保存在密码管理器，不进入 repository 或聊天。
-- GitHub CLI 和 Supabase Dashboard 的登录状态：新电脑需要重新登录。
-- `node_modules`、`dist` 和本机缓存：不会同步，也不需要带走，运行 `pnpm install` / `pnpm build` 可重建。
-- 当前旧电脑没有未提交的项目文件；业务数据在 Supabase，不在本机 repository。
-
-新电脑上的 Codex 应先阅读 `AGENTS.md`、`HANDOFF.md` 和原始开发规格，再检查 `git status` 与远程 `main`。Phase 1–4 已完成部署与验收；Phase 5 尚未开始，必须等待用户明确确认。
+应用使用 Hash Router，Vite 会按 `VITE_BASE_PATH` 生成适合 GitHub Pages 子路径的构建与 PWA 资源。任何 migration 必须先于依赖该 schema 的前端发布。
