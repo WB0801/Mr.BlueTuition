@@ -5,7 +5,11 @@ import { SearchInput } from '../../../components/ui'
 import { listStudents } from '../api/studentsService'
 import { StudentIdentity } from './StudentIdentity'
 
-export function GlobalStudentSearch() {
+interface GlobalStudentSearchProps {
+  placeholder?: string
+}
+
+export function GlobalStudentSearch({ placeholder = '搜索学生姓名……' }: GlobalStudentSearchProps) {
   const [search, setSearch] = useState('')
   const deferredSearch = useDeferredValue(search.trim())
   const result = useQuery({
@@ -19,7 +23,7 @@ export function GlobalStudentSearch() {
       <SearchInput
         aria-label="搜索学生"
         containerClassName="student-search"
-        placeholder="搜索学生姓名……"
+        placeholder={placeholder}
         value={search}
         onChange={(event) => setSearch(event.target.value)}
       />

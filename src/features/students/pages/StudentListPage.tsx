@@ -19,7 +19,6 @@ export function StudentListPage() {
     <section className="management-page student-list-page">
       <PageHeader
         title="学生"
-        backLabel="首页"
         actions={<Link className="button button-primary" to="/students/new">新增学生</Link>}
       />
 

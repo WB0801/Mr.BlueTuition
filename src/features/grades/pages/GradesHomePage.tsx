@@ -4,7 +4,7 @@ import { PageHeader } from '../../../components/shared/PageHeader'
 export function GradesHomePage() {
   return (
     <section>
-      <PageHeader title="成绩" backTo="/" backLabel="首页" />
+      <PageHeader title="成绩" />
       <div className="grade-entry-links">
         <Link className="grade-module-card" to="/grades/school">
           <strong>学校考试</strong>

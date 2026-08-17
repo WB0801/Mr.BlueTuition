@@ -2,7 +2,6 @@ import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Badge, CardLink, Icon, SectionHeader, type AppIconName } from '../../../components/ui'
 import { countPendingReceipts } from '../../fees/api/feesService'
-import { GlobalStudentSearch } from '../../students/components/GlobalStudentSearch'
 
 interface HomeEntry {
   icon: AppIconName
@@ -32,20 +31,8 @@ export function HomePage() {
   }, [])
 
   return (
-    <section className="home-page" aria-labelledby="home-welcome-title">
-      <div className="home-welcome">
-        <div>
-          <p className="home-kicker">工作入口</p>
-          <h1 id="home-welcome-title">今天也别忘了点名。</h1>
-          <p>从常用功能开始，快速处理今天的补习班事务。</p>
-        </div>
-        <img src={`${import.meta.env.BASE_URL}brand/full-logo.png`} alt="猫咪与开放书本标志" />
-      </div>
-
-      <div className="home-search-area">
-        <GlobalStudentSearch />
-      </div>
-
+    <section className="home-page">
+      <h1 className="sr-only">蓝老师补习班</h1>
       <nav className="home-function-lobby" aria-label="主要功能">
         <section aria-labelledby="common-functions-title">
           <SectionHeader id="common-functions-title" title="常用" />

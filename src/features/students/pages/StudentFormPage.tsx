@@ -50,7 +50,7 @@ export function StudentFormPage() {
       <PageHeader
         title={isEditing ? '编辑学生' : '新增学生'}
         backTo={isEditing ? `/students/${studentId}` : '/students'}
-        backLabel="学生"
+        backLabel={isEditing ? '学生资料' : '学生列表'}
       />
       <StudentForm
         key={student.data?.updated_at ?? 'new'}

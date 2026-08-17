@@ -31,10 +31,9 @@ describe('HomePage', () => {
     expect(screen.getByRole('heading', { name: '管理' })).toBeInTheDocument()
   })
 
-  it('enables student search in Phase 2', () => {
+  it('leaves quick student search to the app header', () => {
     renderHome()
 
-    expect(screen.getByRole('searchbox', { name: '搜索学生' })).toBeEnabled()
-    expect(screen.getByPlaceholderText('搜索学生姓名……')).toBeInTheDocument()
+    expect(screen.queryByRole('searchbox', { name: '搜索学生' })).not.toBeInTheDocument()
   })
 })

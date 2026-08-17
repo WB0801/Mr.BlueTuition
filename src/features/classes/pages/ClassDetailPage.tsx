@@ -58,7 +58,7 @@ export function ClassDetailPage() {
       <PageHeader
         title={data.name}
         backTo="/classes"
-        backLabel="班级"
+        backLabel="班级列表"
         actions={<Link className="button button-secondary" to={`/classes/${classId}/edit`}>编辑班级</Link>}
       />
       <div className="detail-title-row compact-title-row">

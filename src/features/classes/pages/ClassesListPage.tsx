@@ -20,7 +20,6 @@ export function ClassesListPage() {
     <section className="management-page classes-list-page">
       <PageHeader
         title="班级"
-        backLabel="首页"
         actions={<Link className="button button-primary" to="/classes/new">新增班级</Link>}
       />
       <div className="list-control-bar">

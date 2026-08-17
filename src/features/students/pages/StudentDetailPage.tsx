@@ -30,7 +30,7 @@ export function StudentDetailPage() {
       <PageHeader
         title={student.data.name}
         backTo="/students"
-        backLabel="学生"
+        backLabel="学生列表"
         actions={<Link className="button button-secondary" to={`/students/${studentId}/edit`}>编辑学生</Link>}
       />
 

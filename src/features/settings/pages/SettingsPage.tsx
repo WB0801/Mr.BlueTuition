@@ -9,7 +9,7 @@ export function SettingsPage() {
 
   return (
     <section>
-      <PageHeader title="设置" backLabel="首页" />
+      <PageHeader title="设置" />
       <div className="settings-sections">
         <BackupSection />
         <AppSection />
@@ -18,4 +18,3 @@ export function SettingsPage() {
     </section>
   )
 }
-

@@ -20,7 +20,7 @@ export function AttendancePage() {
 
   return (
     <section>
-      <PageHeader title="点名" backLabel="首页" />
+      <PageHeader title="点名" />
       <details className="action-panel all-day-stop-panel">
         <summary>全日停课</summary>
         <AllDayStopPanel />
