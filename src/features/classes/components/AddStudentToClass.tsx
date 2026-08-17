@@ -37,7 +37,7 @@ export function AddStudentToClass({ classId, enrolledStudentIds }: AddStudentToC
   const results = students.data?.filter((student) => !enrolledStudentIds.includes(student.id)) ?? []
 
   return (
-    <div className="compact-form">
+    <div className="compact-form add-student-form">
       <label className="field">
         <span>加入日期</span>
         <input type="date" value={joinDate} onChange={(event) => setJoinDate(event.target.value)} required />

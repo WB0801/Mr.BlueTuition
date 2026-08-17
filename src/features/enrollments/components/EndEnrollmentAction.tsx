@@ -40,7 +40,7 @@ export function EndEnrollmentAction({ enrollmentId, studentName, onSuccess }: En
 
   if (!isOpen) {
     return (
-      <button className="button button-secondary button-small" type="button" onClick={() => setIsOpen(true)}>
+      <button className="button button-danger-outline button-small" type="button" onClick={() => setIsOpen(true)}>
         结束报读
       </button>
     )

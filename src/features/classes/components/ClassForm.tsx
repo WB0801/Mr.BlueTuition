@@ -30,7 +30,7 @@ export function ClassForm({ subjects, initialValue, submitLabel, isSubmitting, i
   }
 
   return (
-    <form className="form-card" onSubmit={handleSubmit}>
+    <form className="form-card class-form" onSubmit={handleSubmit}>
       <label className="field">
         <span>班级名称</span>
         <input

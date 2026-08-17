@@ -53,7 +53,7 @@ export function EnrollmentDetailPage() {
   }
 
   return (
-    <section>
+    <section className="management-page detail-page enrollment-detail-page">
       <PageHeader title={data.student?.name ?? '报读资料'} backTo={`/students/${studentId}`} backLabel="学生资料" />
       <div className="detail-title-row">
         <div>
@@ -69,9 +69,9 @@ export function EnrollmentDetailPage() {
       </dl>
 
       {data.status === 'active' && (
-        <section className="content-section action-stack">
+        <section className="content-section action-stack enrollment-actions-section">
           <h2>报读操作</h2>
-          <div className="action-card">
+          <div className="action-card danger-action-card">
             <h3>结束报读</h3>
             <p className="muted">学生资料与这段报读历史都会保留。</p>
             <EndEnrollmentAction
@@ -80,7 +80,7 @@ export function EnrollmentDetailPage() {
               onSuccess={() => navigate(`/students/${studentId}`)}
             />
           </div>
-          <details className="action-card">
+          <details className="action-card transfer-action-card">
             <summary>转班</summary>
             {classes.isLoading && <LoadingBlock message="正在载入班级…" />}
             {classes.isError && <ErrorBlock message="班级载入失败。" />}
@@ -111,13 +111,13 @@ export function EnrollmentDetailPage() {
 
       <section className="content-section">
         <h2>这段报读的资料</h2>
-        <div className="future-links" aria-label="后续阶段功能">
-          <span>出席 <small>已可在课程点名查看</small></span>
+        <div className="future-links" aria-label="报读资料">
+          <span>出席</span>
           <button type="button" onClick={() => document.getElementById('enrollment-fees')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
-            学费 <small>查看这段报读的月费</small>
+            学费
           </button>
           <button type="button" onClick={() => document.getElementById('enrollment-grades')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
-            成绩 <small>查看学校考试与补习班小测</small>
+            成绩
           </button>
         </div>
       </section>

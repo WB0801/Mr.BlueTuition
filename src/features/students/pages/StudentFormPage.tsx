@@ -46,7 +46,7 @@ export function StudentFormPage() {
     : undefined
 
   return (
-    <section>
+    <section className="management-page form-page">
       <PageHeader
         title={isEditing ? '编辑学生' : '新增学生'}
         backTo={isEditing ? `/students/${studentId}` : '/students'}

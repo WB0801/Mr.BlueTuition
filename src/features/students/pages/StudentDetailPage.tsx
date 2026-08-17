@@ -26,7 +26,7 @@ export function StudentDetailPage() {
   const history = enrollments.data?.filter((item) => item.status === 'ended') ?? []
 
   return (
-    <section>
+    <section className="management-page detail-page student-detail-page">
       <PageHeader
         title={student.data.name}
         backTo="/students"
@@ -34,13 +34,13 @@ export function StudentDetailPage() {
         actions={<Link className="button button-secondary" to={`/students/${studentId}/edit`}>编辑学生</Link>}
       />
 
-      <dl className="details-card">
+      <dl className="details-card student-profile-card">
         <div><dt>学校班级</dt><dd>{student.data.school_class || '未填写'}</dd></div>
         <div><dt>联系电话</dt><dd>{student.data.phone || '未填写'}</dd></div>
       </dl>
 
-      <details className="action-panel">
-        <summary>新增报读</summary>
+      <details className="action-panel enrollment-create-panel">
+        <summary>加入班级或重新报读</summary>
         {classes.isLoading && <LoadingBlock message="正在载入班级…" />}
         {classes.isError && <ErrorBlock message="班级载入失败。" />}
         {classes.data && (
@@ -52,8 +52,8 @@ export function StudentDetailPage() {
         )}
       </details>
 
-      <section className="content-section">
-        <h2>当前报读</h2>
+      <section className="content-section entity-section">
+        <h2>当前报读 <span className="section-count">{current.length}</span></h2>
         {enrollments.isLoading && <LoadingBlock />}
         {enrollments.isError && <ErrorBlock message="报读资料载入失败。" />}
         {!enrollments.isLoading && current.length === 0 && <EmptyBlock message="目前没有进行中的报读。" />}
@@ -64,8 +64,8 @@ export function StudentDetailPage() {
 
       <StudentGradesSection studentId={studentId} />
 
-      <section className="content-section">
-        <h2>历史报读</h2>
+      <section className="content-section entity-section">
+        <h2>历史报读 <span className="section-count">{history.length}</span></h2>
         {!enrollments.isLoading && history.length === 0 && <EmptyBlock message="还没有历史报读。" />}
         <div className="record-list">
           {history.map((item) => <EnrollmentCard enrollment={item} key={item.id} />)}

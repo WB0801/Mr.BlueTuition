@@ -43,7 +43,7 @@ export function NewEnrollmentForm({ studentId, classes, excludedClassIds = [], o
   }
 
   return (
-    <form className="compact-form" onSubmit={handleSubmit}>
+    <form className="compact-form enrollment-form" onSubmit={handleSubmit}>
       <label className="field">
         <span>班级</span>
         <select value={classId} onChange={(event) => setClassId(event.target.value)} required>

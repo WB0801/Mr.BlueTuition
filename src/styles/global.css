@@ -244,13 +244,14 @@ h1 { margin: 0; color: var(--color-text-primary); font-size: var(--font-size-pag
 }
 
 .page-header {
-  min-height: 72px;
-  margin-bottom: 26px;
+  min-height: 88px;
+  margin-bottom: var(--space-7);
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 20px;
+  gap: var(--space-5);
 }
+.page-header h1 { margin: 0; font-size: var(--font-size-page-title); line-height: 1.18; letter-spacing: -0.02em; }
 .back-link {
   display: inline-flex;
   align-items: center;
@@ -262,19 +263,24 @@ h1 { margin: 0; color: var(--color-text-primary); font-size: var(--font-size-pag
 }
 .back-link:hover { color: var(--blue-dark); }
 .page-actions { display: flex; align-items: center; gap: 8px; }
+.management-page { width: 100%; max-width: 920px; margin: 0 auto; }
+.form-page { max-width: 780px; }
+.detail-page { max-width: 920px; }
 .secondary-actions { margin: -12px 0 20px; display: flex; flex-wrap: wrap; gap: 8px 18px; }
 .secondary-actions a { color: var(--blue-dark); font-size: 0.92rem; font-weight: 650; }
 
 .button-danger { color: #fff; background: var(--color-danger); }
 .button-danger:hover:not(:disabled) { background: var(--color-danger-hover); }
+.button-danger-outline { color: var(--color-danger); background: var(--color-surface); border-color: #e6aeb2; }
+.button-danger-outline:hover:not(:disabled) { color: #fff; background: var(--color-danger); border-color: var(--color-danger); }
 .button-small { min-height: 38px; padding: 7px 12px; font-size: 0.88rem; }
 
 .state-block {
-  padding: 22px;
+  padding: var(--space-5);
   color: var(--muted);
-  background: var(--surface);
+  background: var(--color-surface-soft);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   line-height: 1.5;
 }
 .state-error { color: var(--danger); }
@@ -302,10 +308,11 @@ h1 { margin: 0; color: var(--color-text-primary); font-size: var(--font-size-pag
 .search-result:hover { background: #f8fbff; }
 .search-note { margin: 0; padding: 13px 15px; color: var(--muted); font-size: 0.9rem; }
 .student-identity { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.student-identity strong { line-height: 1.3; }
+.student-identity strong { color: var(--color-text-primary); font-size: 1.02rem; line-height: 1.3; }
 .student-identity > span { color: var(--muted); font-size: 0.88rem; line-height: 1.35; }
 
 .search-field { display: block; margin-bottom: 18px; }
+.list-search { width: min(100%, 620px); margin-bottom: var(--space-5); }
 .search-field input,
 .field input,
 .field select,
@@ -315,8 +322,8 @@ h1 { margin: 0; color: var(--color-text-primary); font-size: var(--font-size-pag
   padding: 9px 11px;
   color: #172033;
   background: #fff;
-  border: 1px solid #cbd1dc;
-  border-radius: 8px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
 }
 .search-field input { min-height: 48px; padding-inline: 14px; }
 .field { display: grid; gap: 7px; min-width: 0; font-size: 0.92rem; font-weight: 650; }
@@ -329,11 +336,14 @@ h1 { margin: 0; color: var(--color-text-primary); font-size: var(--font-size-pag
   gap: 18px;
 }
 .form-card {
-  padding: 24px;
+  padding: clamp(20px, 4vw, 30px);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
 }
+.student-form { max-width: 680px; }
+.class-form { max-width: 760px; }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .form-grid-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .form-actions { display: flex; justify-content: flex-end; }
@@ -342,10 +352,10 @@ h1 { margin: 0; color: var(--color-text-primary); font-size: var(--font-size-pag
 .horizontal-form { grid-template-columns: minmax(0, 1fr) auto; align-items: end; margin-bottom: 22px; }
 .grow-field { min-width: 0; }
 
-.record-list { display: grid; gap: 10px; }
+.record-list { display: grid; gap: var(--space-3); }
 .record-card {
-  min-height: 76px;
-  padding: 16px 18px;
+  min-height: 78px;
+  padding: 17px 19px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -353,14 +363,18 @@ h1 { margin: 0; color: var(--color-text-primary); font-size: var(--font-size-pag
   color: inherit;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
   text-decoration: none;
 }
-a.record-card:hover { border-color: #a9bfee; background: #fbfdff; }
+a.record-card:hover { border-color: color-mix(in srgb, var(--color-navy) 34%, var(--color-border)); background: var(--color-surface-hover); box-shadow: var(--shadow-card-hover); }
 .static-card { cursor: default; }
 .record-main { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
 .record-meta { color: var(--muted); font-size: 0.88rem; line-height: 1.4; }
 .chevron { color: #8993a4; font-size: 1.6rem; line-height: 1; }
+.record-chevron { flex: 0 0 auto; color: var(--color-text-tertiary); }
+.record-card-end { flex: 0 0 auto; display: inline-flex; align-items: center; gap: var(--space-3); }
+.student-list-card { min-height: 82px; }
 .enrollment-card { align-items: center; }
 .class-card { align-items: flex-start; }
 .class-summary { display: flex; flex-wrap: wrap; gap: 4px 12px; color: #394357; font-size: 0.9rem; line-height: 1.4; }
@@ -389,9 +403,12 @@ a.record-card:hover { border-color: #a9bfee; background: #fbfdff; }
 .details-card dd { margin: 0; font-weight: 600; }
 .details-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .details-grid > div { display: grid; grid-template-columns: 105px 1fr; }
+.student-profile-card { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.student-profile-card > div { display: grid; grid-template-columns: 105px 1fr; }
 
-.content-section { margin-top: 32px; }
-.content-section h2 { margin: 0 0 14px; font-size: 1.12rem; }
+.content-section { margin-top: 38px; }
+.content-section h2 { margin: 0 0 var(--space-4); font-size: var(--font-size-section-title); line-height: 1.3; }
+.section-count { margin-left: 5px; color: var(--color-text-secondary); font-size: 0.82rem; font-weight: var(--font-weight-medium); }
 .action-panel,
 .history-panel,
 .danger-panel,
@@ -415,6 +432,8 @@ a.record-card:hover { border-color: #a9bfee; background: #fbfdff; }
 .action-card[open] > summary { margin-bottom: 16px; }
 .danger-panel { margin-top: 36px; border-color: #f2c7c4; }
 .danger-panel > summary { color: var(--danger); }
+.danger-action-card { border-color: #edc5c8; background: color-mix(in srgb, var(--color-danger-bg) 42%, var(--color-surface)); }
+.danger-action-card h3 { color: var(--color-danger); }
 .impact-notice { padding: 11px 13px; color: #7a271a; background: #fff4f2; border-radius: 8px; line-height: 1.5; }
 .history-panel .record-list { margin-top: 14px; }
 .action-stack { display: grid; gap: 12px; }
@@ -425,28 +444,43 @@ a.record-card:hover { border-color: #a9bfee; background: #fbfdff; }
 .detail-title-row h2 { margin: 4px 0 0; font-size: 1.3rem; }
 .compact-title-row { align-items: flex-start; }
 .eyebrow { margin: 0; color: var(--muted); font-size: 0.85rem; font-weight: 650; }
-.future-links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.future-links { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .future-links > span,
-.future-links > button { padding: 14px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; background: #f1f3f6; border: 0; border-radius: 8px; color: #667085; font: inherit; font-weight: 650; text-align: left; }
+.future-links > button { min-height: 42px; padding: 9px 16px; display: inline-flex; align-items: center; background: var(--color-surface-soft); border: 1px solid var(--color-border); border-radius: var(--radius-round); color: var(--color-text-secondary); font: inherit; font-weight: 650; }
 .future-links > button { color: var(--blue-dark); background: var(--blue-soft); cursor: pointer; }
-.future-links small { font-weight: 500; }
 
 .inline-action-form { display: grid; gap: 10px; }
 .inline-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .inline-edit-form { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; }
+.subject-create-form { max-width: 680px; padding: var(--space-5); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); box-shadow: var(--shadow-card); }
+.subject-row { min-height: 70px; }
+.subject-row > strong { font-size: 1.02rem; }
 .class-student-row { align-items: flex-start; }
 .identity-link { min-width: 0; flex: 1; color: inherit; text-decoration: none; }
 .identity-link:hover strong { color: var(--blue-dark); }
 .embedded-results { margin-top: -8px; }
 .search-result-action { justify-content: space-between; gap: 14px; }
+.add-student-form { max-width: 680px; }
+.enrollment-form { max-width: 620px; }
+
+.list-control-bar {
+  margin-bottom: var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.inline-management-link { color: var(--color-navy); font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); text-decoration: none; }
+.inline-management-link:hover { text-decoration: underline; }
 
 .segmented-control {
   width: fit-content;
-  margin-bottom: 20px;
+  margin-bottom: 0;
   padding: 3px;
   display: flex;
-  background: #e9ecf1;
-  border-radius: 9px;
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
 }
 .segmented-control button {
   min-height: 38px;
@@ -457,7 +491,7 @@ a.record-card:hover { border-color: #a9bfee; background: #fbfdff; }
   border-radius: 7px;
   cursor: pointer;
 }
-.segmented-control button.active { color: #172033; background: #fff; font-weight: 700; }
+.segmented-control button.active { color: var(--color-text-primary); background: #fff; font-weight: 700; box-shadow: 0 1px 3px rgb(16 39 67 / 10%); }
 
 .schedule-section { padding-top: 2px; }
 .schedule-rule-card { margin-bottom: 0; }
@@ -479,7 +513,8 @@ a.record-card:hover { border-color: #a9bfee; background: #fbfdff; }
   padding: 16px 18px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
 }
 .course-summary-card { margin-bottom: 14px; }
 .course-summary-card dd { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
@@ -568,7 +603,8 @@ a.record-card:hover { border-color: #a9bfee; background: #fbfdff; }
   gap: 18px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 11px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
 }
 .attendance-student-main { min-width: 0; display: grid; gap: 5px; }
 .attendance-student-main > span:not(.attendance-label) { color: var(--muted); font-size: 0.88rem; }
@@ -1049,15 +1085,17 @@ label.receipt-row { cursor: pointer; }
   .home-grid-management .home-entry { min-height: 88px; padding: 14px; }
   .login-page { padding: 12px; align-items: center; }
   .login-card { padding: 26px 20px; border-radius: 12px; }
-  .page-header { min-height: 0; align-items: flex-start; }
+  .page-header { min-height: 0; margin-bottom: var(--space-6); align-items: flex-start; }
   .page-actions .button { min-height: 40px; padding-inline: 12px; }
   .form-card { padding: 18px; }
-  .form-grid, .form-grid-three, .details-grid { grid-template-columns: 1fr; }
+  .form-grid, .form-grid-three, .details-grid, .student-profile-card { grid-template-columns: 1fr; }
   .details-card > div, .details-grid > div { grid-template-columns: 105px 1fr; }
   .record-card { padding: 14px; }
+  .record-card-end { gap: var(--space-2); }
+  .list-control-bar { align-items: flex-start; flex-direction: column-reverse; }
+  .subject-create-form { padding: var(--space-4); }
   .class-student-row { flex-direction: column; align-items: stretch; }
   .class-student-row .inline-action-form { width: 100%; }
-  .future-links { grid-template-columns: 1fr; }
   .horizontal-form { grid-template-columns: 1fr; align-items: stretch; }
   .inline-edit-form { grid-template-columns: 1fr auto auto; }
   .search-result-action { align-items: center; }

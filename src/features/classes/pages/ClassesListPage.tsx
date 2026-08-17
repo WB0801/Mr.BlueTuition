@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
+import { Icon } from '../../../components/ui'
 import type { ClassStatus } from '../../../types/domain'
 import { formatDate } from '../../../utils/format'
 import { listClasses } from '../api/classesService'
@@ -16,18 +17,18 @@ export function ClassesListPage() {
   })
 
   return (
-    <section>
+    <section className="management-page classes-list-page">
       <PageHeader
         title="班级"
         backLabel="首页"
         actions={<Link className="button button-primary" to="/classes/new">新增班级</Link>}
       />
-      <div className="secondary-actions">
-        <Link to="/classes/subjects">管理科目</Link>
-      </div>
-      <div className="segmented-control" aria-label="班级状态">
-        <button type="button" className={status === 'active' ? 'active' : ''} onClick={() => setStatus('active')}>进行中</button>
-        <button type="button" className={status === 'ended' ? 'active' : ''} onClick={() => setStatus('ended')}>已结束</button>
+      <div className="list-control-bar">
+        <div className="segmented-control" aria-label="班级状态">
+          <button type="button" className={status === 'active' ? 'active' : ''} onClick={() => setStatus('active')}>进行中</button>
+          <button type="button" className={status === 'ended' ? 'active' : ''} onClick={() => setStatus('ended')}>已结束</button>
+        </div>
+        <Link className="inline-management-link" to="/classes/subjects">管理科目</Link>
       </div>
 
       {classes.isLoading && <LoadingBlock />}
@@ -42,7 +43,7 @@ export function ClassesListPage() {
               <ClassScheduleSummary tuitionClass={item} />
               {item.status === 'ended' && <span className="record-meta">结束于 {formatDate(item.end_date)}</span>}
             </span>
-            <span className="chevron" aria-hidden="true">›</span>
+            <Icon className="record-chevron" name="chevron-right" size={20} />
           </Link>
         ))}
       </div>

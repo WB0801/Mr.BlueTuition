@@ -63,7 +63,7 @@ export function ClassFormPage() {
     : newClassDefaults
 
   return (
-    <section>
+    <section className="management-page form-page">
       <PageHeader
         title={isEditing ? '编辑班级' : '新增班级'}
         backTo={isEditing ? `/classes/${classId}` : '/classes'}

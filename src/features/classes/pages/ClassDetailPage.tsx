@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { StatusBadge } from '../../../components/shared/StatusBadge'
+import { Icon } from '../../../components/ui'
 import { getErrorMessage } from '../../../utils/errors'
 import { formatDate, formatMoney, todayInMalaysia } from '../../../utils/format'
 import { listClassEnrollments } from '../../enrollments/api/enrollmentsService'
@@ -53,7 +54,7 @@ export function ClassDetailPage() {
   }
 
   return (
-    <section>
+    <section className="management-page detail-page class-detail-page">
       <PageHeader
         title={data.name}
         backTo="/classes"
@@ -76,7 +77,7 @@ export function ClassDetailPage() {
 
       <ClassFixedScheduleSection tuitionClass={data} />
 
-      <section className="content-section">
+      <section className="content-section entity-section">
         <div className="section-heading-row">
           <h2>当前学生 {current.length} 人</h2>
           {data.status === 'active' && (
@@ -120,7 +121,7 @@ export function ClassDetailPage() {
                   <StudentIdentity student={item.student} />
                   <span className="record-meta">{formatDate(item.join_date)} – {formatDate(item.end_date)}</span>
                 </span>
-                <span className="chevron" aria-hidden="true">›</span>
+                <Icon className="record-chevron" name="chevron-right" size={20} />
               </Link>
             ))}
           </div>

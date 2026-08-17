@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
+import { Icon, SearchInput } from '../../../components/ui'
 import { listStudents } from '../api/studentsService'
 import { StudentIdentity } from '../components/StudentIdentity'
 
@@ -15,22 +16,20 @@ export function StudentListPage() {
   })
 
   return (
-    <section>
+    <section className="management-page student-list-page">
       <PageHeader
         title="学生"
         backLabel="首页"
         actions={<Link className="button button-primary" to="/students/new">新增学生</Link>}
       />
 
-      <label className="search-field">
-        <span className="sr-only">搜索学生姓名</span>
-        <input
-          type="search"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="输入姓名搜索"
-        />
-      </label>
+      <SearchInput
+        aria-label="搜索学生姓名"
+        containerClassName="list-search"
+        placeholder="搜索学生姓名……"
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+      />
 
       {students.isLoading && <LoadingBlock />}
       {students.isError && <ErrorBlock />}
@@ -39,9 +38,9 @@ export function StudentListPage() {
       )}
       <div className="record-list">
         {students.data?.map((student) => (
-          <Link className="record-card" to={`/students/${student.id}`} key={student.id}>
+          <Link className="record-card student-list-card" to={`/students/${student.id}`} key={student.id}>
             <StudentIdentity student={student} />
-            <span className="chevron" aria-hidden="true">›</span>
+            <Icon className="record-chevron" name="chevron-right" size={20} />
           </Link>
         ))}
       </div>

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { StatusBadge } from '../../../components/shared/StatusBadge'
+import { Icon } from '../../../components/ui'
 import type { EnrollmentWithClass } from '../../../types/domain'
 import { formatDate } from '../../../utils/format'
 
@@ -20,7 +21,10 @@ export function EnrollmentCard({ enrollment }: EnrollmentCardProps) {
           {enrollment.end_date ? ` – ${formatDate(enrollment.end_date)}` : ' 加入'}
         </span>
       </span>
-      <StatusBadge status={enrollment.status} />
+      <span className="record-card-end">
+        <StatusBadge status={enrollment.status} />
+        <Icon className="record-chevron" name="chevron-right" size={20} />
+      </span>
     </Link>
   )
 }

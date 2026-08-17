@@ -48,9 +48,9 @@ export function SubjectsPage() {
   }
 
   return (
-    <section>
+    <section className="management-page subjects-page">
       <PageHeader title="科目" backTo="/classes" backLabel="班级" />
-      <form className="compact-form horizontal-form" onSubmit={handleCreate}>
+      <form className="compact-form horizontal-form subject-create-form" onSubmit={handleCreate}>
         <label className="field grow-field">
           <span>新增科目</span>
           <input value={newName} onChange={(event) => setNewName(event.target.value)} required maxLength={80} placeholder="例如：会计学" />
@@ -63,7 +63,7 @@ export function SubjectsPage() {
       {subjects.data?.length === 0 && <EmptyBlock message="还没有科目。" />}
       <div className="record-list">
         {subjects.data?.map((subject) => (
-          <div className="record-card static-card" key={subject.id}>
+          <div className="record-card static-card subject-row" key={subject.id}>
             {editingId === subject.id ? (
               <form className="inline-edit-form" onSubmit={handleUpdate}>
                 <input value={editingName} onChange={(event) => setEditingName(event.target.value)} required maxLength={80} autoFocus />

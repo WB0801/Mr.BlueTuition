@@ -24,7 +24,7 @@ export function StudentForm({ initialValue = emptyStudent, submitLabel, isSubmit
   }
 
   return (
-    <form className="form-card" onSubmit={handleSubmit}>
+    <form className="form-card student-form" onSubmit={handleSubmit}>
       <label className="field">
         <span>姓名</span>
         <input
