@@ -3,8 +3,10 @@ import { Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../features/auth/authContext'
 import { PwaUpdatePrompt } from '../../features/settings/pwa/PwaUpdatePrompt'
 import { AppHeader } from './AppHeader'
+import { useContextScrollRestoration } from '../navigation/useContextScrollRestoration'
 
 export function AppLayout() {
+  useContextScrollRestoration()
   const { signOut } = useAuth()
   const navigate = useNavigate()
   const [isSigningOut, setIsSigningOut] = useState(false)

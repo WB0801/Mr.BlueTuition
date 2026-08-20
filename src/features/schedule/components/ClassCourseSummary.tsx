@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { formatDateTime } from '../../../utils/format'
 import { listClassSessions } from '../api/scheduleService'
@@ -41,7 +41,7 @@ export function ClassCourseSummary({ classId }: ClassCourseSummaryProps) {
           <div><dt>未来已安排</dt><dd>{future.length} 堂</dd></div>
         </dl>
       )}
-      <Link className="button button-secondary" to={`/classes/${classId}/sessions`}>查看全部课程</Link>
+      <ContextLink backLabel="班级" className="button button-secondary" to={`/classes/${classId}/sessions`}>查看全部课程</ContextLink>
     </section>
   )
 }

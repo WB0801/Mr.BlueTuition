@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
+import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { StatusBadge } from '../../../components/shared/StatusBadge'
@@ -56,7 +57,7 @@ export function ClassDetailPage() {
 
   return (
     <section className="management-page detail-page class-detail-page">
-      <PageHeader title={data.name} backTo="/classes" backLabel="班级列表" />
+      <PageHeader title={data.name} backTo="/classes" backLabel="班级" />
       <div className="detail-title-row compact-title-row">
         <p className="eyebrow">{data.subject?.name}</p>
         <StatusBadge status={data.status} />
@@ -70,10 +71,10 @@ export function ClassDetailPage() {
       </dl>
 
       <nav className="related-nav" aria-label="班级相关资料">
-        <Link to={`/classes/${classId}/sessions`}>课程</Link>
-        <Link to="/attendance">点名</Link>
-        <Link to={`/fees?classId=${classId}`}>学费</Link>
-        <Link to="/grades/quizzes">小测与成绩</Link>
+        <ContextLink backLabel="班级" to={`/classes/${classId}/sessions`}>课程</ContextLink>
+        <ContextLink backLabel="班级" to="/attendance">点名</ContextLink>
+        <ContextLink backLabel="班级" to={`/fees?classId=${classId}`}>学费</ContextLink>
+        <ContextLink backLabel="班级" to="/grades/quizzes">小测与成绩</ContextLink>
       </nav>
 
       <section className="content-section entity-section class-students-section">
@@ -96,9 +97,9 @@ export function ClassDetailPage() {
         <div className="compact-data-list">
           {current.map((item) => item.student && (
             <div className="compact-data-row class-student-row" key={item.id}>
-              <Link className="identity-link" to={`/students/${item.student.id}`}>
+              <ContextLink backLabel="班级" className="identity-link" to={`/students/${item.student.id}`}>
                 <StudentIdentity student={item.student} />
-              </Link>
+              </ContextLink>
               <EndEnrollmentAction enrollmentId={item.id} studentName={item.student.name} />
             </div>
           ))}
@@ -110,13 +111,13 @@ export function ClassDetailPage() {
           <summary>历史报读（{history.length}）</summary>
           <div className="compact-data-list">
             {history.map((item) => item.student && (
-              <Link className="compact-data-row compact-data-link" to={`/students/${item.student.id}/enrollments/${item.id}`} key={item.id}>
+              <ContextLink backLabel="班级" className="compact-data-row compact-data-link" to={`/students/${item.student.id}/enrollments/${item.id}`} key={item.id}>
                 <span className="record-main">
                   <StudentIdentity student={item.student} />
                   <span className="record-meta">{formatDate(item.join_date)} – {formatDate(item.end_date)}</span>
                 </span>
                 <Icon className="record-chevron" name="chevron-right" size={20} />
-              </Link>
+              </ContextLink>
             ))}
           </div>
         </details>
@@ -127,7 +128,7 @@ export function ClassDetailPage() {
       <details className="management-panel">
         <summary>班级管理</summary>
         <div className="management-links">
-          <Link className="button button-secondary" to={`/classes/${classId}/edit`}>编辑班级资料</Link>
+          <ContextLink backLabel="班级" className="button button-secondary" to={`/classes/${classId}/edit`}>编辑班级资料</ContextLink>
         </div>
         <ClassFixedScheduleSection tuitionClass={data} />
         <ClassScheduleHistory tuitionClass={data} />

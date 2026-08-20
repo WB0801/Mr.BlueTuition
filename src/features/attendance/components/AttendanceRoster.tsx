@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { ContextLink } from '../../../components/navigation/ContextLink'
 import type { ClassSessionWithClass, SessionRosterEntry } from '../../../types/domain'
 import { formatDateTime, toMalaysiaDateInput, todayInMalaysia } from '../../../utils/format'
 
@@ -32,7 +32,7 @@ export function AttendanceRoster({ session, entries }: AttendanceRosterProps) {
         return (
           <article className={`attendance-student-card ${hasAttendance ? 'is-signed' : 'is-unsigned'}`} key={`${entry.student_id}-${entry.participation_type}`}>
             <div className="attendance-student-main">
-              <Link className="attendance-student-link" to={`/students/${entry.student_id}`}>{entry.student_name}</Link>
+              <ContextLink backLabel="课程" className="attendance-student-link" to={`/students/${entry.student_id}`}>{entry.student_name}</ContextLink>
               <span>{[entry.school_class, entry.phone].filter(Boolean).join(' · ') || '未填写学校班级与电话'}</span>
               <div className="session-labels">
                 {participationLabels[entry.participation_type] && (
@@ -57,21 +57,23 @@ export function AttendanceRoster({ session, entries }: AttendanceRosterProps) {
               )}
             </div>
             {hasAttendance ? (
-              <Link
+              <ContextLink
+                backLabel="课程"
                 className="button button-secondary button-small"
                 to={`/attendance/session/${session.id}/record/${entry.attendance_record_id}`}
               >
                 查看签名
-              </Link>
+              </ContextLink>
             ) : isFuture ? (
               <span className="future-attendance-note">尚未到课程日期</span>
             ) : (
-              <Link
+              <ContextLink
+                backLabel="课程"
                 className="button button-primary attendance-sign-button"
                 to={`/attendance/session/${session.id}/sign/${entry.student_id}`}
               >
                 {sessionDate < todayInMalaysia() ? '补签' : '签名签到'}
-              </Link>
+              </ContextLink>
             )}
           </article>
         )

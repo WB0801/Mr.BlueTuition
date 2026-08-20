@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useLocation, useParams } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
+import { ContextLink } from '../../../components/navigation/ContextLink'
 import { ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { getErrorMessage } from '../../../utils/errors'
@@ -66,7 +67,7 @@ export function SessionDetailPage() {
 
   return (
     <section className="session-detail-page">
-      <PageHeader title={className} backTo="/attendance" backLabel="点名" />
+      <PageHeader title={className} backTo="/attendance" backLabel="课程" />
       <div className="detail-title-row compact-title-row">
         <p className="eyebrow">{subjectName}</p>
         <span className={`session-status status-${data.status}`}>{statusLabels[data.status]}</span>
@@ -81,10 +82,10 @@ export function SessionDetailPage() {
         {wasRescheduled && <div><dt>原定时间</dt><dd>{formatSessionTimeRange(data.original_start_at, data.original_end_at)}</dd></div>}
       </dl>
       <nav className="related-nav" aria-label="课程相关资料">
-        <Link to="/attendance">今天其他课程</Link>
-        {data.class && <Link to={`/classes/${data.class.id}`}>班级详情</Link>}
-        {data.class && <Link to={`/classes/${data.class.id}/sessions`}>本班课程</Link>}
-        {data.temporary_class && <Link to={`/temporary-classes/${data.temporary_class.id}`}>临时班详情</Link>}
+        <ContextLink backLabel="课程" to="/attendance">今天其他课程</ContextLink>
+        {data.class && <ContextLink backLabel="课程" to={`/classes/${data.class.id}`}>班级详情</ContextLink>}
+        {data.class && <ContextLink backLabel="课程" to={`/classes/${data.class.id}/sessions`}>本班课程</ContextLink>}
+        {data.temporary_class && <ContextLink backLabel="课程" to={`/temporary-classes/${data.temporary_class.id}`}>临时班详情</ContextLink>}
       </nav>
 
       <section className="content-section attendance-section">

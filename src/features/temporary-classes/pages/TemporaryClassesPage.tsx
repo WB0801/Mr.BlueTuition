@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { StatusBadge } from '../../../components/shared/StatusBadge'
@@ -12,7 +12,7 @@ export function TemporaryClassesPage() {
 
   return (
     <section>
-      <PageHeader title="临时班" actions={<Link className="button button-primary" to="/temporary-classes/new">建立临时班</Link>} />
+      <PageHeader title="临时班" actions={<ContextLink backLabel="临时班" className="button button-primary" to="/temporary-classes/new">建立临时班</ContextLink>} />
       <section className="content-section">
         <h2>进行中</h2>
         {active.isLoading && <LoadingBlock />}
@@ -38,7 +38,7 @@ export function TemporaryClassesPage() {
 
 function TemporaryClassCard({ item }: { item: Awaited<ReturnType<typeof listTemporaryClasses>>[number] }) {
   return (
-    <Link className="record-card temporary-class-card" to={`/temporary-classes/${item.id}`}>
+    <ContextLink backLabel="临时班" className="record-card temporary-class-card" to={`/temporary-classes/${item.id}`}>
       <span className="record-main">
         <strong>{item.name}</strong>
         <span>{formatSessionTimeRange(item.start_at, item.end_at)}</span>
@@ -46,6 +46,6 @@ function TemporaryClassCard({ item }: { item: Awaited<ReturnType<typeof listTemp
       </span>
       <StatusBadge status={item.status} />
       <span className="chevron" aria-hidden="true">›</span>
-    </Link>
+    </ContextLink>
   )
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
+import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { StatusBadge } from '../../../components/shared/StatusBadge'
@@ -64,7 +65,7 @@ export function TemporaryClassDetailPage() {
 
   return (
     <section>
-      <PageHeader title={data.name} backTo="/temporary-classes" backLabel="临时班" actions={isActive ? <Link className="button button-secondary" to={`/temporary-classes/${data.id}/edit`}>编辑临时班</Link> : undefined} />
+      <PageHeader title={data.name} backTo="/temporary-classes" backLabel="临时班" actions={isActive ? <ContextLink backLabel="临时班" className="button button-secondary" to={`/temporary-classes/${data.id}/edit`}>编辑临时班</ContextLink> : undefined} />
       <div className="detail-title-row compact-title-row">
         <p className="eyebrow">{data.subject?.name}</p>
         <StatusBadge status={data.status} />
@@ -78,8 +79,8 @@ export function TemporaryClassDetailPage() {
       </dl>
 
       <nav className="related-nav" aria-label="临时班相关资料">
-        <Link to={`/attendance/session/${session.data.id}`}>点名与签名</Link>
-        <Link to="/fees/receipts">收据</Link>
+        <ContextLink backLabel="临时班" to={`/attendance/session/${session.data.id}`}>点名与签名</ContextLink>
+        <ContextLink backLabel="临时班" to="/fees/receipts">收据</ContextLink>
       </nav>
 
       <section className="content-section">
@@ -100,7 +101,7 @@ export function TemporaryClassDetailPage() {
           <span>{sessionStatusLabels[session.data.status]} · 已签到 {signedCount} / {enrollments.data?.length ?? 0}</span>
         </div>
         {roster.isError && <ErrorBlock message="签到摘要载入失败。" />}
-        <Link className="button button-primary" to={`/attendance/session/${session.data.id}`}>进入点名</Link>
+        <ContextLink backLabel="临时班" className="button button-primary" to={`/attendance/session/${session.data.id}`}>进入点名</ContextLink>
       </section>
 
       {isActive && (

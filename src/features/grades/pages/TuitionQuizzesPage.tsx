@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
+import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { formatDate } from '../../../utils/format'
@@ -26,7 +27,7 @@ export function TuitionQuizzesPage() {
         title="补习班小测"
         backTo="/grades"
         backLabel="成绩"
-        actions={selectedClassId ? <Link className="button button-primary" to={`/grades/quizzes/new?classId=${selectedClassId}`}>＋ 新增小测</Link> : undefined}
+        actions={selectedClassId ? <ContextLink backLabel="补习班小测" className="button button-primary" to={`/grades/quizzes/new?classId=${selectedClassId}`}>＋ 新增小测</ContextLink> : undefined}
       />
       {classes.isLoading && <LoadingBlock />}
       {classes.isError && <ErrorBlock message="班级载入失败。" />}
@@ -46,13 +47,13 @@ export function TuitionQuizzesPage() {
       {!quizzes.isLoading && quizzes.data?.length === 0 && <EmptyBlock message="这个班级还没有小测。" />}
       <div className="record-list">
         {quizzes.data?.map((quiz) => (
-          <Link className="record-card" to={`/grades/quizzes/${quiz.id}`} key={quiz.id}>
+          <ContextLink backLabel="成绩" className="record-card" to={`/grades/quizzes/${quiz.id}`} key={quiz.id}>
             <span className="record-main">
               <strong>{quiz.name}</strong>
               <span className="record-meta">{formatDate(quiz.quiz_date)} · 满分 {quiz.max_score}</span>
             </span>
             <span className="chevron" aria-hidden="true">›</span>
-          </Link>
+          </ContextLink>
         ))}
       </div>
     </section>

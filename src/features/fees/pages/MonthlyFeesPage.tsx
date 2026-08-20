@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
@@ -22,11 +22,17 @@ const titles: Record<FeesView, string> = {
 }
 
 export function MonthlyFeesPage({ view }: MonthlyFeesPageProps) {
-  const [searchParams] = useSearchParams()
-  const [monthInput, setMonthInput] = useState(currentMonthInMalaysia().slice(0, 7))
-  const [classId, setClassId] = useState(searchParams.get('classId') ?? '')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const monthInput = searchParams.get('month') ?? currentMonthInMalaysia().slice(0, 7)
+  const classId = searchParams.get('classId') ?? ''
   const studentId = searchParams.get('studentId') ?? ''
-  const [search, setSearch] = useState('')
+  const search = searchParams.get('q') ?? ''
+  const updateFilter = (key: 'month' | 'classId' | 'q', value: string) => {
+    const next = new URLSearchParams(searchParams)
+    if (value) next.set(key, value)
+    else next.delete(key)
+    setSearchParams(next, { replace: true })
+  }
   const feeMonth = normalizeMonthInput(monthInput)
   const ensure = useQuery({
     queryKey: ['monthly-fees', 'ensure', feeMonth],
@@ -68,18 +74,18 @@ export function MonthlyFeesPage({ view }: MonthlyFeesPageProps) {
       <div className="fees-filters">
         <label className="field">
           <span>月份</span>
-          <input type="month" max={currentMonthInMalaysia().slice(0, 7)} value={monthInput} onChange={(event) => setMonthInput(event.target.value)} />
+          <input type="month" max={currentMonthInMalaysia().slice(0, 7)} value={monthInput} onChange={(event) => updateFilter('month', event.target.value)} />
         </label>
         <label className="field">
           <span>班级</span>
-          <select value={classId} onChange={(event) => setClassId(event.target.value)}>
+          <select value={classId} onChange={(event) => updateFilter('classId', event.target.value)}>
             <option value="">全部班级</option>
             {(classes.data ?? []).map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}
           </select>
         </label>
         <label className="field fees-search-field">
           <span>搜索学生</span>
-          <input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="输入姓名" />
+          <input type="search" value={search} onChange={(event) => updateFilter('q', event.target.value)} placeholder="输入姓名" />
         </label>
       </div>
 

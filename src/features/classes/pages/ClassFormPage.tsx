@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
+import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import type { ClassInput } from '../../../types/domain'
@@ -72,7 +73,7 @@ export function ClassFormPage() {
       {subjects.data?.length === 0 ? (
         <div>
           <EmptyBlock message="请先新增至少一个科目。" />
-          <Link className="button button-primary" to="/classes/subjects">管理科目</Link>
+          <ContextLink backLabel="班级" className="button button-primary" to="/classes/subjects">管理科目</ContextLink>
         </div>
       ) : (
         <ClassForm

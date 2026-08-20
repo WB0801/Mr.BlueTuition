@@ -1,6 +1,7 @@
 import { useDeferredValue, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
+import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { Icon, SearchInput } from '../../../components/ui'
@@ -20,7 +21,7 @@ export function StudentListPage() {
     <section className="management-page student-list-page">
       <PageHeader
         title="学生"
-        actions={<Link className="button button-primary" to="/students/new">新增学生</Link>}
+        actions={<ContextLink backLabel="学生" className="button button-primary" to="/students/new">新增学生</ContextLink>}
       />
 
       <SearchInput
@@ -42,10 +43,10 @@ export function StudentListPage() {
       )}
       <div className="record-list">
         {students.data?.map((student) => (
-          <Link className="record-card student-list-card" to={`/students/${student.id}`} key={student.id}>
+          <ContextLink backLabel="学生" className="record-card student-list-card" to={`/students/${student.id}`} key={student.id}>
             <StudentIdentity student={student} />
             <Icon className="record-chevron" name="chevron-right" size={20} />
-          </Link>
+          </ContextLink>
         ))}
       </div>
     </section>

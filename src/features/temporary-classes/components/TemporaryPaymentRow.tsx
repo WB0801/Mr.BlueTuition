@@ -4,6 +4,7 @@ import type { TemporaryClassEnrollment } from '../../../types/domain'
 import { formatMalaysiaDateTime, formatMoney } from '../../../utils/format'
 import { getErrorMessage } from '../../../utils/errors'
 import { StudentIdentity } from '../../students/components/StudentIdentity'
+import { ContextLink } from '../../../components/navigation/ContextLink'
 import { markTemporaryClassPaymentPaid, undoTemporaryClassPayment } from '../api/temporaryClassesService'
 
 export function TemporaryPaymentRow({ enrollment, allowActions }: { enrollment: TemporaryClassEnrollment; allowActions: boolean }) {
@@ -35,7 +36,9 @@ export function TemporaryPaymentRow({ enrollment, allowActions }: { enrollment: 
 
   return (
     <article className="temporary-enrollment-row">
-      <StudentIdentity student={enrollment.student} />
+      <ContextLink backLabel="临时班" className="identity-link" to={`/students/${enrollment.student.id}`}>
+        <StudentIdentity student={enrollment.student} />
+      </ContextLink>
       <div className="temporary-payment-summary">
         <strong>{formatMoney(payment.amount)}</strong>
         <span>{payment.payment_status === 'paid' ? `已缴${receiptLabel ? ` · ${receiptLabel}` : ''}` : '未缴'}</span>

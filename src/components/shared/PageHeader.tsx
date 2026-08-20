@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
-import { Icon } from '../ui'
+import { ContextBackLink } from '../navigation/ContextBackLink'
 
 interface PageHeaderProps {
   title: string
@@ -13,7 +12,7 @@ export function PageHeader({ title, backTo, backLabel = '返回', actions }: Pag
   return (
     <header className="page-header">
       <div>
-        {backTo && <Link className="back-link" to={backTo}><Icon name="arrow-left" size={18} />{backLabel}</Link>}
+        <ContextBackLink fallbackTo={backTo} fallbackLabel={backLabel === '返回' ? undefined : backLabel} />
         <h1>{title}</h1>
       </div>
       {actions && <div className="page-actions">{actions}</div>}

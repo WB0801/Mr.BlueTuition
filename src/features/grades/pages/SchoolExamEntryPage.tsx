@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
+import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { formatDate } from '../../../utils/format'
@@ -30,7 +31,7 @@ export function SchoolExamEntryPage() {
     <section>
       <PageHeader title={exam.data.name} backTo={`/grades/school/${examId}`} backLabel="考试详情" />
       <p className="grade-context">{formatDate(exam.data.exam_date)} · {exam.data.subject?.name} · 满分 {exam.data.max_score}</p>
-      <h2 className="grade-entry-class-title"><Link to={`/classes/${classId}`}>{tuitionClass.data.name}</Link></h2>
+      <h2 className="grade-entry-class-title"><ContextLink backLabel="成绩" to={`/classes/${classId}`}>{tuitionClass.data.name}</ContextLink></h2>
       {roster.data?.length === 0 ? <EmptyBlock message="这个班级目前没有可录入该科目成绩的学生。" /> : (
         <GradeEntryTable
           key={`${examId}-${classId}`}

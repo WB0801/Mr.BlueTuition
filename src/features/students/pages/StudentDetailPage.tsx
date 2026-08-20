@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
+import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { listClasses } from '../../classes/api/classesService'
@@ -30,8 +31,8 @@ export function StudentDetailPage() {
       <PageHeader
         title={student.data.name}
         backTo="/students"
-        backLabel="学生列表"
-        actions={<Link className="button button-secondary" to={`/students/${studentId}/edit`}>编辑学生</Link>}
+        backLabel="学生"
+        actions={<ContextLink backLabel="学生" className="button button-secondary" to={`/students/${studentId}/edit`}>编辑学生</ContextLink>}
       />
 
       <dl className="details-card student-profile-card">
@@ -41,7 +42,7 @@ export function StudentDetailPage() {
 
       <nav className="related-nav" aria-label="学生相关资料">
         <a href="#current-enrollments">当前报读</a>
-        <Link to={`/fees?studentId=${studentId}`}>学费</Link>
+        <ContextLink backLabel="学生" to={`/fees?studentId=${studentId}`}>学费</ContextLink>
         <a href="#student-grades">考试与成绩</a>
         <a href="#student-history">历史报读</a>
       </nav>

@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { ContextLink } from '../../../components/navigation/ContextLink'
 import type { ClassSessionWithClass } from '../../../types/domain'
 import { formatDateTime } from '../../../utils/format'
 
@@ -15,7 +15,7 @@ const statusLabels = {
 
 export function SessionCard({ session, showClass = false, attendanceSummary }: SessionCardProps) {
   return (
-    <Link className={`record-card session-card ${session.status === 'cancelled' ? 'cancelled-session' : ''}`} to={`/attendance/session/${session.id}`}>
+    <ContextLink backLabel="课程" className={`record-card session-card ${session.status === 'cancelled' ? 'cancelled-session' : ''}`} to={`/attendance/session/${session.id}`}>
       <span className="record-main">
         {showClass && <strong>{session.class?.name ?? session.temporary_class?.name ?? '未知班级'}</strong>}
         {showClass && <span className="record-meta">{session.class?.subject?.name ?? session.temporary_class?.subject?.name}</span>}
@@ -28,6 +28,6 @@ export function SessionCard({ session, showClass = false, attendanceSummary }: S
         </span>
       </span>
       <span className="chevron" aria-hidden="true">›</span>
-    </Link>
+    </ContextLink>
   )
 }

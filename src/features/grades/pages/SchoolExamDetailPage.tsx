@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
+import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { getErrorMessage } from '../../../utils/errors'
@@ -70,13 +71,13 @@ export function SchoolExamDetailPage() {
             const classRoster = roster.data?.filter((row) => row.class_id === tuitionClass.id) ?? []
             const recorded = classRoster.filter((row) => scoreMap.has(row.student_id)).length
             return (
-              <Link className="record-card" to={`/grades/school/${examId}/classes/${tuitionClass.id}`} key={tuitionClass.id}>
+              <ContextLink backLabel="成绩" className="record-card" to={`/grades/school/${examId}/classes/${tuitionClass.id}`} key={tuitionClass.id}>
                 <span className="record-main">
                   <strong>{tuitionClass.name}</strong>
                   <span className="record-meta">已录 {recorded} / {classRoster.length}</span>
                 </span>
                 <span className="chevron" aria-hidden="true">›</span>
-              </Link>
+              </ContextLink>
             )
           })}
         </div>

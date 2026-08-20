@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { formatMoney, formatSessionTimeRange } from '../../../utils/format'
 import { listStudentTemporaryClasses } from '../api/temporaryClassesService'
@@ -18,7 +18,7 @@ export function StudentTemporaryClassesSection({ studentId }: { studentId: strin
       {!participations.isLoading && participations.data?.length === 0 && <EmptyBlock message="还没有参加过临时班。" />}
       <div className="record-list">
         {participations.data?.map((item) => item.temporary_class && (
-          <Link className="record-card student-temporary-class-card" to={`/temporary-classes/${item.temporary_class.id}`} key={item.id}>
+          <ContextLink backLabel="学生" className="record-card student-temporary-class-card" to={`/temporary-classes/${item.temporary_class.id}`} key={item.id}>
             <span className="record-main">
               <strong>{item.temporary_class.name}</strong>
               <span>{formatSessionTimeRange(item.temporary_class.start_at, item.temporary_class.end_at)}</span>
@@ -28,7 +28,7 @@ export function StudentTemporaryClassesSection({ studentId }: { studentId: strin
             </span>
             <span className={`status-badge status-${item.temporary_class.status}`}>{item.temporary_class.status === 'active' ? '进行中' : '已结束'}</span>
             <span className="chevron" aria-hidden="true">›</span>
-          </Link>
+          </ContextLink>
         ))}
       </div>
     </section>

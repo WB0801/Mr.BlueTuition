@@ -36,4 +36,10 @@ describe('HomePage', () => {
 
     expect(screen.queryByRole('searchbox', { name: '搜索学生' })).not.toBeInTheDocument()
   })
+
+  it('does not show a back link on the home page', () => {
+    renderHome()
+
+    expect(screen.queryByRole('link', { name: /^返回/ })).not.toBeInTheDocument()
+  })
 })
