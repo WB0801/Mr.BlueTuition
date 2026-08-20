@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useBeforeUnload, useBlocker, useNavigate, useParams } from 'react-router-dom'
+import { useBeforeUnload, useBlocker, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { useAuth } from '../../auth/authContext'
@@ -20,6 +20,7 @@ import {
   savePendingSignature,
   type PendingSignature,
 } from '../offline/pendingSignatureStore'
+import { findNextUnsignedStudentId } from '../signatureFlow'
 
 const leaveMessage = '此签名尚未保存，确定离开？'
 
@@ -27,6 +28,7 @@ export function SignaturePage() {
   const { sessionId = '', studentId = '' } = useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
   const canvasRef = useRef<SignatureCanvasHandle>(null)
   const submissionRef = useRef(false)
@@ -107,7 +109,13 @@ export function SignaturePage() {
       await queryClient.invalidateQueries({ queryKey: ['attendance', sessionId, 'roster'] })
       await queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
       allowNavigationRef.current = true
-      navigate(`/attendance/session/${sessionId}`, { replace: true })
+      const nextUnsignedStudentId = findNextUnsignedStudentId(roster.data ?? [], studentId)
+      navigate(
+        nextUnsignedStudentId
+          ? `/attendance/session/${sessionId}/sign/${nextUnsignedStudentId}`
+          : `/attendance/session/${sessionId}`,
+        { replace: true, state: { signatureSaved: true } },
+      )
     } catch (caughtError) {
       const retainedItem = { ...item, wasOffline: true }
       setPending(retainedItem)
@@ -163,6 +171,7 @@ export function SignaturePage() {
         backLabel="课程点名"
       />
       <div className="signature-context">
+        {(location.state as { signatureSaved?: boolean } | null)?.signatureSaved && <span className="form-success signature-inline-success">上一位学生的签名已保存</span>}
         <strong>{session.data.class?.name ?? session.data.temporary_class?.name}</strong>
         <span>{formatSessionTimeRange(session.data.current_start_at, session.data.current_end_at)}</span>
         {isBackfill && <span className="attendance-label attendance-backfill">补签：保存实际签名时间</span>}

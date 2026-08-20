@@ -42,7 +42,8 @@ const absentEntry: SessionRosterEntry = {
 describe('AttendanceRoster', () => {
   it('derives an absent student and shows completed makeup without turning it into attendance', () => {
     render(<MemoryRouter><AttendanceRoster session={session} entries={[absentEntry]} /></MemoryRouter>)
-    expect(screen.getByText('未出席')).toBeInTheDocument()
+    expect(screen.getByText('未签到')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '陈小明' })).toHaveAttribute('href', '/students/student-1')
     expect(screen.getByText(/已于.*补课/)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '补签' })).toHaveAttribute(
       'href',

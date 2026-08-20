@@ -1,6 +1,6 @@
 # 蓝老师补习班：开发交接
 
-更新时间：2026-08-16（Asia/Kuala_Lumpur）
+更新时间：2026-08-20（Asia/Kuala_Lumpur）
 
 ## 唯一本机开发基底
 
@@ -10,7 +10,7 @@
 - 生产分支：`main`
 - 线上网站：<https://wb0801.github.io/Mr.BlueTuition/>
 - Supabase Project URL：`https://ldobzxvxccdowkvwgydt.supabase.co`
-- 当前仓库提交：`4dde234`（`feat: add Phase 8 backup and PWA`）。
+- 开始工作前以 `git status`、`git rev-parse HEAD` 与 `git rev-parse origin/main` 确认实际版本，不在交接文档硬编码尚未产生的新提交。
 
 开始开发前必须先阅读 `AGENTS.md`、本文件及用户确认的规格，并执行 `git status`。不要在未获用户明确确认时进入下一 Phase 或扩大 Scope。
 
@@ -51,14 +51,23 @@
    - 当前只支持备份导出，尚未开放恢复功能。
    - 应用提供 Web App Manifest、Service Worker、安装提示、更新检查/重新载入提示及应用壳离线准备状态。
 
-不要继续开发 Phase 9 或其他新功能，除非用户明确确认新的开发规格。
+## UI / UX 改版状态
+
+- **UI Phase 1：品牌基础、共享设计系统与首页体验**：已完成并部署。
+- **UI Phase 2：学生、科目与班级管理**：已完成并部署。
+- **UI Phase 2 后修正：首页 Header 与返回导航**：已完成并部署；修正基线为 `dc2eaaa`。
+- **UI Phase 3：课表、课程、点名、签名及相关工作流**：本轮完成前端重构；包含班级加入学生多选、班级详情层级、学费处理优先排序、课程／点名紧凑界面与跨模块直达。提交与部署结果应以本轮发布记录为准。
+
+这里的「UI Phase 3」只代表现有功能的界面与导航重构，不是上方功能开发的「Phase 3：课表与实际课程」，也没有新增或修改数据库结构、业务规则或 migration。
+
+不要继续开发 UI Phase 4、功能 Phase 9 或其他新功能，除非用户明确确认新的开发规格。
 
 ## 已知部署与验收记录
 
-- Phase 1–3 已在电脑、iPad 和手机完成实际验收。
-- Phase 4 已完成生产部署与主要流程实际验收；IndexedDB 离线签名恢复由自动化测试覆盖，未作人工离线实测且不作为当时阻塞项。
-- 截至旧交接记录的 2026-08-14 生产核对，Supabase 已执行至 `202608140005_phase4_attendance_signatures.sql`，Auth、RLS、关闭公开注册和 private `signatures` bucket 已实际验收。
-- 当前仓库代码已推进至 Phase 8，但本地 repository 不能证明 Phase 5–8 的线上 migration、部署或人工验收状态；需要在相关发布或验收工作开始前从 Supabase 与 GitHub Pages 实际环境确认。
+- 功能 Phase 1–8 已在 production 正式部署，并由用户完成人工验收。
+- UI Phase 1、UI Phase 2 及 UI Phase 2 后修正已在 GitHub Pages 部署。
+- 正式启用前的测试业务资料清理已由用户确认完成；系统现用于录入真实资料。后续 UI 浏览器验收不得建立、修改或删除 production 业务资料。
+- IndexedDB 离线签名恢复继续由自动化测试覆盖；签名、收费、转班、停课等原有业务规则不得因 UI 改版而改变。
 
 ## 数据库 migrations
 
@@ -75,7 +84,7 @@
 
 Phase 8 没有新增业务 schema migration；对应完整性审计位于 `supabase/checks/phase8_integrity_audit.sql`。
 
-本地文件只能确认仓库所需 schema，不能证明生产数据库在上述旧核对后实际又执行到哪一份 migration。任何依赖 schema 的发布前，都必须先在 Supabase 核对生产 migration 状态，再执行尚未执行的新 migration，最后发布前端。生产数据库已有真实资料，不得重置、清空或重建；已执行的 migration 不得改写，修正必须新增 migration。
+功能 Phase 1–8 的 production migration 已执行并完成验收。本轮 UI 改版不需要、也不得重新执行旧 migration。生产数据库已有真实资料，不得重置、清空或重建；已执行的 migration 不得改写，未来若经用户确认需要 schema 修正，必须新增 migration。
 
 所有业务表继续使用 `owner_id` 和 RLS。前端只使用 Supabase publishable key；Secret Key、Service Role Key、数据库密码和用户密码不得进入 repository、前端或聊天。
 

@@ -7,6 +7,7 @@ import { currentMonthInMalaysia, formatFeeMonth, normalizeMonthInput } from '../
 import { ensureMonthlyFees, listMonthlyFees } from '../api/feesService'
 import { FeesShell } from '../components/FeesShell'
 import { MonthlyFeeCard } from '../components/MonthlyFeeCard'
+import { sortFeesByActionPriority } from '../feePresentation'
 
 type FeesView = 'current' | 'unpaid' | 'history'
 
@@ -24,6 +25,7 @@ export function MonthlyFeesPage({ view }: MonthlyFeesPageProps) {
   const [searchParams] = useSearchParams()
   const [monthInput, setMonthInput] = useState(currentMonthInMalaysia().slice(0, 7))
   const [classId, setClassId] = useState(searchParams.get('classId') ?? '')
+  const studentId = searchParams.get('studentId') ?? ''
   const [search, setSearch] = useState('')
   const feeMonth = normalizeMonthInput(monthInput)
   const ensure = useQuery({
@@ -31,10 +33,11 @@ export function MonthlyFeesPage({ view }: MonthlyFeesPageProps) {
     queryFn: () => ensureMonthlyFees(feeMonth),
   })
   const fees = useQuery({
-    queryKey: ['monthly-fees', view, feeMonth, classId],
+    queryKey: ['monthly-fees', view, feeMonth, classId, studentId],
     queryFn: () => listMonthlyFees({
       feeMonth,
       classId: classId || undefined,
+      studentId: studentId || undefined,
       paymentStatus: view === 'unpaid' ? 'unpaid' : undefined,
     }),
     enabled: ensure.isSuccess,
@@ -43,8 +46,9 @@ export function MonthlyFeesPage({ view }: MonthlyFeesPageProps) {
 
   const visibleFees = useMemo(() => {
     const keyword = search.trim().toLocaleLowerCase()
-    if (!keyword) return fees.data ?? []
-    return (fees.data ?? []).filter((fee) => [
+    const sorted = sortFeesByActionPriority(fees.data ?? [])
+    if (!keyword) return sorted
+    return sorted.filter((fee) => [
       fee.student?.name,
       fee.student?.school_class,
       fee.student?.phone,

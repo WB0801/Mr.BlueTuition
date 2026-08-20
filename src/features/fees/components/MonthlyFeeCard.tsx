@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import type { MonthlyFeeDetails } from '../../../types/domain'
 import { getErrorMessage } from '../../../utils/errors'
 import { formatMalaysiaDateTime, formatMoney } from '../../../utils/format'
@@ -68,8 +69,14 @@ export function MonthlyFeeCard({ fee, showClass = true, showStudent = true, read
   return (
     <article className="fee-card">
       <div className="fee-card-main">
-        {showStudent && fee.student && <StudentIdentity student={fee.student} />}
-        {showClass && <span className="record-meta">{fee.enrollment?.class?.name ?? '班级资料不可用'}</span>}
+        {showStudent && fee.student && (
+          <Link className="fee-entity-link" to={`/students/${fee.student.id}`}>
+            <StudentIdentity student={fee.student} />
+          </Link>
+        )}
+        {showClass && (fee.enrollment?.class
+          ? <Link className="record-meta fee-entity-link" to={`/classes/${fee.enrollment.class.id}`}>{fee.enrollment.class.name}</Link>
+          : <span className="record-meta">班级资料不可用</span>)}
         <div className="fee-amount-row">
           <strong>{formatMoney(fee.actual_amount)}</strong>
           {fee.actual_amount !== fee.normal_amount && (

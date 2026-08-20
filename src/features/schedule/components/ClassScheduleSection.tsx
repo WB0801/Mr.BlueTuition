@@ -20,24 +20,33 @@ export function ClassScheduleSection({ tuitionClass }: ClassScheduleSectionProps
     queryFn: () => listClassSessions(classId),
   })
   const { future, history } = splitClassSessions(sessions.data ?? [], pageOpenedAt)
+  const nextSessions = future.slice(0, 12)
+  const laterSessions = future.slice(12)
 
   return (
     <>
       <ClassFixedScheduleSection tuitionClass={tuitionClass} />
 
       <section className="content-section">
-        <h2>未来课程（{future.length}）</h2>
+        <h2>接下来课程（{future.length}）</h2>
         {sessions.isLoading && <LoadingBlock />}
         {sessions.isError && <ErrorBlock message="课程载入失败。" />}
         {!sessions.isLoading && future.length === 0 && <EmptyBlock message="目前没有未来课程。" />}
-        <div className="record-list">{future.map((session) => <SessionCard session={session} key={session.id} />)}</div>
+        <div className="compact-data-list">{nextSessions.map((session) => <SessionCard session={session} key={session.id} />)}</div>
       </section>
+
+      {laterSessions.length > 0 && (
+        <details className="history-panel">
+          <summary>更后的课程（{laterSessions.length}）</summary>
+          <div className="compact-data-list">{laterSessions.map((session) => <SessionCard session={session} key={session.id} />)}</div>
+        </details>
+      )}
 
       <details className="history-panel">
         <summary>历史课程（{history.length}）</summary>
         {history.length === 0
           ? <EmptyBlock message="目前没有历史课程。" />
-          : <div className="record-list">{history.map((session) => <SessionCard session={session} key={session.id} />)}</div>}
+          : <div className="compact-data-list">{history.map((session) => <SessionCard session={session} key={session.id} />)}</div>}
       </details>
 
       <ClassScheduleHistory tuitionClass={tuitionClass} />

@@ -39,6 +39,13 @@ export function StudentDetailPage() {
         <div><dt>联系电话</dt><dd>{student.data.phone || '未填写'}</dd></div>
       </dl>
 
+      <nav className="related-nav" aria-label="学生相关资料">
+        <a href="#current-enrollments">当前报读</a>
+        <Link to={`/fees?studentId=${studentId}`}>学费</Link>
+        <a href="#student-grades">考试与成绩</a>
+        <a href="#student-history">历史报读</a>
+      </nav>
+
       <details className="action-panel enrollment-create-panel">
         <summary>加入班级或重新报读</summary>
         {classes.isLoading && <LoadingBlock message="正在载入班级…" />}
@@ -52,7 +59,7 @@ export function StudentDetailPage() {
         )}
       </details>
 
-      <section className="content-section entity-section">
+      <section className="content-section entity-section" id="current-enrollments">
         <h2>当前报读 <span className="section-count">{current.length}</span></h2>
         {enrollments.isLoading && <LoadingBlock />}
         {enrollments.isError && <ErrorBlock message="报读资料载入失败。" />}
@@ -64,7 +71,7 @@ export function StudentDetailPage() {
 
       <StudentGradesSection studentId={studentId} />
 
-      <section className="content-section entity-section">
+      <section className="content-section entity-section" id="student-history">
         <h2>历史报读 <span className="section-count">{history.length}</span></h2>
         {!enrollments.isLoading && history.length === 0 && <EmptyBlock message="还没有历史报读。" />}
         <div className="record-list">

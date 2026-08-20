@@ -70,13 +70,17 @@ export function TemporaryClassDetailPage() {
         <StatusBadge status={data.status} />
       </div>
 
-      <section className="content-section">
-        <h2>班级资讯</h2>
-        <dl className="details-card">
+      <dl className="details-card details-grid class-overview">
           <div><dt>日期与时间</dt><dd>{formatSessionTimeRange(data.start_at, data.end_at)}</dd></div>
           <div><dt>一次性收费</dt><dd>{formatMoney(data.fee_amount)} / 人</dd></div>
-        </dl>
-      </section>
+          <div><dt>当前报名</dt><dd>{enrollments.data?.length ?? 0} 人</dd></div>
+          <div><dt>点名进度</dt><dd>{signedCount} / {enrollments.data?.length ?? 0}</dd></div>
+      </dl>
+
+      <nav className="related-nav" aria-label="临时班相关资料">
+        <Link to={`/attendance/session/${session.data.id}`}>点名与签名</Link>
+        <Link to="/fees/receipts">收据</Link>
+      </nav>
 
       <section className="content-section">
         <div className="section-heading-row">
@@ -84,7 +88,7 @@ export function TemporaryClassDetailPage() {
         </div>
         {isActive && <TemporaryClassRegistrationPanel classId={data.id} enrollments={enrollments.data ?? []} />}
         {!enrollments.data?.length && <EmptyBlock message="目前还没有学生报名。" />}
-        <div className="temporary-enrollment-list">
+        <div className="temporary-enrollment-list compact-data-list">
           {enrollments.data?.map((enrollment) => <TemporaryPaymentRow enrollment={enrollment} allowActions key={enrollment.id} />)}
         </div>
       </section>
@@ -100,8 +104,8 @@ export function TemporaryClassDetailPage() {
       </section>
 
       {isActive && (
-        <section className="danger-zone temporary-end-zone">
-          <h2>结束临时班</h2>
+        <details className="danger-panel temporary-end-zone">
+          <summary>结束临时班</summary>
           <p>结束后报名、收费、收据与签到历史都会保留。</p>
           {error && <p className="form-error" role="alert">{error}</p>}
           <button className="button button-danger" type="button" disabled={end.isPending} onClick={() => {
@@ -109,7 +113,7 @@ export function TemporaryClassDetailPage() {
           }}>
             {end.isPending ? '处理中…' : '结束此班'}
           </button>
-        </section>
+        </details>
       )}
     </section>
   )

@@ -1,6 +1,6 @@
 import { useDeferredValue, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { Icon, SearchInput } from '../../../components/ui'
@@ -8,7 +8,8 @@ import { listStudents } from '../api/studentsService'
 import { StudentIdentity } from '../components/StudentIdentity'
 
 export function StudentListPage() {
-  const [search, setSearch] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [search, setSearch] = useState(searchParams.get('q') ?? '')
   const deferredSearch = useDeferredValue(search.trim())
   const students = useQuery({
     queryKey: ['students', 'list', deferredSearch],
@@ -27,7 +28,11 @@ export function StudentListPage() {
         containerClassName="list-search"
         placeholder="搜索学生姓名……"
         value={search}
-        onChange={(event) => setSearch(event.target.value)}
+        onChange={(event) => {
+          const value = event.target.value
+          setSearch(value)
+          setSearchParams(value ? { q: value } : {}, { replace: true })
+        }}
       />
 
       {students.isLoading && <LoadingBlock />}

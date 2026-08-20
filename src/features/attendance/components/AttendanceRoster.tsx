@@ -30,9 +30,9 @@ export function AttendanceRoster({ session, entries }: AttendanceRosterProps) {
       {entries.map((entry) => {
         const hasAttendance = Boolean(entry.attendance_record_id)
         return (
-          <article className="attendance-student-card" key={`${entry.student_id}-${entry.participation_type}`}>
+          <article className={`attendance-student-card ${hasAttendance ? 'is-signed' : 'is-unsigned'}`} key={`${entry.student_id}-${entry.participation_type}`}>
             <div className="attendance-student-main">
-              <strong>{entry.student_name}</strong>
+              <Link className="attendance-student-link" to={`/students/${entry.student_id}`}>{entry.student_name}</Link>
               <span>{[entry.school_class, entry.phone].filter(Boolean).join(' · ') || '未填写学校班级与电话'}</span>
               <div className="session-labels">
                 {participationLabels[entry.participation_type] && (
@@ -43,7 +43,7 @@ export function AttendanceRoster({ session, entries }: AttendanceRosterProps) {
                     {entry.signing_type === 'backfill' ? '已补签' : '已签到'}
                   </span>
                 ) : (
-                  <span className="attendance-label attendance-absent">未出席</span>
+                  <span className="attendance-label attendance-absent">{isFuture ? '待点名' : '未签到'}</span>
                 )}
               </div>
               {!hasAttendance && entry.made_up_at && (

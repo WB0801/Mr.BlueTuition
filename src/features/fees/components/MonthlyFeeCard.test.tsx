@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import type { MonthlyFeeDetails } from '../../../types/domain'
 import { MonthlyFeeCard } from './MonthlyFeeCard'
 
@@ -37,7 +38,11 @@ const fee: MonthlyFeeDetails = {
 
 function renderFee(value: MonthlyFeeDetails) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
-  return render(<QueryClientProvider client={client}><MonthlyFeeCard fee={value} /></QueryClientProvider>)
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter><MonthlyFeeCard fee={value} /></MemoryRouter>
+    </QueryClientProvider>,
+  )
 }
 
 describe('MonthlyFeeCard', () => {

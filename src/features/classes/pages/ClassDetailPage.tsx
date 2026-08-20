@@ -16,6 +16,7 @@ import { StudentIdentity } from '../../students/components/StudentIdentity'
 import { endClass, getClass } from '../api/classesService'
 import { getEndClassConfirmationMessage } from '../classActions'
 import { AddStudentToClass } from '../components/AddStudentToClass'
+import { ClassScheduleSummary } from '../components/ClassScheduleSummary'
 
 export function ClassDetailPage() {
   const { classId = '' } = useParams()
@@ -55,38 +56,31 @@ export function ClassDetailPage() {
 
   return (
     <section className="management-page detail-page class-detail-page">
-      <PageHeader
-        title={data.name}
-        backTo="/classes"
-        backLabel="班级列表"
-        actions={<Link className="button button-secondary" to={`/classes/${classId}/edit`}>编辑班级</Link>}
-      />
+      <PageHeader title={data.name} backTo="/classes" backLabel="班级列表" />
       <div className="detail-title-row compact-title-row">
         <p className="eyebrow">{data.subject?.name}</p>
         <StatusBadge status={data.status} />
       </div>
-      <dl className="details-card details-grid">
+
+      <dl className="details-card details-grid class-overview">
+        <div><dt>当前学生</dt><dd>{current.length} 人</dd></div>
         <div><dt>每月学费</dt><dd>{formatMoney(data.monthly_fee)}</dd></div>
-        <div><dt>开始日期</dt><dd>{formatDate(data.start_date)}</dd></div>
-        <div><dt>结束日期</dt><dd>{formatDate(data.end_date)}</dd></div>
+        <div><dt>固定课表</dt><dd><ClassScheduleSummary tuitionClass={data} /></dd></div>
+        <div><dt>开班日期</dt><dd>{formatDate(data.start_date)}</dd></div>
       </dl>
-      <div className="secondary-actions">
-        <Link to={`/fees?classId=${classId}`}>查看本班学费</Link>
-        <Link to="/grades">查看成绩</Link>
-      </div>
 
-      <ClassFixedScheduleSection tuitionClass={data} />
+      <nav className="related-nav" aria-label="班级相关资料">
+        <Link to={`/classes/${classId}/sessions`}>课程</Link>
+        <Link to="/attendance">点名</Link>
+        <Link to={`/fees?classId=${classId}`}>学费</Link>
+        <Link to="/grades/quizzes">小测与成绩</Link>
+      </nav>
 
-      <section className="content-section entity-section">
+      <section className="content-section entity-section class-students-section">
         <div className="section-heading-row">
-          <h2>当前学生 {current.length} 人</h2>
+          <h2>当前学生 <span className="section-count">{current.length}</span></h2>
           {data.status === 'active' && (
-            <button
-              className="button button-secondary compact-button"
-              type="button"
-              aria-expanded={showAddStudent}
-              onClick={() => setShowAddStudent((value) => !value)}
-            >
+            <button className="button button-secondary compact-button" type="button" aria-expanded={showAddStudent} onClick={() => setShowAddStudent((value) => !value)}>
               ＋ 加入学生
             </button>
           )}
@@ -99,9 +93,9 @@ export function ClassDetailPage() {
         {enrollments.isLoading && <LoadingBlock />}
         {enrollments.isError && <ErrorBlock message="学生名单载入失败。" />}
         {!enrollments.isLoading && current.length === 0 && <EmptyBlock message="目前没有在读学生。" />}
-        <div className="record-list">
+        <div className="compact-data-list">
           {current.map((item) => item.student && (
-            <div className="record-card static-card class-student-row" key={item.id}>
+            <div className="compact-data-row class-student-row" key={item.id}>
               <Link className="identity-link" to={`/students/${item.student.id}`}>
                 <StudentIdentity student={item.student} />
               </Link>
@@ -114,9 +108,9 @@ export function ClassDetailPage() {
       {history.length > 0 && (
         <details className="history-panel">
           <summary>历史报读（{history.length}）</summary>
-          <div className="record-list">
+          <div className="compact-data-list">
             {history.map((item) => item.student && (
-              <Link className="record-card" to={`/students/${item.student.id}/enrollments/${item.id}`} key={item.id}>
+              <Link className="compact-data-row compact-data-link" to={`/students/${item.student.id}/enrollments/${item.id}`} key={item.id}>
                 <span className="record-main">
                   <StudentIdentity student={item.student} />
                   <span className="record-meta">{formatDate(item.join_date)} – {formatDate(item.end_date)}</span>
@@ -130,13 +124,19 @@ export function ClassDetailPage() {
 
       <ClassCourseSummary classId={classId} />
 
-      <ClassScheduleHistory tuitionClass={data} />
+      <details className="management-panel">
+        <summary>班级管理</summary>
+        <div className="management-links">
+          <Link className="button button-secondary" to={`/classes/${classId}/edit`}>编辑班级资料</Link>
+        </div>
+        <ClassFixedScheduleSection tuitionClass={data} />
+        <ClassScheduleHistory tuitionClass={data} />
+      </details>
 
       {data.status === 'active' && (
         <details className="danger-panel">
           <summary>结束此班</summary>
-          <p className="muted">班级、学生名单及所有历史关系都会保留。</p>
-          <p className="impact-notice">结束此班将同时结束 <strong>{current.length}</strong> 位当前学生的报读。</p>
+          <p className="impact-notice">结束此班将同时结束 <strong>{current.length}</strong> 位当前学生的报读；所有历史都会保留。</p>
           <form className="compact-form" onSubmit={handleEndClass}>
             <label className="field">
               <span>结束日期</span>

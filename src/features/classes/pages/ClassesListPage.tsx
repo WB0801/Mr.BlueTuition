@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { Icon } from '../../../components/ui'
@@ -10,7 +10,12 @@ import { listClasses } from '../api/classesService'
 import { ClassScheduleSummary } from '../components/ClassScheduleSummary'
 
 export function ClassesListPage() {
-  const [status, setStatus] = useState<ClassStatus>('active')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [status, setStatus] = useState<ClassStatus>(searchParams.get('status') === 'ended' ? 'ended' : 'active')
+  const selectStatus = (next: ClassStatus) => {
+    setStatus(next)
+    setSearchParams(next === 'ended' ? { status: 'ended' } : {}, { replace: true })
+  }
   const classes = useQuery({
     queryKey: ['classes', status],
     queryFn: () => listClasses(status),
@@ -24,8 +29,8 @@ export function ClassesListPage() {
       />
       <div className="list-control-bar">
         <div className="segmented-control" aria-label="班级状态">
-          <button type="button" className={status === 'active' ? 'active' : ''} onClick={() => setStatus('active')}>进行中</button>
-          <button type="button" className={status === 'ended' ? 'active' : ''} onClick={() => setStatus('ended')}>已结束</button>
+          <button type="button" className={status === 'active' ? 'active' : ''} onClick={() => selectStatus('active')}>进行中</button>
+          <button type="button" className={status === 'ended' ? 'active' : ''} onClick={() => selectStatus('ended')}>已结束</button>
         </div>
         <Link className="inline-management-link" to="/classes/subjects">管理科目</Link>
       </div>

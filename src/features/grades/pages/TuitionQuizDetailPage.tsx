@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { getErrorMessage } from '../../../utils/errors'
@@ -42,7 +42,10 @@ export function TuitionQuizDetailPage() {
   return (
     <section>
       <PageHeader title={quiz.data.name} backTo={`/grades/quizzes?classId=${quiz.data.class_id}`} backLabel="补习班小测" />
-      <p className="grade-context">{quiz.data.class?.name} · {formatDate(quiz.data.quiz_date)} · 满分 {quiz.data.max_score}</p>
+      <p className="grade-context">
+        {quiz.data.class && <Link to={`/classes/${quiz.data.class.id}`}>{quiz.data.class.name}</Link>}
+        {' · '}{formatDate(quiz.data.quiz_date)} · 满分 {quiz.data.max_score}
+      </p>
       {roster.data?.length === 0 ? <EmptyBlock message="小测日期当天没有有效报读学生。" /> : (
         <GradeEntryTable
           key={quizId}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react'
-import { useBeforeUnload, useBlocker } from 'react-router-dom'
+import { Link, useBeforeUnload, useBlocker } from 'react-router-dom'
 import type { GradeEntryRow } from '../../../types/domain'
 import { getErrorMessage } from '../../../utils/errors'
 import {
@@ -121,7 +121,7 @@ export function GradeEntryTable({ rows, initialScores, maxScore, onSave }: Grade
             {rows.map((row, index) => (
               <tr key={row.student_id}>
                 <td>
-                  <strong>{row.student_name}</strong>
+                  <Link className="grade-student-link" to={`/students/${row.student_id}`}>{row.student_name}</Link>
                   {(row.school_class || row.phone) && (
                     <small>{[row.school_class, row.phone].filter(Boolean).join(' · ')}</small>
                   )}
