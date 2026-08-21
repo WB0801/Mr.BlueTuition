@@ -26,5 +26,8 @@ describe('Phase 8 PWA configuration', () => {
     expect(viteConfig).toContain('cleanupOutdatedCaches: true')
     expect(provider).toContain('60 * 60 * 1000')
     expect(provider).toContain('updateServiceWorker(true)')
+    expect(provider).toContain("window.addEventListener('offline', handleOffline)")
+    expect(provider).toContain("window.addEventListener('online', handleOnline)")
+    expect(provider).toContain('App 已更新至最新版本。')
   })
 })

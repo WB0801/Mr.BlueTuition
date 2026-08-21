@@ -1,7 +1,8 @@
 import { usePwa } from './pwaContext'
 
 export function AppSection() {
-  const { isSupported, isInstalled, canInstall, isOfflineReady, statusMessage, install, checkForUpdate } = usePwa()
+  const { isSupported, isInstalled, isOnline, canInstall, isOfflineReady, statusMessage, install, checkForUpdate } = usePwa()
+  const isAppleMobile = /iPad|iPhone|iPod/.test(navigator.userAgent)
   const installationStatus = isInstalled
     ? '已安装'
     : canInstall
@@ -11,22 +12,26 @@ export function AppSection() {
         : '此浏览器不支持安装'
 
   return (
-    <section className="content-section settings-section" aria-labelledby="app-heading">
-      <div>
+    <section className="settings-section settings-app-section" aria-labelledby="app-heading">
+      <div className="settings-section-heading">
+        <div>
         <h2 id="app-heading">App</h2>
+        <p>安装、离线准备与版本更新状态。</p>
         <dl className="settings-app-details">
           <div><dt>App 名称</dt><dd>蓝老师补习班</dd></div>
           <div><dt>当前版本</dt><dd>V1</dd></div>
           <div><dt>安装状态</dt><dd>{installationStatus}</dd></div>
           <div><dt>App 启动</dt><dd>{isOfflineReady ? '已准备' : isSupported ? '准备中' : '需网络开启'}</dd></div>
+          <div><dt>网络状态</dt><dd>{isOnline ? '已连接' : '目前离线'}</dd></div>
         </dl>
+        </div>
       </div>
       <div className="settings-app-actions">
         {canInstall && !isInstalled && <button className="button button-secondary" onClick={() => void install()} type="button">安装 App</button>}
         <button className="button button-secondary" disabled={!isSupported} onClick={() => void checkForUpdate()} type="button">检查更新</button>
       </div>
+      {isAppleMobile && !isInstalled && !canInstall && <p className="settings-note">iPhone／iPad：从浏览器分享菜单选择「加入主画面」。</p>}
       {statusMessage && <p className="settings-note" role="status">{statusMessage}</p>}
     </section>
   )
 }
-

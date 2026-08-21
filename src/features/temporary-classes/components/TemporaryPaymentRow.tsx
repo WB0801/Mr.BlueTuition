@@ -5,6 +5,7 @@ import { formatMalaysiaDateTime, formatMoney } from '../../../utils/format'
 import { getErrorMessage } from '../../../utils/errors'
 import { StudentIdentity } from '../../students/components/StudentIdentity'
 import { ContextLink } from '../../../components/navigation/ContextLink'
+import { Badge } from '../../../components/ui'
 import { markTemporaryClassPaymentPaid, undoTemporaryClassPayment } from '../api/temporaryClassesService'
 
 export function TemporaryPaymentRow({ enrollment, allowActions }: { enrollment: TemporaryClassEnrollment; allowActions: boolean }) {
@@ -41,7 +42,10 @@ export function TemporaryPaymentRow({ enrollment, allowActions }: { enrollment: 
       </ContextLink>
       <div className="temporary-payment-summary">
         <strong>{formatMoney(payment.amount)}</strong>
-        <span>{payment.payment_status === 'paid' ? `已缴${receiptLabel ? ` · ${receiptLabel}` : ''}` : '未缴'}</span>
+        <span className="temporary-payment-state">
+          <Badge tone={payment.payment_status === 'paid' ? 'success' : 'warning'}>{payment.payment_status === 'paid' ? '已缴' : '未缴'}</Badge>
+          {receiptLabel && <small>{receiptLabel}</small>}
+        </span>
         {payment.paid_at && <small>缴费时间：{formatMalaysiaDateTime(payment.paid_at)}</small>}
       </div>
       {allowActions && payment.payment_status === 'unpaid' && (

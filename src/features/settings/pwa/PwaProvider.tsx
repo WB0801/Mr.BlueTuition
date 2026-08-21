@@ -7,6 +7,18 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
 }
 
+const UPDATE_FEEDBACK_KEY = 'lan-laoshi-pwa-update-completed'
+
+function initialStatusMessage() {
+  try {
+    if (window.sessionStorage.getItem(UPDATE_FEEDBACK_KEY) === '1') {
+      window.sessionStorage.removeItem(UPDATE_FEEDBACK_KEY)
+      return 'App 已更新至最新版本。'
+    }
+  } catch { /* status feedback is optional */ }
+  return ''
+}
+
 function installedDisplayMode(): boolean {
   const standaloneNavigator = navigator as Navigator & { standalone?: boolean }
   return window.matchMedia('(display-mode: standalone)').matches || standaloneNavigator.standalone === true
@@ -16,7 +28,9 @@ export function PwaProvider({ children }: PropsWithChildren) {
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null)
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [isInstalled, setIsInstalled] = useState(installedDisplayMode)
-  const [statusMessage, setStatusMessage] = useState('')
+  const [isOnline, setIsOnline] = useState(() => navigator.onLine)
+  const [connectionMessage, setConnectionMessage] = useState('')
+  const [statusMessage, setStatusMessage] = useState(initialStatusMessage)
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     offlineReady: [isOfflineReady],
@@ -50,6 +64,28 @@ export function PwaProvider({ children }: PropsWithChildren) {
   }, [])
 
   useEffect(() => {
+    let reconnectTimer = 0
+    function handleOffline() {
+      window.clearTimeout(reconnectTimer)
+      setIsOnline(false)
+      setConnectionMessage('')
+    }
+    function handleOnline() {
+      setIsOnline(true)
+      setConnectionMessage('网络已重新连接。')
+      window.clearTimeout(reconnectTimer)
+      reconnectTimer = window.setTimeout(() => setConnectionMessage(''), 4000)
+    }
+    window.addEventListener('offline', handleOffline)
+    window.addEventListener('online', handleOnline)
+    return () => {
+      window.clearTimeout(reconnectTimer)
+      window.removeEventListener('offline', handleOffline)
+      window.removeEventListener('online', handleOnline)
+    }
+  }, [])
+
+  useEffect(() => {
     if (!registration) return
     const activeRegistration = registration
     const interval = window.setInterval(() => {
@@ -69,11 +105,21 @@ export function PwaProvider({ children }: PropsWithChildren) {
 
   const install = useCallback(async () => {
     if (!installPrompt) return
-    await installPrompt.prompt()
-    const choice = await installPrompt.userChoice
-    setStatusMessage(choice.outcome === 'accepted' ? 'App 安装已开始。' : '已取消安装。')
-    setInstallPrompt(null)
+    try {
+      await installPrompt.prompt()
+      const choice = await installPrompt.userChoice
+      setStatusMessage(choice.outcome === 'accepted' ? 'App 安装已开始。' : '已取消安装。')
+      setInstallPrompt(null)
+    } catch (error) {
+      console.error('PWA 安装提示失败', error)
+      setStatusMessage('无法启动安装，请从浏览器菜单加入主画面。')
+    }
   }, [installPrompt])
+
+  const reloadToUpdate = useCallback(async () => {
+    try { window.sessionStorage.setItem(UPDATE_FEEDBACK_KEY, '1') } catch { /* feedback is optional */ }
+    await updateServiceWorker(true)
+  }, [updateServiceWorker])
 
   const checkForUpdate = useCallback(async () => {
     if (!('serviceWorker' in navigator)) {
@@ -99,15 +145,21 @@ export function PwaProvider({ children }: PropsWithChildren) {
   const value = useMemo<PwaContextValue>(() => ({
     isSupported: 'serviceWorker' in navigator,
     isInstalled,
+    isOnline,
     canInstall: Boolean(installPrompt),
     isOfflineReady,
     needRefresh,
     statusMessage,
+    connectionMessage,
     install,
     checkForUpdate,
-    reloadToUpdate: () => updateServiceWorker(true),
+    reloadToUpdate,
     dismissUpdate: () => setNeedRefresh(false),
-  }), [checkForUpdate, install, installPrompt, isInstalled, isOfflineReady, needRefresh, setNeedRefresh, statusMessage, updateServiceWorker])
+    dismissStatus: () => {
+      setConnectionMessage('')
+      setStatusMessage('')
+    },
+  }), [checkForUpdate, connectionMessage, install, installPrompt, isInstalled, isOfflineReady, isOnline, needRefresh, reloadToUpdate, setNeedRefresh, statusMessage])
 
   return <PwaContext.Provider value={value}>{children}</PwaContext.Provider>
 }

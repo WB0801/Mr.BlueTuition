@@ -34,6 +34,9 @@ const TemporaryClassesPage = lazy(() => import('../features/temporary-classes/pa
 const TemporaryClassFormPage = lazy(() => import('../features/temporary-classes/pages/TemporaryClassFormPage').then((module) => ({ default: module.TemporaryClassFormPage })))
 const TemporaryClassDetailPage = lazy(() => import('../features/temporary-classes/pages/TemporaryClassDetailPage').then((module) => ({ default: module.TemporaryClassDetailPage })))
 const SettingsPage = lazy(() => import('../features/settings/pages/SettingsPage').then((module) => ({ default: module.SettingsPage })))
+const BackupPage = lazy(() => import('../features/settings/pages/BackupPage').then((module) => ({ default: module.BackupPage })))
+const AppSettingsPage = lazy(() => import('../features/settings/pages/AppSettingsPage').then((module) => ({ default: module.AppSettingsPage })))
+const RecentActivityPage = lazy(() => import('../features/settings/pages/RecentActivityPage').then((module) => ({ default: module.RecentActivityPage })))
 
 function routePage(page: React.ReactNode) {
   return <Suspense fallback={<FullPageLoading label="正在载入页面…" />}>{page}</Suspense>
@@ -79,6 +82,9 @@ const router = createHashRouter([
         { path: 'temporary-classes/:temporaryClassId', element: routePage(<TemporaryClassDetailPage />) },
         { path: 'temporary-classes/:temporaryClassId/edit', element: routePage(<TemporaryClassFormPage />) },
         { path: 'settings', element: routePage(<SettingsPage />) },
+        { path: 'settings/backup', element: routePage(<BackupPage />) },
+        { path: 'settings/app', element: routePage(<AppSettingsPage />) },
+        { path: 'settings/activity', element: routePage(<RecentActivityPage />) },
         { path: 'home', element: <Navigate to="/" replace /> },
         { path: '*', element: <NotFoundPage /> },
       ],

@@ -141,5 +141,6 @@ describe('contextual back navigation', () => {
       state: { tab: 'unpaid' },
     })
     expect(getDefaultBackTarget('/attendance/session/session-1')).toEqual({ to: '/attendance', label: '课程' })
+    expect(getDefaultBackTarget('/settings/backup')).toEqual({ to: '/settings', label: '设置' })
   })
 })

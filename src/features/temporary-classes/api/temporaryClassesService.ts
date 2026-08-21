@@ -13,6 +13,8 @@ const temporaryClassSelection = '*, subject:subjects(id,name)'
 
 export interface TemporaryClassListItem extends TemporaryClass {
   enrollment_count: number
+  paid_count: number
+  unpaid_count: number
 }
 
 export interface StudentTemporaryParticipation extends TemporaryClassEnrollment {
@@ -23,14 +25,23 @@ export interface StudentTemporaryParticipation extends TemporaryClassEnrollment 
 export async function listTemporaryClasses(status: TemporaryClassStatus): Promise<TemporaryClassListItem[]> {
   const { data, error } = await requireSupabase()
     .from('temporary_classes')
-    .select(`${temporaryClassSelection}, registrations:temporary_class_enrollments(count)`)
+    .select(`${temporaryClassSelection}, registrations:temporary_class_enrollments(id, payment:temporary_class_payments(payment_status))`)
     .eq('status', status)
     .order('start_at', { ascending: status === 'active' })
   if (error) throw error
-  return (data ?? []).map((row) => ({
-    ...mapTemporaryClass(row),
-    enrollment_count: Number(row.registrations?.[0]?.count ?? 0),
-  }))
+  return (data ?? []).map((row) => {
+    const registrations = Array.isArray(row.registrations) ? row.registrations : []
+    const paidCount = registrations.filter((registration: Record<string, unknown>) => {
+      const rawPayment = (Array.isArray(registration.payment) ? registration.payment[0] : registration.payment) as Record<string, unknown> | undefined
+      return rawPayment?.payment_status === 'paid'
+    }).length
+    return {
+      ...mapTemporaryClass(row),
+      enrollment_count: registrations.length,
+      paid_count: paidCount,
+      unpaid_count: registrations.length - paidCount,
+    }
+  })
 }
 
 export async function getTemporaryClass(classId: string): Promise<TemporaryClass> {

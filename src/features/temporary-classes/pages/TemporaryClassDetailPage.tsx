@@ -62,10 +62,12 @@ export function TemporaryClassDetailPage() {
   const data = temporaryClass.data
   const isActive = data.status === 'active'
   const signedCount = roster.data?.filter((item) => item.attendance_record_id).length ?? 0
+  const paidCount = enrollments.data?.filter((item) => item.payment?.payment_status === 'paid').length ?? 0
+  const enrollmentCount = enrollments.data?.length ?? 0
 
   return (
     <section>
-      <PageHeader title={data.name} backTo="/temporary-classes" backLabel="临时班" actions={isActive ? <ContextLink backLabel="临时班" className="button button-secondary" to={`/temporary-classes/${data.id}/edit`}>编辑临时班</ContextLink> : undefined} />
+      <PageHeader title={data.name} backTo="/temporary-classes" backLabel="临时班" />
       <div className="detail-title-row compact-title-row">
         <p className="eyebrow">{data.subject?.name}</p>
         <StatusBadge status={data.status} />
@@ -74,8 +76,9 @@ export function TemporaryClassDetailPage() {
       <dl className="details-card details-grid class-overview">
           <div><dt>日期与时间</dt><dd>{formatSessionTimeRange(data.start_at, data.end_at)}</dd></div>
           <div><dt>一次性收费</dt><dd>{formatMoney(data.fee_amount)} / 人</dd></div>
-          <div><dt>当前报名</dt><dd>{enrollments.data?.length ?? 0} 人</dd></div>
-          <div><dt>点名进度</dt><dd>{signedCount} / {enrollments.data?.length ?? 0}</dd></div>
+          <div><dt>当前报名</dt><dd>{enrollmentCount} 人</dd></div>
+          <div><dt>收费进度</dt><dd>{paidCount} / {enrollmentCount} 已缴</dd></div>
+          <div><dt>点名进度</dt><dd>{signedCount} / {enrollmentCount}</dd></div>
       </dl>
 
       <nav className="related-nav" aria-label="临时班相关资料">
@@ -85,37 +88,42 @@ export function TemporaryClassDetailPage() {
 
       <section className="content-section">
         <div className="section-heading-row">
-          <h2>当前报名 {enrollments.data?.length ?? 0} 人</h2>
+          <h2>学生名单 {enrollmentCount} 人</h2>
         </div>
-        {isActive && <TemporaryClassRegistrationPanel classId={data.id} enrollments={enrollments.data ?? []} />}
         {!enrollments.data?.length && <EmptyBlock message="目前还没有学生报名。" />}
         <div className="temporary-enrollment-list compact-data-list">
           {enrollments.data?.map((enrollment) => <TemporaryPaymentRow enrollment={enrollment} allowActions key={enrollment.id} />)}
         </div>
+        {isActive && <TemporaryClassRegistrationPanel classId={data.id} enrollments={enrollments.data ?? []} />}
       </section>
 
       <section className="content-section temporary-attendance-summary">
         <h2>点名</h2>
         <div>
           <strong>{formatSessionTimeRange(session.data.current_start_at, session.data.current_end_at)}</strong>
-          <span>{sessionStatusLabels[session.data.status]} · 已签到 {signedCount} / {enrollments.data?.length ?? 0}</span>
+          <span>{sessionStatusLabels[session.data.status]} · 已签到 {signedCount} / {enrollmentCount}</span>
         </div>
         {roster.isError && <ErrorBlock message="签到摘要载入失败。" />}
         <ContextLink backLabel="临时班" className="button button-primary" to={`/attendance/session/${session.data.id}`}>进入点名</ContextLink>
       </section>
 
-      {isActive && (
-        <details className="danger-panel temporary-end-zone">
-          <summary>结束临时班</summary>
-          <p>结束后报名、收费、收据与签到历史都会保留。</p>
-          {error && <p className="form-error" role="alert">{error}</p>}
-          <button className="button button-danger" type="button" disabled={end.isPending} onClick={() => {
-            if (window.confirm('确定结束此临时班吗？报名、收费与签到历史都会保留。')) end.mutate()
-          }}>
-            {end.isPending ? '处理中…' : '结束此班'}
-          </button>
-        </details>
-      )}
+      <details className="management-panel temporary-management-panel">
+        <summary>管理临时班</summary>
+        {isActive && <ContextLink backLabel="临时班" className="button button-secondary" to={`/temporary-classes/${data.id}/edit`}>编辑临时班</ContextLink>}
+        {isActive && (
+          <div className="danger-action-card temporary-end-zone">
+            <h3>结束临时班</h3>
+            <p>结束后报名、收费、收据与签到历史都会保留。</p>
+            {error && <p className="form-error" role="alert">{error}</p>}
+            <button className="button button-danger" type="button" disabled={end.isPending} onClick={() => {
+              if (window.confirm('确定结束此临时班吗？报名、收费与签到历史都会保留。')) end.mutate()
+            }}>
+              {end.isPending ? '处理中…' : '结束此班'}
+            </button>
+          </div>
+        )}
+        {!isActive && <p className="settings-note">此临时班已结束，报名、收费与签到历史保留为只读资料。</p>}
+      </details>
     </section>
   )
 }

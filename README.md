@@ -1,6 +1,6 @@
 # 蓝老师补习班
 
-蓝老师单人使用的轻量补习班管理系统，提供电脑、iPad 和手机共用的 Responsive Web App。当前仓库已实现至 Phase 8。
+蓝老师单人使用的轻量补习班管理系统，提供电脑、iPad 和手机共用的 Responsive Web App。功能开发 Phase 1–8 与正式 UI Phase 1–5 均已完成。
 
 ## 主要功能
 
