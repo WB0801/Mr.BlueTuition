@@ -1,14 +1,11 @@
-import { useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
-import { getErrorMessage } from '../../../utils/errors'
 import { formatDate } from '../../../utils/format'
 import { listClasses } from '../../classes/api/classesService'
 import {
-  deleteSchoolExam,
   getSchoolExam,
   listSchoolExamHistoricalCandidates,
   listSchoolExamRoster,
@@ -17,13 +14,13 @@ import {
 import { calculateGradeStats } from '../gradeEntry'
 import { HistoricalSchoolScorePanel } from '../components/HistoricalSchoolScorePanel'
 import { GradeFlowSteps } from '../components/GradeFlowSteps'
+import { PermanentDeleteZone } from '../../deletion/components/PermanentDeleteZone'
 
 export function SchoolExamDetailPage() {
   const { examId = '' } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()
-  const [deleteError, setDeleteError] = useState('')
   const isNewFlow = Boolean((location.state as { gradeFlow?: boolean } | null)?.gradeFlow)
   const exam = useQuery({ queryKey: ['school-exam', examId], queryFn: () => getSchoolExam(examId) })
   const classes = useQuery({ queryKey: ['classes'], queryFn: () => listClasses() })
@@ -33,13 +30,6 @@ export function SchoolExamDetailPage() {
     queryFn: () => listSchoolExamHistoricalCandidates(examId, ''),
   })
   const scores = useQuery({ queryKey: ['school-exam', examId, 'scores'], queryFn: () => listSchoolExamScores(examId) })
-  const remove = useMutation({
-    mutationFn: () => deleteSchoolExam(examId),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['school-exams'] })
-      navigate('/grades/school', { replace: true })
-    },
-  })
 
   if (exam.isLoading || classes.isLoading || roster.isLoading || historicalCandidates.isLoading || scores.isLoading) return <LoadingBlock />
   if (exam.isError || !exam.data || classes.isError || roster.isError || historicalCandidates.isError || scores.isError) return <ErrorBlock message="考试资料载入失败。" />
@@ -50,13 +40,6 @@ export function SchoolExamDetailPage() {
     (scores.data ?? []).map((score) => String(score.score)),
     (roster.data?.length ?? 0) + (historicalCandidates.data?.length ?? 0),
   )
-
-  async function handleDelete() {
-    const count = scores.data?.length ?? 0
-    if (!window.confirm(`删除此考试将同时删除 ${count} 笔学生成绩。确定删除吗？`)) return
-    setDeleteError('')
-    try { await remove.mutateAsync() } catch (caughtError) { setDeleteError(getErrorMessage(caughtError, '删除考试失败，请重试。')) }
-  }
 
   return (
     <section>
@@ -96,14 +79,16 @@ export function SchoolExamDetailPage() {
         existingScores={Object.fromEntries((scores.data ?? []).map((score) => [score.student_id, score.score]))}
       />
 
-      <details className="danger-panel">
-        <summary>删除此考试</summary>
-        <p className="impact-notice">删除此考试将同时删除 <strong>{scores.data?.length ?? 0}</strong> 笔学生成绩。</p>
-        <button className="button button-danger" type="button" disabled={remove.isPending} onClick={handleDelete}>
-          {remove.isPending ? '删除中…' : '永久删除考试'}
-        </button>
-        {deleteError && <p className="form-error" role="alert">{deleteError}</p>}
-      </details>
+      <PermanentDeleteZone
+        entityType="school_exam"
+        entityId={examId}
+        entityName={exam.data.name}
+        entityLabel="考试"
+        onDeleted={async () => {
+          await queryClient.invalidateQueries({ queryKey: ['school-exams'] })
+          navigate('/grades/school', { replace: true, state: { successMessage: `已永久删除考试「${exam.data.name}」及其成绩。` } })
+        }}
+      />
     </section>
   )
 }

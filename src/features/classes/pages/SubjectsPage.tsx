@@ -5,6 +5,7 @@ import { PageHeader } from '../../../components/shared/PageHeader'
 import { useAuth } from '../../auth/authContext'
 import { getErrorMessage } from '../../../utils/errors'
 import { createSubject, listSubjects, updateSubject } from '../api/subjectsService'
+import { PermanentDeleteZone } from '../../deletion/components/PermanentDeleteZone'
 
 export function SubjectsPage() {
   const { user } = useAuth()
@@ -13,6 +14,7 @@ export function SubjectsPage() {
   const [editingId, setEditingId] = useState('')
   const [editingName, setEditingName] = useState('')
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const subjects = useQuery({ queryKey: ['subjects'], queryFn: listSubjects })
   const create = useMutation({
     mutationFn: () => createSubject(user!.id, newName),
@@ -58,12 +60,13 @@ export function SubjectsPage() {
         <button className="button button-primary" type="submit" disabled={create.isPending}>新增</button>
       </form>
       {error && <p className="form-error" role="alert">{error}</p>}
+      {success && <p className="form-success list-success" role="status">{success}</p>}
       {subjects.isLoading && <LoadingBlock />}
       {subjects.isError && <ErrorBlock message="科目资料载入失败。" />}
       {subjects.data?.length === 0 && <EmptyBlock message="还没有科目。" />}
       <div className="record-list">
         {subjects.data?.map((subject) => (
-          <div className="record-card static-card subject-row" key={subject.id}>
+          <div className="record-card static-card subject-row subject-management-row" key={subject.id}>
             {editingId === subject.id ? (
               <form className="inline-edit-form" onSubmit={handleUpdate}>
                 <input value={editingName} onChange={(event) => setEditingName(event.target.value)} required maxLength={80} autoFocus />
@@ -85,6 +88,21 @@ export function SubjectsPage() {
                 </button>
               </>
             )}
+            <PermanentDeleteZone
+              entityType="subject"
+              entityId={subject.id}
+              entityName={subject.name}
+              entityLabel="科目"
+              onDeleted={async () => {
+                setSuccess(`已永久删除科目「${subject.name}」及其关联资料。`)
+                await Promise.all([
+                  queryClient.invalidateQueries({ queryKey: ['subjects'] }),
+                  queryClient.invalidateQueries({ queryKey: ['classes'] }),
+                  queryClient.invalidateQueries({ queryKey: ['temporary-classes'] }),
+                  queryClient.invalidateQueries({ queryKey: ['school-exams'] }),
+                ])
+              }}
+            />
           </div>
         ))}
       </div>

@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import type { MonthlyFeeDetails } from '../../../types/domain'
+import { updateMonthlyFeeAmount } from '../api/feesService'
 import { MonthlyFeeCard } from './MonthlyFeeCard'
 
 vi.mock('../api/feesService', () => ({
@@ -48,8 +49,8 @@ function renderFee(value: MonthlyFeeDetails) {
 describe('MonthlyFeeCard', () => {
   it('shows a join-month override without changing the normal amount', () => {
     renderFee(fee)
-    expect(screen.getByText('RM50')).toBeInTheDocument()
-    expect(screen.getByText('正常月费 RM100')).toBeInTheDocument()
+    expect(screen.getByText('本月 RM50')).toBeInTheDocument()
+    expect(screen.getByText('标准 RM100')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '确认已缴' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '修改本月金额' })).toBeInTheDocument()
   })
@@ -65,5 +66,18 @@ describe('MonthlyFeeCard', () => {
     expect(screen.getByText('已缴 · 收据已处理')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '撤销缴费' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '确认已缴' })).not.toBeInTheDocument()
+  })
+
+  it('keeps the amount editor open and explains a save failure', async () => {
+    const user = (await import('@testing-library/user-event')).default.setup()
+    vi.mocked(updateMonthlyFeeAmount).mockRejectedValueOnce(new Error('network failed'))
+    renderFee(fee)
+    await user.click(screen.getByRole('button', { name: '修改本月金额' }))
+    const amountInput = screen.getByRole('spinbutton', { name: /本月实际收费/ })
+    await user.clear(amountInput)
+    await user.type(amountInput, '45')
+    await user.click(screen.getByRole('button', { name: '保存金额' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('操作失败，请重试')
+    expect(screen.getByRole('spinbutton', { name: /本月实际收费/ })).toHaveValue(45)
   })
 })

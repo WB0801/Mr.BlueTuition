@@ -1,6 +1,6 @@
 import { useDeferredValue, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useSearchParams } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
@@ -9,6 +9,7 @@ import { listStudents } from '../api/studentsService'
 import { StudentIdentity } from '../components/StudentIdentity'
 
 export function StudentListPage() {
+  const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const [search, setSearch] = useState(searchParams.get('q') ?? '')
   const deferredSearch = useDeferredValue(search.trim())
@@ -35,13 +36,16 @@ export function StudentListPage() {
           setSearchParams(value ? { q: value } : {}, { replace: true })
         }}
       />
+      {(location.state as { successMessage?: string } | null)?.successMessage && (
+        <p className="form-success list-success" role="status">{(location.state as { successMessage: string }).successMessage}</p>
+      )}
 
       {students.isLoading && <LoadingBlock />}
       {students.isError && <ErrorBlock />}
       {students.data?.length === 0 && (
         <EmptyBlock message={deferredSearch ? '找不到符合的学生。' : '还没有学生资料。'} />
       )}
-      <div className="record-list">
+      <div className="record-list compact-card-grid student-card-grid">
         {students.data?.map((student) => (
           <ContextLink backLabel="学生" className="record-card student-list-card" to={`/students/${student.id}`} key={student.id}>
             <StudentIdentity student={student} />

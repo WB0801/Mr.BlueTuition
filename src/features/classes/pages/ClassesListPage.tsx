@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useSearchParams } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
@@ -11,6 +11,7 @@ import { listClasses } from '../api/classesService'
 import { ClassScheduleSummary } from '../components/ClassScheduleSummary'
 
 export function ClassesListPage() {
+  const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const [status, setStatus] = useState<ClassStatus>(searchParams.get('status') === 'ended' ? 'ended' : 'active')
   const selectStatus = (next: ClassStatus) => {
@@ -35,11 +36,14 @@ export function ClassesListPage() {
         </div>
         <ContextLink backLabel="班级" className="inline-management-link" to="/classes/subjects">管理科目</ContextLink>
       </div>
+      {(location.state as { successMessage?: string } | null)?.successMessage && (
+        <p className="form-success list-success" role="status">{(location.state as { successMessage: string }).successMessage}</p>
+      )}
 
       {classes.isLoading && <LoadingBlock />}
       {classes.isError && <ErrorBlock message="班级资料载入失败。" />}
       {classes.data?.length === 0 && <EmptyBlock message={status === 'active' ? '还没有进行中的班级。' : '还没有已结束的班级。'} />}
-      <div className="record-list">
+      <div className="record-list compact-card-grid class-card-grid">
         {classes.data?.map((item) => (
           <ContextLink backLabel="班级" className="record-card class-card" to={`/classes/${item.id}`} key={item.id}>
             <span className="record-main">

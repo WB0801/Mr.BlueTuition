@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useDeferredValue, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
@@ -6,7 +6,7 @@ import { PageHeader } from '../../../components/shared/PageHeader'
 import { useAuth } from '../../auth/authContext'
 import { getErrorMessage } from '../../../utils/errors'
 import type { StudentInput } from '../../../types/domain'
-import { createStudent, getStudent, updateStudent } from '../api/studentsService'
+import { createStudent, findPotentialDuplicateStudents, getStudent, updateStudent } from '../api/studentsService'
 import { StudentForm } from '../components/StudentForm'
 
 export function StudentFormPage() {
@@ -16,10 +16,17 @@ export function StudentFormPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [error, setError] = useState('')
+  const [draft, setDraft] = useState<StudentInput>({ name: '', school_class: '', phone: '' })
+  const deferredDraft = useDeferredValue(draft)
   const student = useQuery({
     queryKey: ['student', studentId],
     queryFn: () => getStudent(studentId!),
     enabled: isEditing,
+  })
+  const duplicates = useQuery({
+    queryKey: ['students', 'duplicate-check', deferredDraft],
+    queryFn: () => findPotentialDuplicateStudents(deferredDraft),
+    enabled: !isEditing && Boolean(deferredDraft.name.trim() || deferredDraft.phone.trim()),
   })
 
   const saveStudent = useMutation({
@@ -58,6 +65,9 @@ export function StudentFormPage() {
         submitLabel={isEditing ? '保存修改' : '新增学生'}
         isSubmitting={saveStudent.isPending}
         error={error}
+        duplicateStudents={isEditing ? [] : duplicates.data}
+        duplicateCheckPending={!isEditing && duplicates.isFetching}
+        onInputChange={isEditing ? undefined : setDraft}
         onSubmit={async (input) => {
           setError('')
           await saveStudent.mutateAsync(input)

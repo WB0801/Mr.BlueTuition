@@ -1,5 +1,5 @@
 import type { MonthlyFeeDetails } from '../../types/domain'
-import { canWaiveFinalMonth, getFeeStatusLabel, sortFeesByActionPriority } from './feePresentation'
+import { canWaiveFinalMonth, getFeeStatusLabel, matchesFeeStatus, sortFeesByActionPriority, sortFeesForWorkflow } from './feePresentation'
 
 const baseFee = {
   payment_status: 'unpaid',
@@ -46,5 +46,45 @@ describe('fee presentation', () => {
       fee('1', 'unpaid', 'not_applicable'),
     ])
     expect(sorted.map((item) => item.id)).toEqual(['1', '2', '3', '4'])
+  })
+
+  it('groups all-class unpaid fees by class and then student name', () => {
+    const fee = (id: string, className: string, studentName: string) => ({
+      ...baseFee,
+      id,
+      created_at: id,
+      student: { id: `student-${id}`, name: studentName, school_class: null, phone: null },
+      enrollment: { id: `enrollment-${id}`, class_id: `class-${className}`, join_date: '2026-01-01', end_date: null, status: 'active', class: { id: `class-${className}`, name: className, status: 'active' } },
+    }) as MonthlyFeeDetails
+    const sorted = sortFeesForWorkflow([
+      fee('3', '数学', '王小明'), fee('2', '会计', '张小芳'), fee('1', '会计', '陈小明'),
+    ], { status: 'unpaid' })
+    expect(sorted.map((item) => item.id)).toEqual(['1', '2', '3'])
+  })
+
+  it('orders pending receipts oldest first and completed receipts newest first', () => {
+    const paid = (id: string, receipt_status: 'pending' | 'completed', paid_at: string) => ({
+      ...baseFee,
+      id,
+      created_at: id,
+      payment_status: 'paid',
+      receipt_status,
+      paid_at,
+      student: { id: `student-${id}`, name: `学生${id}`, school_class: null, phone: null },
+    }) as MonthlyFeeDetails
+    const sorted = sortFeesForWorkflow([
+      paid('completed-old', 'completed', '2026-08-01T00:00:00Z'),
+      paid('pending-new', 'pending', '2026-08-03T00:00:00Z'),
+      paid('completed-new', 'completed', '2026-08-04T00:00:00Z'),
+      paid('pending-old', 'pending', '2026-08-02T00:00:00Z'),
+    ], { status: 'paid' })
+    expect(sorted.map((item) => item.id)).toEqual(['pending-old', 'pending-new', 'completed-new', 'completed-old'])
+  })
+
+  it('filters unpaid, paid, and all states without mixing them', () => {
+    expect(matchesFeeStatus(baseFee, 'unpaid')).toBe(true)
+    expect(matchesFeeStatus({ ...baseFee, payment_status: 'paid' }, 'unpaid')).toBe(false)
+    expect(matchesFeeStatus({ ...baseFee, payment_status: 'paid' }, 'paid')).toBe(true)
+    expect(matchesFeeStatus({ ...baseFee, payment_status: 'waived' }, 'all')).toBe(true)
   })
 })

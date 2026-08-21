@@ -4,7 +4,6 @@ import { ContextLink } from '../../../components/navigation/ContextLink'
 import type { MonthlyFeeDetails } from '../../../types/domain'
 import { getErrorMessage } from '../../../utils/errors'
 import { formatMalaysiaDateTime, formatMoney } from '../../../utils/format'
-import { StudentIdentity } from '../../students/components/StudentIdentity'
 import {
   markMonthlyFeePaid,
   undoMonthlyFeePayment,
@@ -41,9 +40,12 @@ export function MonthlyFeeCard({ fee, showClass = true, showStudent = true, read
       if (action === 'waive') return waiveMonthlyFee(fee.id)
       return updateMonthlyFeeAmount(fee.id, Number(amount))
     },
-    onSuccess: async (_, action) => {
+    onSuccess: async (updated, action) => {
       setError('')
       if (action === 'amount') setEditing(false)
+      queryClient.setQueriesData<MonthlyFeeDetails[]>({ queryKey: ['monthly-fees', 'list'] }, (current) => (
+        current?.map((item) => item.id === fee.id ? { ...item, ...updated } : item)
+      ))
       await refresh()
     },
     onError: (caughtError) => setError(getErrorMessage(caughtError, '操作失败，请重试。')),
@@ -71,17 +73,15 @@ export function MonthlyFeeCard({ fee, showClass = true, showStudent = true, read
       <div className="fee-card-main">
         {showStudent && fee.student && (
           <ContextLink backLabel="学费" className="fee-entity-link" to={`/students/${fee.student.id}`}>
-            <StudentIdentity student={fee.student} />
+            <strong>{fee.student.name}</strong>
           </ContextLink>
         )}
         {showClass && (fee.enrollment?.class
           ? <ContextLink backLabel="学费" className="record-meta fee-entity-link" to={`/classes/${fee.enrollment.class.id}`}>{fee.enrollment.class.name}</ContextLink>
           : <span className="record-meta">班级资料不可用</span>)}
         <div className="fee-amount-row">
-          <strong>{formatMoney(fee.actual_amount)}</strong>
-          {fee.actual_amount !== fee.normal_amount && (
-            <span>正常月费 {formatMoney(fee.normal_amount)}</span>
-          )}
+          <strong>{fee.actual_amount === fee.normal_amount ? formatMoney(fee.actual_amount) : `本月 ${formatMoney(fee.actual_amount)}`}</strong>
+          {fee.actual_amount !== fee.normal_amount && <span>标准 {formatMoney(fee.normal_amount)}</span>}
         </div>
         <span className={`fee-status fee-status-${fee.payment_status}`}>{getFeeStatusLabel(fee)}</span>
         {fee.paid_at && <span className="record-meta">{formatMalaysiaDateTime(fee.paid_at)} 缴费</span>}
@@ -94,22 +94,22 @@ export function MonthlyFeeCard({ fee, showClass = true, showStudent = true, read
               <button className="button button-primary button-small" type="button" disabled={mutation.isPending} onClick={() => mutation.mutate('paid')}>
                 确认已缴
               </button>
-              <button className="button button-secondary button-small" type="button" disabled={mutation.isPending} onClick={() => setEditing(true)}>
-                修改本月金额
-              </button>
-              {canWaiveFinalMonth(fee) && (
-                <button className="button button-text button-small" type="button" disabled={mutation.isPending} onClick={() => {
-                  if (window.confirm('确定将这笔学费标记为「本月不再追缴」吗？')) mutation.mutate('waive')
-                }}>
-                  本月不再追缴
-                </button>
-              )}
+              <details className="fee-more-menu">
+                <summary aria-label={`更多${fee.student?.name ?? ''}的学费操作`}>⋯</summary>
+                <div>
+                  <button className="button button-text button-small" type="button" disabled={mutation.isPending} onClick={() => setEditing(true)}>修改本月金额</button>
+                  {canWaiveFinalMonth(fee) && <button className="button button-text button-small danger-text" type="button" disabled={mutation.isPending} onClick={() => {
+                    if (window.confirm('确定将这笔学费标记为「本月不再追缴」吗？')) mutation.mutate('waive')
+                  }}>本月不再追缴</button>}
+                </div>
+              </details>
             </>
           )}
           {fee.payment_status === 'paid' && (
-            <button className="button button-secondary button-small" type="button" disabled={mutation.isPending} onClick={undoPayment}>
-              撤销缴费
-            </button>
+            <details className="fee-more-menu">
+              <summary aria-label={`更多${fee.student?.name ?? ''}的已缴操作`}>⋯</summary>
+              <div><button className="button button-text button-small danger-text" type="button" disabled={mutation.isPending} onClick={undoPayment}>撤销缴费</button></div>
+            </details>
           )}
         </div>
       )}

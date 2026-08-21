@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
@@ -9,10 +9,12 @@ import { EnrollmentCard } from '../../enrollments/components/EnrollmentCard'
 import { NewEnrollmentForm } from '../../enrollments/components/NewEnrollmentForm'
 import { StudentGradesSection } from '../../grades/components/StudentGradesSection'
 import { StudentTemporaryClassesSection } from '../../temporary-classes/components/StudentTemporaryClassesSection'
+import { PermanentDeleteZone } from '../../deletion/components/PermanentDeleteZone'
 import { getStudent } from '../api/studentsService'
 
 export function StudentDetailPage() {
   const { studentId = '' } = useParams()
+  const navigate = useNavigate()
   const student = useQuery({ queryKey: ['student', studentId], queryFn: () => getStudent(studentId) })
   const enrollments = useQuery({
     queryKey: ['enrollments', 'student', studentId],
@@ -81,6 +83,14 @@ export function StudentDetailPage() {
       </section>
 
       <StudentTemporaryClassesSection studentId={studentId} />
+
+      <PermanentDeleteZone
+        entityType="student"
+        entityId={studentId}
+        entityName={student.data.name}
+        entityLabel="学生"
+        onDeleted={() => navigate('/students', { replace: true, state: { successMessage: `已永久删除学生「${student.data.name}」及其关联资料。` } })}
+      />
     </section>
   )
 }

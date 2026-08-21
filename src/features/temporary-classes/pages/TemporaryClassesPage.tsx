@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useLocation } from 'react-router-dom'
 import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
@@ -13,18 +14,22 @@ import {
 } from '../temporaryClassPresentation'
 
 export function TemporaryClassesPage() {
+  const location = useLocation()
   const active = useQuery({ queryKey: ['temporary-classes', 'active'], queryFn: () => listTemporaryClasses('active') })
   const ended = useQuery({ queryKey: ['temporary-classes', 'ended'], queryFn: () => listTemporaryClasses('ended') })
 
   return (
     <section>
       <PageHeader title="临时班" actions={<ContextLink backLabel="临时班" className="button button-primary" to="/temporary-classes/new">建立临时班</ContextLink>} />
+      {(location.state as { successMessage?: string } | null)?.successMessage && (
+        <p className="form-success list-success" role="status">{(location.state as { successMessage: string }).successMessage}</p>
+      )}
       <section className="content-section temporary-current-section">
         <h2>目前临时班</h2>
         {active.isLoading && <LoadingBlock />}
         {active.isError && <ErrorBlock message="临时班载入失败。" />}
         {!active.isLoading && active.data?.length === 0 && <EmptyBlock message="目前没有进行中的临时班。" />}
-        <div className="record-list">
+        <div className="record-list compact-card-grid temporary-card-grid">
           {active.data?.map((item) => <TemporaryClassCard item={item} key={item.id} />)}
         </div>
       </section>
@@ -34,7 +39,7 @@ export function TemporaryClassesPage() {
         {ended.isLoading && <LoadingBlock />}
         {ended.isError && <ErrorBlock message="历史临时班载入失败。" />}
         {!ended.isLoading && ended.data?.length === 0 && <EmptyBlock message="还没有已结束临时班。" />}
-        <div className="record-list">
+        <div className="record-list compact-card-grid temporary-card-grid">
           {ended.data?.map((item) => <TemporaryClassCard item={item} key={item.id} />)}
         </div>
       </details>

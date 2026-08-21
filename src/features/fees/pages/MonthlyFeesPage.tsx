@@ -3,22 +3,16 @@ import { useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { listClasses } from '../../classes/api/classesService'
-import { currentMonthInMalaysia, formatFeeMonth, normalizeMonthInput } from '../../../utils/format'
+import { currentMonthInMalaysia, normalizeMonthInput } from '../../../utils/format'
 import { ensureMonthlyFees, listMonthlyFees } from '../api/feesService'
 import { FeesShell } from '../components/FeesShell'
 import { MonthlyFeeCard } from '../components/MonthlyFeeCard'
-import { sortFeesByActionPriority } from '../feePresentation'
+import { matchesFeeStatus, sortFeesForWorkflow, type FeeStatusFilter } from '../feePresentation'
 
 type FeesView = 'current' | 'unpaid' | 'history'
 
 interface MonthlyFeesPageProps {
   view: FeesView
-}
-
-const titles: Record<FeesView, string> = {
-  current: '本月缴费',
-  unpaid: '未缴名单',
-  history: '历史缴费',
 }
 
 export function MonthlyFeesPage({ view }: MonthlyFeesPageProps) {
@@ -27,7 +21,8 @@ export function MonthlyFeesPage({ view }: MonthlyFeesPageProps) {
   const classId = searchParams.get('classId') ?? ''
   const studentId = searchParams.get('studentId') ?? ''
   const search = searchParams.get('q') ?? ''
-  const updateFilter = (key: 'month' | 'classId' | 'q', value: string) => {
+  const status = normalizeStatus(searchParams.get('status'), view)
+  const updateFilter = (key: 'month' | 'classId' | 'q' | 'status', value: string) => {
     const next = new URLSearchParams(searchParams)
     if (value) next.set(key, value)
     else next.delete(key)
@@ -39,39 +34,38 @@ export function MonthlyFeesPage({ view }: MonthlyFeesPageProps) {
     queryFn: () => ensureMonthlyFees(feeMonth),
   })
   const fees = useQuery({
-    queryKey: ['monthly-fees', view, feeMonth, classId, studentId],
+    queryKey: ['monthly-fees', 'list', feeMonth, classId, studentId],
     queryFn: () => listMonthlyFees({
       feeMonth,
       classId: classId || undefined,
       studentId: studentId || undefined,
-      paymentStatus: view === 'unpaid' ? 'unpaid' : undefined,
     }),
     enabled: ensure.isSuccess,
   })
-  const classes = useQuery({ queryKey: ['classes'], queryFn: () => listClasses() })
+  const classes = useQuery({ queryKey: ['classes', 'active'], queryFn: () => listClasses('active') })
 
   const visibleFees = useMemo(() => {
     const keyword = search.trim().toLocaleLowerCase()
-    const sorted = sortFeesByActionPriority(fees.data ?? [])
-    if (!keyword) return sorted
-    return sorted.filter((fee) => [
+    const filtered = (fees.data ?? []).filter((fee) => matchesFeeStatus(fee, status))
+    const searched = !keyword ? filtered : filtered.filter((fee) => [
       fee.student?.name,
-      fee.student?.school_class,
-      fee.student?.phone,
       fee.enrollment?.class?.name,
     ].some((value) => value?.toLocaleLowerCase().includes(keyword)))
-  }, [fees.data, search])
+    return sortFeesForWorkflow(searched, { status, classId: classId || undefined })
+  }, [fees.data, search, status, classId])
+
+  const counts = useMemo(() => ({
+    unpaid: (fees.data ?? []).filter((fee) => fee.payment_status === 'unpaid').length,
+    paid: (fees.data ?? []).filter((fee) => fee.payment_status === 'paid').length,
+    all: (fees.data ?? []).length,
+  }), [fees.data])
+  const pendingFees = status === 'paid' ? visibleFees.filter((fee) => fee.receipt_status === 'pending') : []
+  const completedFees = status === 'paid' ? visibleFees.filter((fee) => fee.receipt_status === 'completed') : []
 
   return (
     <FeesShell>
-      <div className="section-heading-row">
-        <div>
-          <h2>{titles[view]}</h2>
-          <p className="muted">{formatFeeMonth(feeMonth)}</p>
-        </div>
-      </div>
-
-      <div className="fees-filters">
+      <div className="fees-workflow-header">
+        <div className="fees-filters">
         <label className="field">
           <span>月份</span>
           <input type="month" max={currentMonthInMalaysia().slice(0, 7)} value={monthInput} onChange={(event) => updateFilter('month', event.target.value)} />
@@ -87,6 +81,14 @@ export function MonthlyFeesPage({ view }: MonthlyFeesPageProps) {
           <span>搜索学生</span>
           <input type="search" value={search} onChange={(event) => updateFilter('q', event.target.value)} placeholder="输入姓名" />
         </label>
+        </div>
+        <div className="segmented-control fee-status-tabs" aria-label="缴费状态">
+          {(['unpaid', 'paid', 'all'] as FeeStatusFilter[]).map((item) => (
+            <button type="button" className={status === item ? 'active' : ''} onClick={() => updateFilter('status', item)} key={item}>
+              {statusLabel(item)} <span>{counts[item]}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {(ensure.isLoading || fees.isLoading) && <LoadingBlock message="正在准备月费记录…" />}
@@ -94,9 +96,30 @@ export function MonthlyFeesPage({ view }: MonthlyFeesPageProps) {
       {!fees.isLoading && !fees.isError && visibleFees.length === 0 && (
         <EmptyBlock message={search ? '找不到符合搜索的学生。' : '这个月份没有需要显示的月费。'} />
       )}
-      <div className="fee-list">
-        {visibleFees.map((fee) => <MonthlyFeeCard fee={fee} key={fee.id} />)}
-      </div>
+      {status === 'paid' ? (
+        <div className="paid-fee-groups">
+          <section>
+            <h2>待开收据 <span className="section-count">{pendingFees.length}</span></h2>
+            {pendingFees.length === 0 ? <p className="settings-note">目前没有待开收据。</p> : <div className="fee-list">{pendingFees.map((fee) => <MonthlyFeeCard fee={fee} key={fee.id} />)}</div>}
+          </section>
+          <section>
+            <h2>收据已处理 <span className="section-count">{completedFees.length}</span></h2>
+            {completedFees.length === 0 ? <p className="settings-note">目前没有已处理收据。</p> : <div className="fee-list">{completedFees.map((fee) => <MonthlyFeeCard fee={fee} key={fee.id} />)}</div>}
+          </section>
+        </div>
+      ) : <div className="fee-list">{visibleFees.map((fee) => <MonthlyFeeCard fee={fee} key={fee.id} />)}</div>}
     </FeesShell>
   )
+}
+
+function normalizeStatus(value: string | null, view: FeesView): FeeStatusFilter {
+  if (value === 'paid' || value === 'all' || value === 'unpaid') return value
+  if (view === 'history') return 'all'
+  return 'unpaid'
+}
+
+function statusLabel(status: FeeStatusFilter) {
+  if (status === 'unpaid') return '未缴'
+  if (status === 'paid') return '已缴'
+  return '全部'
 }

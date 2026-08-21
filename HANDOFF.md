@@ -60,8 +60,9 @@
 - **UI Phase 3.1：情境式返回导航**：已完成并部署；跨模块详情页会携带安全的内部返回路径、标签、筛选与合理滚动位置，直接载入时使用默认上级。
 - **UI Phase 4：成绩、考试与批量录入**：已完成本轮前端重构；成绩区改为学校考试／补习班小测页签与紧凑列表，录入进度由现有成绩及资格资料即时推导。学校考试继续使用科目历史资格，小测继续使用小测日期当天的有效报读；批量录入支持键盘操作、Excel／Google Sheets 单列粘贴预检、空白与真实 0 分区分、未保存保护，以及 Desktop／iPad／Mobile 响应式布局。学生、班级、考试和小测之间继续使用情境式返回导航。
 - **UI Phase 5：最终收尾与全系统一致性优化**：已完成。临时班列表与详情以日期时间、人数、收费和点名进度为主，加入学生继续使用完整名单、多选、筛选和批量加入；编辑与结束操作后置。设置改为紧凑分区入口，App、完整备份和最近操作使用独立页面及情境式返回。备份界面明确显示处理中、成功、失败、档案名称与完整性；恢复功能因没有后端支持继续保持停用并置于独立危险区域。PWA 增加非阻挡式安装、更新、离线与重新连接提示。
+- **UI 5.1：实际使用修正**：已完成。新增学生会按正规化姓名、电话及姓名／学校班级相似度显示可继续建立的重复预警；学生、科目、常态班、临时班、学校考试和补习班小测使用共享危险删除区，先读取真实影响数量、要求完整名称确认，再调用 owner-scoped transaction RPC。学生、班级及临时班列表在 Desktop／宽屏 iPad 使用两栏紧凑卡片，Mobile 保持单栏。学费页以月份、进行中常态班及未缴／已缴／全部状态浏览，已缴内先显示待开收据，并使用明确稳定排序及较低视觉层级的次要操作。
 
-这里的 UI Phase 只代表现有功能的界面与导航重构：UI Phase 4 重新设计的是既有功能开发 **Phase 6：成绩**，UI Phase 5 收尾的是既有功能开发 **Phase 7：临时班** 与 **Phase 8：备份及 PWA**。两者都没有新增业务能力，也没有修改数据库结构、资格规则、RPC、RLS 或 migration。
+这里的 UI Phase 只代表现有功能的界面与导航重构：UI Phase 4 重新设计的是既有功能开发 **Phase 6：成绩**，UI Phase 5 收尾的是既有功能开发 **Phase 7：临时班** 与 **Phase 8：备份及 PWA**。UI 5.1 是正式使用后的限定修正；只有永久删除安全能力新增了 additive RPC 与 Storage delete policy，未改变既有收费、资格、点名或成绩业务规则。
 
 **UI Phase 1–5 已全部完成。** 后续只进入正式使用后的 bug fix 或小幅体验调整；不要自行开始 UI Phase 6、功能 Phase 9 或其他新功能。
 
@@ -70,6 +71,7 @@
 - 功能 Phase 1–8 已在 production 正式部署，并由用户完成人工验收。
 - UI Phase 1、UI Phase 2 及 UI Phase 2 后修正已在 GitHub Pages 部署。
 - UI Phase 3、UI Phase 3.1 与 UI Phase 4 已在 GitHub Pages 部署；UI Phase 5 以开发基线 `a557b44` 开始，正式发布提交以 `main` 最新 Git 历史及对应 GitHub Pages workflow 为准，不在本文件预写尚未产生的 commit SHA。
+- UI 5.1 以 `7914981` 为开发基线；production 已安全执行 `202608210009_ui51_safe_permanent_deletion.sql`，并确认公开 RPC、私有 helper 权限及 Storage policy 正常。migration 只建立函数／权限，不会自动删除资料；本轮 production 验收不得实际调用最终删除、缴费或资料写入动作。
 - 正式启用前的测试业务资料清理已由用户确认完成；系统现用于录入真实资料。后续 UI 浏览器验收不得建立、修改或删除 production 业务资料。
 - IndexedDB 离线签名恢复继续由自动化测试覆盖；签名、收费、转班、停课等原有业务规则不得因 UI 改版而改变。
 
@@ -85,10 +87,11 @@
 6. `202608140006_phase5_monthly_fees_receipts.sql`
 7. `202608140007_phase6_grades.sql`
 8. `202608140008_phase7_temporary_classes.sql`
+9. `202608210009_ui51_safe_permanent_deletion.sql`
 
 Phase 8 没有新增业务 schema migration；对应完整性审计位于 `supabase/checks/phase8_integrity_audit.sql`。
 
-功能 Phase 1–8 的 production migration 已执行并完成验收。本轮 UI 改版不需要、也不得重新执行旧 migration。生产数据库已有真实资料，不得重置、清空或重建；已执行的 migration 不得改写，未来若经用户确认需要 schema 修正，必须新增 migration。
+功能 Phase 1–8 的 production migration 已执行并完成验收；UI 5.1 additive migration 也已执行。不得重新执行或改写这些旧 migration。生产数据库已有真实资料，不得重置、清空或重建；未来若经用户确认需要 schema 修正，必须新增 migration。
 
 所有业务表继续使用 `owner_id` 和 RLS。前端只使用 Supabase publishable key；Secret Key、Service Role Key、数据库密码和用户密码不得进入 repository、前端或聊天。
 
@@ -138,7 +141,7 @@ pnpm test
 pnpm build
 ```
 
-UI Phase 5 本地发布验证包含 lint、完整测试、production build 与 `git diff --check`；真实浏览器验收必须覆盖 Desktop 1440×900、iPad 1024×768 和 Mobile 390×844，并保持 production 资料只读。
+UI Phase 5 与 UI 5.1 的本地发布验证包含 lint、完整测试、production build 与 `git diff --check`；真实浏览器验收必须覆盖 Desktop 1440×900、iPad 1024×768 和 Mobile 390×844，并保持 production 资料只读。
 
 GitHub Pages 由 `.github/workflows/deploy-pages.yml` 在推送 `main` 后执行 lint、测试、构建和部署。仓库需要配置：
 

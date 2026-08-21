@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
@@ -16,11 +16,13 @@ import {
 } from '../api/temporaryClassesService'
 import { TemporaryClassRegistrationPanel } from '../components/TemporaryClassRegistrationPanel'
 import { TemporaryPaymentRow } from '../components/TemporaryPaymentRow'
+import { PermanentDeleteZone } from '../../deletion/components/PermanentDeleteZone'
 
 const sessionStatusLabels = { scheduled: '可点名', cancelled: '已停课', completed: '已结束' } as const
 
 export function TemporaryClassDetailPage() {
   const { temporaryClassId = '' } = useParams()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [error, setError] = useState('')
   const temporaryClass = useQuery({
@@ -124,6 +126,21 @@ export function TemporaryClassDetailPage() {
         )}
         {!isActive && <p className="settings-note">此临时班已结束，报名、收费与签到历史保留为只读资料。</p>}
       </details>
+
+      <PermanentDeleteZone
+        entityType="temporary_class"
+        entityId={temporaryClassId}
+        entityName={data.name}
+        entityLabel="临时班"
+        onDeleted={async () => {
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ['temporary-classes'] }),
+            queryClient.invalidateQueries({ queryKey: ['sessions'] }),
+            queryClient.invalidateQueries({ queryKey: ['monthly-fees'] }),
+          ])
+          navigate('/temporary-classes', { replace: true, state: { successMessage: `已永久删除临时班「${data.name}」及其关联资料。` } })
+        }}
+      />
     </section>
   )
 }

@@ -18,6 +18,7 @@ import { endClass, getClass } from '../api/classesService'
 import { getEndClassConfirmationMessage } from '../classActions'
 import { AddStudentToClass } from '../components/AddStudentToClass'
 import { ClassScheduleSummary } from '../components/ClassScheduleSummary'
+import { PermanentDeleteZone } from '../../deletion/components/PermanentDeleteZone'
 
 export function ClassDetailPage() {
   const { classId = '' } = useParams()
@@ -150,6 +151,21 @@ export function ClassDetailPage() {
           </form>
         </details>
       )}
+
+      <PermanentDeleteZone
+        entityType="class"
+        entityId={classId}
+        entityName={data.name}
+        entityLabel="班级"
+        onDeleted={async () => {
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ['classes'] }),
+            queryClient.invalidateQueries({ queryKey: ['enrollments'] }),
+            queryClient.invalidateQueries({ queryKey: ['monthly-fees'] }),
+          ])
+          navigate('/classes', { replace: true, state: { successMessage: `已永久删除班级「${data.name}」及其关联资料。` } })
+        }}
+      />
     </section>
   )
 }

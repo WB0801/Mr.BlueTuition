@@ -356,6 +356,7 @@ h1 { margin: 0; color: var(--color-text-primary); font-size: var(--font-size-pag
 .grow-field { min-width: 0; }
 
 .record-list { display: grid; gap: var(--space-3); }
+.compact-card-grid { align-items: stretch; }
 .record-card {
   min-height: 78px;
   padding: 17px 19px;
@@ -378,6 +379,16 @@ a.record-card:hover { border-color: color-mix(in srgb, var(--color-navy) 34%, va
 .record-chevron { flex: 0 0 auto; color: var(--color-text-tertiary); }
 .record-card-end { flex: 0 0 auto; display: inline-flex; align-items: center; gap: var(--space-3); }
 .student-list-card { min-height: 82px; }
+.compact-card-grid .record-card {
+  min-height: 68px;
+  padding: 12px 14px;
+}
+.compact-card-grid .student-list-card { min-height: 68px; }
+.compact-card-grid .student-identity { gap: 2px; }
+.compact-card-grid .student-identity > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.compact-card-grid .class-card { align-items: center; }
+.compact-card-grid .class-summary { gap: 3px 9px; font-size: 0.84rem; }
+.list-success { margin: 0 0 var(--space-4); }
 .enrollment-card { align-items: center; }
 .enrollment-card-main {
   min-width: 0;
@@ -483,6 +494,25 @@ a.record-card:hover { border-color: color-mix(in srgb, var(--color-navy) 34%, va
   justify-content: space-between;
   gap: var(--space-4);
 }
+.permanent-delete-zone { margin-top: 28px; border-color: #e6b8bd; background: #fff8f8; }
+.permanent-delete-zone > summary { color: var(--color-danger); }
+.permanent-delete-content { padding-top: 14px; display: grid; gap: 15px; }
+.danger-message { margin: 0; color: #7a271a; line-height: 1.55; }
+.deletion-impact-list { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; }
+.deletion-impact-list > div { min-height: 40px; padding: 8px 0; display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid #f0d8da; }
+.deletion-impact-list dt { color: var(--color-text-secondary); }
+.deletion-impact-list dd { margin: 0; color: var(--color-danger); font-weight: 750; }
+.permanent-delete-confirmation { max-width: 520px; }
+.subject-management-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+.subject-management-row > .permanent-delete-zone { grid-column: 1 / -1; width: 100%; margin: 8px 0 0; }
+.duplicate-warning { padding: 16px; display: grid; gap: 14px; color: #6d4c16; background: var(--color-warning-bg); border: 1px solid #e7ca91; border-radius: var(--radius-md); }
+.duplicate-warning h2 { margin: 0; font-size: 1rem; }
+.duplicate-student-list { display: grid; gap: 8px; }
+.duplicate-student-list > div { padding: 10px 0; display: flex; justify-content: space-between; gap: 16px; border-bottom: 1px solid #ead8af; }
+.duplicate-student-list > div:last-child { border-bottom: 0; }
+.duplicate-student-list span { min-width: 0; display: grid; gap: 3px; }
+.duplicate-student-list small { color: #75613b; }
+.duplicate-student-list a { color: var(--color-navy); font-weight: 700; }
 .inline-management-link { color: var(--color-navy); font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); text-decoration: none; }
 .inline-management-link:hover { text-decoration: underline; }
 
@@ -764,6 +794,13 @@ a.record-card:hover { border-color: color-mix(in srgb, var(--color-navy) 34%, va
   border: 1px solid var(--border);
   border-radius: 11px;
 }
+.fees-workflow-header { margin-bottom: 20px; padding: 16px; display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 11px; }
+.fees-workflow-header .fees-filters { margin: 0; padding: 0; background: transparent; border: 0; }
+.fee-status-tabs { width: fit-content; max-width: 100%; }
+.fee-status-tabs button { gap: 6px; }
+.fee-status-tabs button span { min-width: 22px; padding: 1px 6px; color: var(--muted); background: rgb(255 255 255 / 70%); border-radius: 999px; font-size: 0.75rem; }
+.paid-fee-groups { display: grid; gap: 28px; }
+.paid-fee-groups h2 { margin: 0 0 10px; font-size: 1rem; }
 .fee-rule-notice { margin: 0 0 18px; }
 .fee-list { display: grid; gap: 10px; }
 .fee-card {
@@ -792,6 +829,12 @@ a.record-card:hover { border-color: color-mix(in srgb, var(--color-navy) 34%, va
 .fee-status-paid { color: #05603a; background: #e9f8f0; }
 .fee-status-waived { color: #596273; background: #eef0f4; }
 .fee-actions { max-width: 250px; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.fee-more-menu { position: relative; }
+.fee-more-menu > summary { width: 42px; min-height: 40px; display: grid; place-items: center; cursor: pointer; color: var(--color-text-secondary); border: 1px solid var(--border); border-radius: 8px; font-size: 1.2rem; font-weight: 800; list-style: none; }
+.fee-more-menu > summary::-webkit-details-marker { display: none; }
+.fee-more-menu > div { position: absolute; right: 0; z-index: 4; min-width: 170px; padding: 7px; display: grid; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 9px; box-shadow: var(--shadow-card-hover); }
+.fee-more-menu > div .button { width: 100%; justify-content: flex-start; white-space: nowrap; }
+.danger-text { color: var(--color-danger); }
 .fee-amount-form { grid-column: 1 / -1; padding-top: 12px; display: grid; grid-template-columns: minmax(0, 280px) auto; align-items: end; gap: 12px; border-top: 1px solid var(--border); }
 .fee-card-error { grid-column: 1 / -1; }
 .checkbox-field { display: flex; align-items: flex-start; gap: 9px; line-height: 1.4; }
@@ -1424,6 +1467,12 @@ label.receipt-row { cursor: pointer; }
   .grade-entry-table td:last-child { width: 120px; }
 }
 
+@media (min-width: 760px) {
+  .student-card-grid,
+  .class-card-grid,
+  .temporary-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 @media (max-width: 560px) {
   .header-inner, .page-container { width: min(100% - 24px, var(--max-width-content)); }
   .page-container { padding-top: 28px; }
@@ -1470,10 +1519,15 @@ label.receipt-row { cursor: pointer; }
   .signature-canvas { height: 340px; }
   .signature-actions { grid-template-columns: 1fr; }
   .fees-filters { grid-template-columns: 1fr; }
+  .fees-workflow-header { padding: 13px; }
+  .fee-status-tabs { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .fee-status-tabs button { min-width: 0; justify-content: center; padding-inline: 7px; }
   .fee-card,
   .enrollment-fee-row .fee-card { grid-template-columns: 1fr; }
   .fee-actions { width: 100%; max-width: none; justify-content: stretch; }
-  .fee-actions .button { flex: 1 1 auto; }
+  .fee-actions > .button { flex: 1 1 auto; }
+  .fee-more-menu { margin-left: auto; }
+  .fee-more-menu > div { position: static; margin-top: 6px; }
   .fee-amount-form { grid-template-columns: 1fr; }
   .receipts-heading { align-items: center; }
   .receipt-row { align-items: flex-start; }
@@ -1538,6 +1592,9 @@ label.receipt-row { cursor: pointer; }
   .student-picker-submit { position: sticky; bottom: 8px; z-index: 4; padding: 8px 10px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); }
   .student-picker-submit .button { min-width: 128px; }
   .compact-data-row { align-items: flex-start; }
+  .deletion-impact-list { grid-template-columns: 1fr; }
+  .duplicate-student-list > div { align-items: flex-start; flex-direction: column; }
+  .subject-management-row { grid-template-columns: minmax(0, 1fr) auto; }
   .attendance-toolbar { flex-direction: column; }
   .attendance-toolbar .all-day-stop-panel { width: 100%; }
   .fee-card-main { display: grid; grid-template-columns: minmax(0, 1fr) auto; }

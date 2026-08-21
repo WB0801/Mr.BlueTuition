@@ -17,4 +17,19 @@ describe('UI Phase 5 consistency and responsive safety', () => {
     expect(css).toContain('.pwa-status-prompt { left: 12px; right: 12px; bottom: 12px; max-width: none;')
     expect(css).toContain('.settings-menu-item { grid-template-columns: 36px minmax(0, 1fr) 18px;')
   })
+
+  it('uses two compact card columns on desktop and wide iPad, then one mobile column', () => {
+    expect(css).toContain('@media (min-width: 760px)')
+    expect(css).toContain('.student-card-grid,')
+    expect(css).toContain('.class-card-grid,')
+    expect(css).toContain('.temporary-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }')
+    expect(css).toContain('.compact-card-grid .record-card')
+    expect(css).toContain('@media (max-width: 560px)')
+  })
+
+  it('keeps fee controls and deletion impacts within the mobile viewport', () => {
+    expect(css).toContain('.fee-status-tabs { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }')
+    expect(css).toContain('.deletion-impact-list { grid-template-columns: 1fr; }')
+    expect(css).not.toContain('overflow-x: scroll')
+  })
 })

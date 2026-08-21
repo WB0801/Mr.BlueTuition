@@ -1,51 +1,35 @@
 import { useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
-import { getErrorMessage } from '../../../utils/errors'
 import { formatDate } from '../../../utils/format'
 import { GradeEntryTable } from '../components/GradeEntryTable'
 import { GradeFlowSteps } from '../components/GradeFlowSteps'
 import {
-  deleteTuitionQuiz,
   getTuitionQuiz,
   listTuitionQuizRoster,
   listTuitionQuizScores,
   saveTuitionQuizScores,
 } from '../api/gradesService'
+import { PermanentDeleteZone } from '../../deletion/components/PermanentDeleteZone'
 
 export function TuitionQuizDetailPage() {
   const { quizId = '' } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()
-  const [deleteError, setDeleteError] = useState('')
   const [flowStep, setFlowStep] = useState<2 | 3>(2)
   const isNewFlow = Boolean((location.state as { gradeFlow?: boolean } | null)?.gradeFlow)
   const quiz = useQuery({ queryKey: ['tuition-quiz', quizId], queryFn: () => getTuitionQuiz(quizId) })
   const roster = useQuery({ queryKey: ['tuition-quiz', quizId, 'roster'], queryFn: () => listTuitionQuizRoster(quizId) })
   const scores = useQuery({ queryKey: ['tuition-quiz', quizId, 'scores'], queryFn: () => listTuitionQuizScores(quizId) })
-  const remove = useMutation({
-    mutationFn: () => deleteTuitionQuiz(quizId),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['tuition-quizzes'] })
-      navigate(`/grades/quizzes?classId=${quiz.data?.class_id ?? ''}`, { replace: true })
-    },
-  })
 
   if (quiz.isLoading || roster.isLoading || scores.isLoading) return <LoadingBlock />
   if (quiz.isError || !quiz.data || roster.isError || scores.isError) return <ErrorBlock message="小测资料载入失败。" />
 
   const initialScores = Object.fromEntries((scores.data ?? []).map((score) => [score.student_id, score.score]))
-
-  async function handleDelete() {
-    const count = scores.data?.length ?? 0
-    if (!window.confirm(`删除此小测将同时删除 ${count} 笔学生成绩。确定删除吗？`)) return
-    setDeleteError('')
-    try { await remove.mutateAsync() } catch (caughtError) { setDeleteError(getErrorMessage(caughtError, '删除小测失败，请重试。')) }
-  }
 
   return (
     <section>
@@ -70,14 +54,16 @@ export function TuitionQuizDetailPage() {
         />
       )}
 
-      <details className="danger-panel">
-        <summary>删除此小测</summary>
-        <p className="impact-notice">删除此小测将同时删除 <strong>{scores.data?.length ?? 0}</strong> 笔学生成绩。</p>
-        <button className="button button-danger" type="button" disabled={remove.isPending} onClick={handleDelete}>
-          {remove.isPending ? '删除中…' : '永久删除小测'}
-        </button>
-        {deleteError && <p className="form-error" role="alert">{deleteError}</p>}
-      </details>
+      <PermanentDeleteZone
+        entityType="tuition_quiz"
+        entityId={quizId}
+        entityName={quiz.data.name}
+        entityLabel="小测"
+        onDeleted={async () => {
+          await queryClient.invalidateQueries({ queryKey: ['tuition-quizzes'] })
+          navigate(`/grades/quizzes?classId=${quiz.data.class_id}`, { replace: true, state: { successMessage: `已永久删除小测「${quiz.data.name}」及其成绩。` } })
+        }}
+      />
     </section>
   )
 }

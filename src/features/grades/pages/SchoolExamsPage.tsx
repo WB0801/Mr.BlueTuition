@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useSearchParams } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
@@ -11,6 +11,7 @@ import { GradesTabs } from '../components/GradesTabs'
 import { ScoreProgress } from '../components/ScoreProgress'
 
 export function SchoolExamsPage() {
+  const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const year = Number(searchParams.get('year') ?? todayInMalaysia().slice(0, 4))
   const subjectId = searchParams.get('subjectId') ?? ''
@@ -37,6 +38,9 @@ export function SchoolExamsPage() {
         actions={<ContextLink backLabel="学校考试" className="button button-primary" to="/grades/school/new">新增学校考试</ContextLink>}
       />
       <GradesTabs active="school" />
+      {(location.state as { successMessage?: string } | null)?.successMessage && (
+        <p className="form-success list-success" role="status">{(location.state as { successMessage: string }).successMessage}</p>
+      )}
 
       <div className="grade-filters compact-grade-filters">
         <label className="field">

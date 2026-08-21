@@ -10,10 +10,8 @@ export function FeesShell({ children }: { children: ReactNode }) {
     <section>
       <PageHeader title="学费" {...(!isFeesRoot && { backTo: '/fees', backLabel: '本月缴费' })} />
       <nav className="fees-nav" aria-label="学费功能">
-        <NavLink end to="/fees">本月缴费</NavLink>
-        <NavLink to="/fees/unpaid">未缴名单</NavLink>
-        <NavLink to="/fees/receipts">待开收据</NavLink>
-        <NavLink to="/fees/history">历史缴费</NavLink>
+        <NavLink end to="/fees">缴费记录</NavLink>
+        <NavLink to="/fees/receipts">收据处理</NavLink>
       </nav>
       {children}
     </section>

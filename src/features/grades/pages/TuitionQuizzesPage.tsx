@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useSearchParams } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
@@ -11,6 +11,7 @@ import { GradesTabs } from '../components/GradesTabs'
 import { ScoreProgress } from '../components/ScoreProgress'
 
 export function TuitionQuizzesPage() {
+  const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const classes = useQuery({ queryKey: ['classes'], queryFn: () => listClasses() })
   const selectedClassId = searchParams.get('classId')
@@ -40,6 +41,9 @@ export function TuitionQuizzesPage() {
         actions={selectedClassId ? <ContextLink backLabel="补习班小测" className="button button-primary" to={`/grades/quizzes/new?classId=${selectedClassId}`}>新增补习班小测</ContextLink> : undefined}
       />
       <GradesTabs active="quizzes" />
+      {(location.state as { successMessage?: string } | null)?.successMessage && (
+        <p className="form-success list-success" role="status">{(location.state as { successMessage: string }).successMessage}</p>
+      )}
 
       <div className="grade-filters compact-grade-filters grade-quiz-filters">
         <label className="field">
