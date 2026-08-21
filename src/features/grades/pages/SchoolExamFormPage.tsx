@@ -1,15 +1,17 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { getErrorMessage } from '../../../utils/errors'
 import { todayInMalaysia } from '../../../utils/format'
 import { listSubjects } from '../../classes/api/subjectsService'
 import { createSchoolExam, type SchoolExamInput } from '../api/gradesService'
+import { GradeFlowSteps } from '../components/GradeFlowSteps'
 
 export function SchoolExamFormPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const subjects = useQuery({ queryKey: ['subjects'], queryFn: listSubjects })
   const [form, setForm] = useState<SchoolExamInput>({
     subject_id: '',
@@ -21,7 +23,7 @@ export function SchoolExamFormPage() {
   const [error, setError] = useState('')
   const create = useMutation({
     mutationFn: () => createSchoolExam(form),
-    onSuccess: (exam) => navigate(`/grades/school/${exam.id}`, { replace: true }),
+    onSuccess: (exam) => navigate(`/grades/school/${exam.id}`, { replace: true, state: { ...(location.state as object ?? {}), gradeFlow: true } }),
     onError: (caughtError) => setError(getErrorMessage(caughtError, '新增学校考试失败，请重试。')),
   })
 
@@ -41,6 +43,7 @@ export function SchoolExamFormPage() {
   return (
     <section>
       <PageHeader title="新增学校考试" backTo="/grades/school" backLabel="学校考试" />
+      <GradeFlowSteps current={1} />
       {subjects.data?.length === 0 ? <EmptyBlock message="请先在班级模块新增科目。" /> : (
         <form className="form-card" onSubmit={handleSubmit}>
           <div className="form-grid">

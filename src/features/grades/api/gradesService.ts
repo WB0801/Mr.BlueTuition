@@ -8,6 +8,7 @@ import type {
   TuitionQuizRosterEntry,
   TuitionQuizScore,
 } from '../../../types/domain'
+import { buildSchoolExamOverviews, buildTuitionQuizOverviews } from '../gradeOverview'
 
 const schoolExamSelection = '*, subject:subjects(id,name)'
 const quizSelection = '*, class:classes(*,subject:subjects(id,name))'
@@ -45,6 +46,31 @@ export async function listSchoolExams(filters: { year?: number; subjectId?: stri
   const { data, error } = await query
   if (error) throw error
   return (data ?? []).map(mapSchoolExam)
+}
+
+export async function listSchoolExamOverviews(filters: { year?: number; subjectId?: string } = {}) {
+  const exams = await listSchoolExams(filters)
+  if (exams.length === 0) return []
+  const examIds = exams.map((exam) => exam.id)
+  const subjectIds = [...new Set(exams.map((exam) => exam.subject_id))]
+  const client = requireSupabase()
+  const [scoresResult, enrollmentsResult] = await Promise.all([
+    client.from('school_exam_scores').select('exam_id,student_id').in('exam_id', examIds),
+    client.from('enrollments').select('student_id,class_id,join_date,end_date,class:classes!inner(subject_id)').in('class.subject_id', subjectIds),
+  ])
+  if (scoresResult.error) throw scoresResult.error
+  if (enrollmentsResult.error) throw enrollmentsResult.error
+  return buildSchoolExamOverviews(
+    exams,
+    (scoresResult.data ?? []).map((row) => ({ parent_id: row.exam_id, student_id: row.student_id })),
+    (enrollmentsResult.data ?? []).map((row) => ({
+      student_id: row.student_id,
+      class_id: row.class_id,
+      subject_id: row.class?.[0]?.subject_id,
+      join_date: row.join_date,
+      end_date: row.end_date,
+    })),
+  )
 }
 
 export async function getSchoolExam(examId: string) {
@@ -137,6 +163,25 @@ export async function listTuitionQuizzes(classId?: string) {
   const { data, error } = await query
   if (error) throw error
   return (data ?? []).map(mapTuitionQuiz)
+}
+
+export async function listTuitionQuizOverviews(classId?: string) {
+  const quizzes = await listTuitionQuizzes(classId)
+  if (quizzes.length === 0) return []
+  const quizIds = quizzes.map((quiz) => quiz.id)
+  const classIds = [...new Set(quizzes.map((quiz) => quiz.class_id))]
+  const client = requireSupabase()
+  const [scoresResult, enrollmentsResult] = await Promise.all([
+    client.from('tuition_quiz_scores').select('quiz_id,student_id').in('quiz_id', quizIds),
+    client.from('enrollments').select('student_id,class_id,join_date,end_date').in('class_id', classIds),
+  ])
+  if (scoresResult.error) throw scoresResult.error
+  if (enrollmentsResult.error) throw enrollmentsResult.error
+  return buildTuitionQuizOverviews(
+    quizzes,
+    (scoresResult.data ?? []).map((row) => ({ parent_id: row.quiz_id, student_id: row.student_id })),
+    enrollmentsResult.data ?? [],
+  )
 }
 
 export async function getTuitionQuiz(quizId: string) {

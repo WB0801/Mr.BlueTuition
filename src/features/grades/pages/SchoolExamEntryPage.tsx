@@ -1,16 +1,21 @@
+import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useParams } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
 import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { formatDate } from '../../../utils/format'
 import { getClass } from '../../classes/api/classesService'
 import { GradeEntryTable } from '../components/GradeEntryTable'
+import { GradeFlowSteps } from '../components/GradeFlowSteps'
 import { getSchoolExam, listSchoolExamRoster, listSchoolExamScores, saveSchoolExamScores } from '../api/gradesService'
 
 export function SchoolExamEntryPage() {
   const { examId = '', classId = '' } = useParams()
+  const location = useLocation()
   const queryClient = useQueryClient()
+  const [flowStep, setFlowStep] = useState<2 | 3>(2)
+  const isNewFlow = Boolean((location.state as { gradeFlow?: boolean } | null)?.gradeFlow)
   const exam = useQuery({ queryKey: ['school-exam', examId], queryFn: () => getSchoolExam(examId) })
   const tuitionClass = useQuery({ queryKey: ['class', classId], queryFn: () => getClass(classId) })
   const roster = useQuery({
@@ -30,6 +35,7 @@ export function SchoolExamEntryPage() {
   return (
     <section>
       <PageHeader title={exam.data.name} backTo={`/grades/school/${examId}`} backLabel="考试详情" />
+      {isNewFlow && <GradeFlowSteps current={flowStep} />}
       <p className="grade-context">{formatDate(exam.data.exam_date)} · {exam.data.subject?.name} · 满分 {exam.data.max_score}</p>
       <h2 className="grade-entry-class-title"><ContextLink backLabel="成绩" to={`/classes/${classId}`}>{tuitionClass.data.name}</ContextLink></h2>
       {roster.data?.length === 0 ? <EmptyBlock message="这个班级目前没有可录入该科目成绩的学生。" /> : (
@@ -38,6 +44,8 @@ export function SchoolExamEntryPage() {
           rows={roster.data ?? []}
           initialScores={initialScores}
           maxScore={exam.data.max_score}
+          studentBackLabel="考试"
+          onSaved={() => setFlowStep(3)}
           onSave={async (payload) => {
             await saveSchoolExamScores(examId, payload)
             await queryClient.invalidateQueries({ queryKey: ['school-exam', examId, 'scores'] })

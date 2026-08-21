@@ -74,7 +74,7 @@ export function ClassDetailPage() {
         <ContextLink backLabel="班级" to={`/classes/${classId}/sessions`}>课程</ContextLink>
         <ContextLink backLabel="班级" to="/attendance">点名</ContextLink>
         <ContextLink backLabel="班级" to={`/fees?classId=${classId}`}>学费</ContextLink>
-        <ContextLink backLabel="班级" to="/grades/quizzes">小测与成绩</ContextLink>
+        <ContextLink backLabel="班级" to={`/grades/quizzes?classId=${classId}`}>小测与成绩</ContextLink>
       </nav>
 
       <section className="content-section entity-section class-students-section">

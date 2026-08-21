@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
@@ -15,11 +16,15 @@ import {
 } from '../api/gradesService'
 import { calculateGradeStats } from '../gradeEntry'
 import { HistoricalSchoolScorePanel } from '../components/HistoricalSchoolScorePanel'
+import { GradeFlowSteps } from '../components/GradeFlowSteps'
 
 export function SchoolExamDetailPage() {
   const { examId = '' } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
+  const [deleteError, setDeleteError] = useState('')
+  const isNewFlow = Boolean((location.state as { gradeFlow?: boolean } | null)?.gradeFlow)
   const exam = useQuery({ queryKey: ['school-exam', examId], queryFn: () => getSchoolExam(examId) })
   const classes = useQuery({ queryKey: ['classes'], queryFn: () => listClasses() })
   const roster = useQuery({ queryKey: ['school-exam', examId, 'roster'], queryFn: () => listSchoolExamRoster(examId) })
@@ -49,12 +54,14 @@ export function SchoolExamDetailPage() {
   async function handleDelete() {
     const count = scores.data?.length ?? 0
     if (!window.confirm(`删除此考试将同时删除 ${count} 笔学生成绩。确定删除吗？`)) return
-    try { await remove.mutateAsync() } catch (caughtError) { window.alert(getErrorMessage(caughtError, '删除考试失败，请重试。')) }
+    setDeleteError('')
+    try { await remove.mutateAsync() } catch (caughtError) { setDeleteError(getErrorMessage(caughtError, '删除考试失败，请重试。')) }
   }
 
   return (
     <section>
       <PageHeader title={exam.data.name} backTo="/grades/school" backLabel="学校考试" />
+      {isNewFlow && <GradeFlowSteps current={2} />}
       <p className="grade-context">{formatDate(exam.data.exam_date)} · {exam.data.subject?.name} · 满分 {exam.data.max_score}</p>
       <div className="grade-stats" aria-label="整场考试统计">
         <span>已录 <strong>{stats.recorded} / {stats.total}</strong></span>
@@ -71,7 +78,7 @@ export function SchoolExamDetailPage() {
             const classRoster = roster.data?.filter((row) => row.class_id === tuitionClass.id) ?? []
             const recorded = classRoster.filter((row) => scoreMap.has(row.student_id)).length
             return (
-              <ContextLink backLabel="成绩" className="record-card" to={`/grades/school/${examId}/classes/${tuitionClass.id}`} key={tuitionClass.id}>
+              <ContextLink backLabel="考试" state={isNewFlow ? { gradeFlow: true } : undefined} className="record-card" to={`/grades/school/${examId}/classes/${tuitionClass.id}`} key={tuitionClass.id}>
                 <span className="record-main">
                   <strong>{tuitionClass.name}</strong>
                   <span className="record-meta">已录 {recorded} / {classRoster.length}</span>
@@ -95,6 +102,7 @@ export function SchoolExamDetailPage() {
         <button className="button button-danger" type="button" disabled={remove.isPending} onClick={handleDelete}>
           {remove.isPending ? '删除中…' : '永久删除考试'}
         </button>
+        {deleteError && <p className="form-error" role="alert">{deleteError}</p>}
       </details>
     </section>
   )

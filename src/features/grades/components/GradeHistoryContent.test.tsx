@@ -1,4 +1,7 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { createMemoryRouter, MemoryRouter, RouterProvider } from 'react-router-dom'
+import { PageHeader } from '../../../components/shared/PageHeader'
 import type { SchoolExamScore, TuitionQuizScore } from '../../../types/domain'
 import { GradeHistoryContent } from './GradeHistoryContent'
 
@@ -29,13 +32,28 @@ const quizScores = [{
 
 describe('GradeHistoryContent', () => {
   it('shows the latest exam by exam date and displays student-wide context', () => {
-    render(<GradeHistoryContent schoolScores={schoolScores} quizScores={quizScores} showContext />)
+    render(<MemoryRouter initialEntries={['/students/student-1']}><GradeHistoryContent schoolScores={schoolScores} quizScores={quizScores} showContext /></MemoryRouter>)
 
-    const latestCard = screen.getByText('最近一次学校考试').closest('.latest-grade-card')
-    expect(latestCard).toHaveTextContent('第二次段考')
-    expect(latestCard).toHaveTextContent('80 / 100')
-    expect(screen.getAllByText('会计学').length).toBeGreaterThan(0)
-    expect(screen.getByText('Depreciation').parentElement).toHaveTextContent('高一会计学（1）')
-    expect(screen.getByText('16 / 20 · 80%')).toBeInTheDocument()
+    const schoolLinks = screen.getAllByRole('link').filter((link) => link.getAttribute('href')?.startsWith('/grades/school/'))
+    expect(schoolLinks[0]).toHaveTextContent('第二次段考')
+    expect(schoolLinks[0]).toHaveTextContent('80 / 100')
+    expect(schoolLinks[0]).toHaveAttribute('href', '/grades/school/exam-new')
+    expect(schoolLinks[0]).toHaveTextContent('会计学')
+    expect(screen.getByRole('link', { name: /Depreciation/ })).toHaveTextContent('高一会计学（1）')
+    expect(screen.getByText('16 / 20')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Depreciation/ })).toHaveAttribute('href', '/grades/quizzes/quiz-1')
+  })
+
+  it('returns from an exam to the student who opened it', async () => {
+    const user = userEvent.setup()
+    const router = createMemoryRouter([
+      { path: '/students/:studentId', element: <GradeHistoryContent schoolScores={schoolScores} quizScores={[]} showContext /> },
+      { path: '/grades/school/:examId', element: <PageHeader title="考试" backTo="/grades/school" backLabel="成绩" /> },
+    ], { initialEntries: ['/students/student-1?gradeTab=school'] })
+    render(<RouterProvider router={router} />)
+
+    await user.click(screen.getByRole('link', { name: /第二次段考/ }))
+
+    expect(screen.getByRole('link', { name: '返回学生' })).toHaveAttribute('href', '/students/student-1?gradeTab=school')
   })
 })

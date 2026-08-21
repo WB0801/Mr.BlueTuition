@@ -3,15 +3,19 @@ import { useSearchParams } from 'react-router-dom'
 import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
+import { SearchInput } from '../../../components/ui'
 import { formatDate, todayInMalaysia } from '../../../utils/format'
 import { listSubjects } from '../../classes/api/subjectsService'
-import { listSchoolExams } from '../api/gradesService'
+import { listSchoolExamOverviews } from '../api/gradesService'
+import { GradesTabs } from '../components/GradesTabs'
+import { ScoreProgress } from '../components/ScoreProgress'
 
 export function SchoolExamsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const year = Number(searchParams.get('year') ?? todayInMalaysia().slice(0, 4))
   const subjectId = searchParams.get('subjectId') ?? ''
-  const updateFilter = (key: 'year' | 'subjectId', value: string) => {
+  const search = searchParams.get('q') ?? ''
+  const updateFilter = (key: 'year' | 'subjectId' | 'q', value: string) => {
     const next = new URLSearchParams(searchParams)
     if (value) next.set(key, value)
     else next.delete(key)
@@ -19,24 +23,22 @@ export function SchoolExamsPage() {
   }
   const subjects = useQuery({ queryKey: ['subjects'], queryFn: listSubjects })
   const exams = useQuery({
-    queryKey: ['school-exams', year, subjectId],
-    queryFn: () => listSchoolExams({ year, subjectId: subjectId || undefined }),
+    queryKey: ['school-exams', 'overview', year, subjectId],
+    queryFn: () => listSchoolExamOverviews({ year, subjectId: subjectId || undefined }),
   })
-  const groupedExams = (exams.data ?? []).reduce<Record<string, typeof exams.data>>((groups, exam) => {
-    const key = `${exam.year} · ${exam.subject?.name ?? '未知科目'}`
-    groups[key] = [...(groups[key] ?? []), exam]
-    return groups
-  }, {})
+  const visibleExams = (exams.data ?? []).filter((exam) => exam.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
 
   return (
-    <section>
+    <section className="management-page grades-workspace">
       <PageHeader
-        title="学校考试"
-        backTo="/grades"
-        backLabel="成绩"
-        actions={<ContextLink backLabel="学校考试" className="button button-primary" to="/grades/school/new">＋ 新增学校考试</ContextLink>}
+        title="成绩"
+        backTo="/"
+        backLabel="首页"
+        actions={<ContextLink backLabel="学校考试" className="button button-primary" to="/grades/school/new">新增学校考试</ContextLink>}
       />
-      <div className="grade-filters">
+      <GradesTabs active="school" />
+
+      <div className="grade-filters compact-grade-filters">
         <label className="field">
           <span>年份</span>
           <input type="number" min="2000" max="2200" value={year} onChange={(event) => updateFilter('year', event.target.value)} />
@@ -48,28 +50,34 @@ export function SchoolExamsPage() {
             {subjects.data?.map((subject) => <option value={subject.id} key={subject.id}>{subject.name}</option>)}
           </select>
         </label>
+        <SearchInput
+          aria-label="搜索学校考试"
+          containerClassName="grade-search-filter"
+          placeholder="搜索考试"
+          value={search}
+          onChange={(event) => updateFilter('q', event.target.value)}
+        />
       </div>
+
       {exams.isLoading && <LoadingBlock />}
       {exams.isError && <ErrorBlock message="学校考试载入失败。" />}
-      {!exams.isLoading && exams.data?.length === 0 && <EmptyBlock message="这个筛选条件下还没有学校考试。" />}
-      <div className="grade-exam-groups">
-        {Object.entries(groupedExams).map(([group, groupExams]) => (
-          <section key={group}>
-            <h2>{group}</h2>
-            <div className="record-list">
-              {(groupExams ?? []).map((exam) => (
-                <ContextLink backLabel="成绩" className="record-card" to={`/grades/school/${exam.id}`} key={exam.id}>
-                  <span className="record-main">
-                    <strong>{exam.name}</strong>
-                    <span className="record-meta">{formatDate(exam.exam_date)} · 满分 {exam.max_score}</span>
-                  </span>
-                  <span className="record-action-label">录入 / 查看成绩</span>
-                </ContextLink>
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
+      {!exams.isLoading && visibleExams.length === 0 && <EmptyBlock message={search ? '找不到符合的学校考试。' : '这个筛选条件下还没有学校考试。'} />}
+      {visibleExams.length > 0 && (
+        <div className="grade-list-table" role="table" aria-label="学校考试">
+          <div className="grade-list-row grade-list-head" role="row">
+            <span>考试</span><span>日期</span><span>科目</span><span>录入进度</span><span aria-hidden="true" />
+          </div>
+          {visibleExams.map((exam) => (
+            <ContextLink backLabel="成绩" className="grade-list-row grade-list-link" to={`/grades/school/${exam.id}`} role="row" key={exam.id}>
+              <strong data-label="考试">{exam.name}</strong>
+              <span data-label="日期">{formatDate(exam.exam_date)}</span>
+              <span data-label="科目">{exam.subject?.name ?? '—'}</span>
+              <ScoreProgress progress={exam} compact />
+              <span className="chevron" aria-hidden="true">›</span>
+            </ContextLink>
+          ))}
+        </div>
+      )}
     </section>
   )
 }

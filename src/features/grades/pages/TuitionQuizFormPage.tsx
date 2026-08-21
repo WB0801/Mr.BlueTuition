@@ -1,15 +1,17 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { getErrorMessage } from '../../../utils/errors'
 import { todayInMalaysia } from '../../../utils/format'
 import { listClasses } from '../../classes/api/classesService'
 import { createTuitionQuiz, type TuitionQuizInput } from '../api/gradesService'
+import { GradeFlowSteps } from '../components/GradeFlowSteps'
 
 export function TuitionQuizFormPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams] = useSearchParams()
   const classes = useQuery({ queryKey: ['classes'], queryFn: () => listClasses() })
   const [form, setForm] = useState<TuitionQuizInput>({
@@ -21,7 +23,7 @@ export function TuitionQuizFormPage() {
   const [error, setError] = useState('')
   const create = useMutation({
     mutationFn: () => createTuitionQuiz(form),
-    onSuccess: (quiz) => navigate(`/grades/quizzes/${quiz.id}`, { replace: true }),
+    onSuccess: (quiz) => navigate(`/grades/quizzes/${quiz.id}`, { replace: true, state: { ...(location.state as object ?? {}), gradeFlow: true } }),
     onError: (caughtError) => setError(getErrorMessage(caughtError, '新增小测失败，请重试。')),
   })
 
@@ -37,6 +39,7 @@ export function TuitionQuizFormPage() {
   return (
     <section>
       <PageHeader title="新增补习班小测" backTo="/grades/quizzes" backLabel="补习班小测" />
+      <GradeFlowSteps current={1} kind="小测" />
       {classes.data?.length === 0 ? <EmptyBlock message="目前没有常态班。" /> : (
         <form className="form-card" onSubmit={handleSubmit}>
           <label className="field">

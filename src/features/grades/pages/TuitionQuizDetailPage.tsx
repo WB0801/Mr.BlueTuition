@@ -1,11 +1,13 @@
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { getErrorMessage } from '../../../utils/errors'
 import { formatDate } from '../../../utils/format'
 import { GradeEntryTable } from '../components/GradeEntryTable'
+import { GradeFlowSteps } from '../components/GradeFlowSteps'
 import {
   deleteTuitionQuiz,
   getTuitionQuiz,
@@ -17,7 +19,11 @@ import {
 export function TuitionQuizDetailPage() {
   const { quizId = '' } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
+  const [deleteError, setDeleteError] = useState('')
+  const [flowStep, setFlowStep] = useState<2 | 3>(2)
+  const isNewFlow = Boolean((location.state as { gradeFlow?: boolean } | null)?.gradeFlow)
   const quiz = useQuery({ queryKey: ['tuition-quiz', quizId], queryFn: () => getTuitionQuiz(quizId) })
   const roster = useQuery({ queryKey: ['tuition-quiz', quizId, 'roster'], queryFn: () => listTuitionQuizRoster(quizId) })
   const scores = useQuery({ queryKey: ['tuition-quiz', quizId, 'scores'], queryFn: () => listTuitionQuizScores(quizId) })
@@ -37,12 +43,14 @@ export function TuitionQuizDetailPage() {
   async function handleDelete() {
     const count = scores.data?.length ?? 0
     if (!window.confirm(`删除此小测将同时删除 ${count} 笔学生成绩。确定删除吗？`)) return
-    try { await remove.mutateAsync() } catch (caughtError) { window.alert(getErrorMessage(caughtError, '删除小测失败，请重试。')) }
+    setDeleteError('')
+    try { await remove.mutateAsync() } catch (caughtError) { setDeleteError(getErrorMessage(caughtError, '删除小测失败，请重试。')) }
   }
 
   return (
     <section>
       <PageHeader title={quiz.data.name} backTo={`/grades/quizzes?classId=${quiz.data.class_id}`} backLabel="补习班小测" />
+      {isNewFlow && <GradeFlowSteps current={flowStep} kind="小测" />}
       <p className="grade-context">
         {quiz.data.class && <ContextLink backLabel="成绩" to={`/classes/${quiz.data.class.id}`}>{quiz.data.class.name}</ContextLink>}
         {' · '}{formatDate(quiz.data.quiz_date)} · 满分 {quiz.data.max_score}
@@ -53,6 +61,8 @@ export function TuitionQuizDetailPage() {
           rows={roster.data ?? []}
           initialScores={initialScores}
           maxScore={quiz.data.max_score}
+          studentBackLabel="小测"
+          onSaved={() => setFlowStep(3)}
           onSave={async (payload) => {
             await saveTuitionQuizScores(quizId, payload)
             await queryClient.invalidateQueries({ queryKey: ['tuition-quiz', quizId, 'scores'] })
@@ -66,6 +76,7 @@ export function TuitionQuizDetailPage() {
         <button className="button button-danger" type="button" disabled={remove.isPending} onClick={handleDelete}>
           {remove.isPending ? '删除中…' : '永久删除小测'}
         </button>
+        {deleteError && <p className="form-error" role="alert">{deleteError}</p>}
       </details>
     </section>
   )

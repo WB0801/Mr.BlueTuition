@@ -23,8 +23,14 @@ export function parseScoreColumnPaste(
   maxScore: number,
 ) {
   const normalized = text.replace(/\r/g, '')
-  const values = normalized.split('\n')
-  if (values.at(-1) === '') values.pop()
+  const lines = normalized.split('\n')
+  while (lines.length > 0 && lines[0].trim() === '') lines.shift()
+  while (lines.length > 0 && lines.at(-1)?.trim() === '') lines.pop()
+  if (lines.length === 0) return { values: null, error: '没有可贴入的成绩。' }
+  if (lines.some((value) => value.trim() === '')) {
+    return { values: null, error: '粘贴内容包含空白行。请整理整列后再试，以免成绩错位。' }
+  }
+  const values = lines.map((value) => value.trim())
 
   if (values.length > rowCount - startIndex) {
     return {

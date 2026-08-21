@@ -49,6 +49,6 @@ describe('ClassDetailPage hierarchy and connected navigation', () => {
     expect(students.compareDocumentPosition(management) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(screen.getByRole('link', { name: '课程' })).toHaveAttribute('href', '/classes/class-1/sessions')
     expect(screen.getByRole('link', { name: '学费' })).toHaveAttribute('href', '/fees?classId=class-1')
-    expect(screen.getByRole('link', { name: '小测与成绩' })).toHaveAttribute('href', '/grades/quizzes')
+    expect(screen.getByRole('link', { name: '小测与成绩' })).toHaveAttribute('href', '/grades/quizzes?classId=class-1')
   })
 })

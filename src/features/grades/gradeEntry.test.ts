@@ -15,9 +15,16 @@ describe('grade entry helpers', () => {
   })
 
   it('parses a copied score column in order', () => {
-    expect(parseScoreColumnPaste('72\n81\n0\n', 0, 4, 100)).toEqual({
+    expect(parseScoreColumnPaste('\n 72 \n81\n0\n', 0, 4, 100)).toEqual({
       values: ['72', '81', '0'],
       error: null,
+    })
+  })
+
+  it('rejects internal blank lines so later scores cannot shift to another student', () => {
+    expect(parseScoreColumnPaste('72\n\n81', 0, 3, 100)).toEqual({
+      values: null,
+      error: '粘贴内容包含空白行。请整理整列后再试，以免成绩错位。',
     })
   })
 
