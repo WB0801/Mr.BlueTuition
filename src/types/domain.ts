@@ -334,6 +334,94 @@ export interface TuitionQuizRosterEntry {
   enrollment_id: string
 }
 
+export interface QuizTopThreeCandidate {
+  student_id: string
+  student_name: string
+  enrollment_id: string
+  rank: number
+  score: number
+  unredeemed_after: number
+}
+
+export interface QuizTopThreeRecordedEntry {
+  record_id: string
+  student_id: string
+  student_name: string
+  rank: number
+  score: number
+  is_active: boolean
+  used_for_reward: boolean
+}
+
+export interface QuizTopThreeDifference {
+  student_id: string
+  student_name: string
+  rank?: number
+  score?: number
+  old_rank?: number
+  new_rank?: number
+  old_score?: number
+  new_score?: number
+}
+
+export interface QuizTopThreePreview {
+  quiz_id: string
+  class_id: string
+  confirmed: boolean
+  confirmed_at: string | null
+  needs_reconfirmation: boolean
+  roster_count: number
+  score_count: number
+  missing_students: Array<{ student_id: string; student_name: string }>
+  candidates: QuizTopThreeCandidate[]
+  recorded: QuizTopThreeRecordedEntry[]
+  differences: {
+    added: QuizTopThreeDifference[]
+    removed: QuizTopThreeDifference[]
+    changed: QuizTopThreeDifference[]
+  }
+  awarded_history_impact: number
+}
+
+export interface QuizRewardRecordSummary {
+  record_id: string
+  quiz_id?: string
+  quiz_name: string
+  quiz_date: string
+  rank: number
+  score: number
+  confirmed_at?: string
+}
+
+export interface QuizRewardProgressSummary {
+  student_id: string
+  student_name: string
+  class_id: string
+  class_name: string
+  unredeemed_count: number
+  reward_count?: number
+  records: QuizRewardRecordSummary[]
+}
+
+export interface QuizRewardHistoryEntry {
+  claim_id: string
+  student_id: string
+  student_name: string
+  class_id: string
+  class_name: string
+  rewarded_at: string
+  status: 'awarded' | 'reversed'
+  reversed_at: string | null
+  records: QuizRewardRecordSummary[]
+}
+
+export interface QuizRewardOverview {
+  pending_count: number
+  pending: QuizRewardProgressSummary[]
+  progress: QuizRewardProgressSummary[]
+  history: QuizRewardHistoryEntry[]
+}
+
 export interface GradeEntryRow {
   student_id: string
   student_name: string

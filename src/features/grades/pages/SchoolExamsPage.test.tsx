@@ -3,11 +3,11 @@ import { render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { vi } from 'vitest'
 import { listSubjects } from '../../classes/api/subjectsService'
-import { listSchoolExamOverviews } from '../api/gradesService'
+import { countPendingQuizRewards, listSchoolExamOverviews } from '../api/gradesService'
 import { SchoolExamsPage } from './SchoolExamsPage'
 
 vi.mock('../../classes/api/subjectsService', () => ({ listSubjects: vi.fn() }))
-vi.mock('../api/gradesService', () => ({ listSchoolExamOverviews: vi.fn() }))
+vi.mock('../api/gradesService', () => ({ countPendingQuizRewards: vi.fn(), listSchoolExamOverviews: vi.fn() }))
 
 function renderPage(initialEntry = '/grades/school') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -16,6 +16,10 @@ function renderPage(initialEntry = '/grades/school') {
 }
 
 describe('SchoolExamsPage', () => {
+  beforeEach(() => {
+    vi.mocked(countPendingQuizRewards).mockResolvedValue(0)
+  })
+
   it('shows tabs, newest-first compact rows and derived score progress', async () => {
     vi.mocked(listSubjects).mockResolvedValue([{ id: 'subject-1', name: '会计学' }] as never)
     vi.mocked(listSchoolExamOverviews).mockResolvedValue([

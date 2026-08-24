@@ -16,7 +16,7 @@ const internalRoutePatterns = [
   /^\/classes(?:\/subjects|\/new|\/[A-Za-z0-9_-]+(?:\/edit|\/sessions)?)?$/,
   /^\/attendance(?:\/session\/[A-Za-z0-9_-]+(?:\/sign\/[A-Za-z0-9_-]+|\/record\/[A-Za-z0-9_-]+)?)?$/,
   /^\/fees(?:\/unpaid|\/receipts|\/history)?$/,
-  /^\/grades(?:\/school(?:\/new|\/[A-Za-z0-9_-]+(?:\/classes\/[A-Za-z0-9_-]+)?)?|\/quizzes(?:\/new|\/[A-Za-z0-9_-]+)?)?$/,
+  /^\/grades(?:\/school(?:\/new|\/[A-Za-z0-9_-]+(?:\/classes\/[A-Za-z0-9_-]+)?)?|\/quizzes(?:\/new|\/[A-Za-z0-9_-]+)?|\/rewards)?$/,
   /^\/temporary-classes(?:\/new|\/[A-Za-z0-9_-]+(?:\/edit)?)?$/,
   /^\/settings(?:\/(?:backup|app|activity))?$/,
 ]
@@ -89,6 +89,7 @@ export function getDefaultBackTarget(pathname: string): ContextBackTarget | null
   if (/^\/grades\/quizzes\/[A-Za-z0-9_-]+$/.test(pathname)) return { to: '/grades/quizzes', label: '小测' }
   if (pathname === '/grades/quizzes/new') return { to: '/grades/quizzes', label: '小测' }
   if (pathname.startsWith('/grades/quizzes')) return { to: '/grades', label: '成绩' }
+  if (pathname === '/grades/rewards') return { to: '/grades/quizzes', label: '补习班小测' }
   if (/^\/temporary-classes\/[A-Za-z0-9_-]+\/edit$/.test(pathname)) {
     return { to: pathname.replace(/\/edit$/, ''), label: '临时班' }
   }

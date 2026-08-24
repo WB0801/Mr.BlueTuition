@@ -1,6 +1,6 @@
 # 蓝老师补习班：开发交接
 
-更新时间：2026-08-21（Asia/Kuala_Lumpur）
+更新时间：2026-08-24（Asia/Kuala_Lumpur）
 
 ## 唯一本机开发基底
 
@@ -66,12 +66,25 @@
 
 **UI Phase 1–5 已全部完成。** 后续只进入正式使用后的 bug fix 或小幅体验调整；不要自行开始 UI Phase 6、功能 Phase 9 或其他新功能。
 
+## 小型功能扩充：小测前三名奖励累计
+
+- 每场补习班小测继续属于一个常态班；排行榜直接复用 `list_tuition_quiz_roster()` 的小测日期有效报读名单，因此转班后旧记录仍固定归原班级。
+- 排名按已保存分数降序，以第三个学生名额的分数为 cutoff；边界同分全部入选，名次使用竞赛排名。空白没有成绩 row、不参与；真实 `0` 分参与。有效成绩不足三人时全部入选。
+- 小测详情只先显示预览。老师明确确认后才建立 `tuition_quiz_top_three_records`；migration 不会回填旧小测，也不会自动改变任何 production 成绩或奖励状态。
+- 每位学生按 `student_id + class_id` 独立累计。每三笔尚未兑换记录可发一份奖励；发放 RPC 每次锁定并消耗最早三笔，第四笔及之后记录继续保留。幂等 `client_request_id` 与 transaction 防止重复发奖。
+- `quiz_reward_claims` 保存发放／撤销状态，`quiz_reward_claim_items` 准确关联每份奖励使用的三笔记录并保存小测名称、日期、名次与分数快照。撤销只释放来源记录，不删除排行榜或奖励历史。
+- 已确认后若小测成绩改变，trigger 会将排行榜标为需要重新确认。重算显示新增、移除及名次／分数变化；若影响已发奖励，必须额外确认，历史奖励及当时三笔快照不会被静默改写。
+- 新增表全部启用 owner-scoped RLS，只开放读取；确认排行榜、重算、发奖及撤销只能经固定 `search_path` 的安全 RPC 执行，并写入 `activity_logs`。
+- UI 5.1 永久删除预览已纳入排行榜确认、前三名记录、奖励及来源笔数；core-delete trigger 会先处理奖励依赖，避免学生、班级、科目或小测永久删除留下孤儿资料。
+- 完整备份格式升级为 v2，纳入四张奖励相关表及 UUID 关系；读取器对 Phase 8 v1 旧备份把缺少的奖励表正规化为空阵列。产品仍只开放完整 ZIP 导出，不提供一键恢复操作。
+
 ## 已知部署与验收记录
 
 - 功能 Phase 1–8 已在 production 正式部署，并由用户完成人工验收。
 - UI Phase 1、UI Phase 2 及 UI Phase 2 后修正已在 GitHub Pages 部署。
 - UI Phase 3、UI Phase 3.1 与 UI Phase 4 已在 GitHub Pages 部署；UI Phase 5 以开发基线 `a557b44` 开始，正式发布提交以 `main` 最新 Git 历史及对应 GitHub Pages workflow 为准，不在本文件预写尚未产生的 commit SHA。
 - UI 5.1 以 `7914981` 为开发基线；production 已安全执行 `202608210009_ui51_safe_permanent_deletion.sql`，并确认公开 RPC、私有 helper 权限及 Storage policy 正常。migration 只建立函数／权限，不会自动删除资料；本轮 production 验收不得实际调用最终删除、缴费或资料写入动作。
+- 小测前三名奖励以 `0286bebd` 为开发基线；`202608240010_quiz_top_three_rewards.sql` 是全新 additive migration。必须先安全执行并验证 schema/RLS/RPC，再部署依赖它的前端；旧小测只能由老师日后逐场确认，不得自动回填。
 - 正式启用前的测试业务资料清理已由用户确认完成；系统现用于录入真实资料。后续 UI 浏览器验收不得建立、修改或删除 production 业务资料。
 - IndexedDB 离线签名恢复继续由自动化测试覆盖；签名、收费、转班、停课等原有业务规则不得因 UI 改版而改变。
 
@@ -88,6 +101,7 @@
 7. `202608140007_phase6_grades.sql`
 8. `202608140008_phase7_temporary_classes.sql`
 9. `202608210009_ui51_safe_permanent_deletion.sql`
+10. `202608240010_quiz_top_three_rewards.sql`
 
 Phase 8 没有新增业务 schema migration；对应完整性审计位于 `supabase/checks/phase8_integrity_audit.sql`。
 

@@ -5,6 +5,8 @@ import type {
   SchoolExamRosterEntry,
   SchoolExamScore,
   TuitionQuiz,
+  QuizRewardOverview,
+  QuizTopThreePreview,
   TuitionQuizRosterEntry,
   TuitionQuizScore,
 } from '../../../types/domain'
@@ -237,6 +239,67 @@ export async function saveTuitionQuizScores(quizId: string, scores: ScorePayload
   return Number(data ?? 0)
 }
 
+export async function previewTuitionQuizTopThree(quizId: string) {
+  const { data, error } = await requireSupabase().rpc('preview_tuition_quiz_top_three', {
+    p_quiz_id: quizId,
+  })
+  if (error) throw error
+  return normalizeTopThreePreview(data)
+}
+
+export async function confirmTuitionQuizTopThree(
+  quizId: string,
+  options: { allowIncomplete?: boolean; allowAwardedHistoryImpact?: boolean } = {},
+) {
+  const { data, error } = await requireSupabase().rpc('confirm_tuition_quiz_top_three', {
+    p_quiz_id: quizId,
+    p_allow_incomplete: options.allowIncomplete ?? false,
+    p_allow_awarded_history_impact: options.allowAwardedHistoryImpact ?? false,
+  })
+  if (error) throw error
+  return normalizeTopThreePreview(data)
+}
+
+export async function listQuizRewardOverview(classId?: string) {
+  const { data, error } = await requireSupabase().rpc('list_quiz_reward_overview', {
+    p_class_id: classId || null,
+  })
+  if (error) throw error
+  return normalizeRewardOverview(data)
+}
+
+export async function getStudentQuizRewardSummary(studentId: string) {
+  const { data, error } = await requireSupabase().rpc('get_student_quiz_reward_summary', {
+    p_student_id: studentId,
+  })
+  if (error) throw error
+  return normalizeRewardOverview(data)
+}
+
+export async function countPendingQuizRewards() {
+  const { data, error } = await requireSupabase().rpc('count_pending_quiz_rewards')
+  if (error) throw error
+  return Number(data ?? 0)
+}
+
+export async function markQuizRewardAwarded(studentId: string, classId: string, clientRequestId: string) {
+  const { data, error } = await requireSupabase().rpc('mark_quiz_reward_awarded', {
+    p_student_id: studentId,
+    p_class_id: classId,
+    p_client_request_id: clientRequestId,
+  })
+  if (error) throw error
+  return data as { claim_id: string; remaining_count: number; idempotent: boolean }
+}
+
+export async function reverseQuizReward(claimId: string) {
+  const { data, error } = await requireSupabase().rpc('reverse_quiz_reward', {
+    p_claim_id: claimId,
+  })
+  if (error) throw error
+  return data as { claim_id: string; released_count: number; idempotent: boolean }
+}
+
 export async function listEnrollmentTuitionQuizScores(enrollmentId: string) {
   const { data, error } = await requireSupabase()
     .from('tuition_quiz_scores')
@@ -281,4 +344,60 @@ function mapTuitionQuiz(row: Record<string, unknown>): TuitionQuiz {
 
 function mapTuitionQuizScore(row: Record<string, unknown>): TuitionQuizScore {
   return { ...row, score: Number(row.score) } as TuitionQuizScore
+}
+
+function normalizeTopThreePreview(value: unknown): QuizTopThreePreview {
+  const preview = (value ?? {}) as Record<string, unknown>
+  const numeric = (entry: Record<string, unknown>) => ({
+    ...entry,
+    rank: Number(entry.rank ?? 0),
+    score: Number(entry.score ?? 0),
+    ...(entry.unredeemed_after === undefined ? {} : { unredeemed_after: Number(entry.unredeemed_after) }),
+    ...(entry.old_rank === undefined ? {} : { old_rank: Number(entry.old_rank) }),
+    ...(entry.new_rank === undefined ? {} : { new_rank: Number(entry.new_rank) }),
+    ...(entry.old_score === undefined ? {} : { old_score: Number(entry.old_score) }),
+    ...(entry.new_score === undefined ? {} : { new_score: Number(entry.new_score) }),
+  })
+  const differences = (preview.differences ?? {}) as Record<string, unknown>
+  return {
+    ...preview,
+    roster_count: Number(preview.roster_count ?? 0),
+    score_count: Number(preview.score_count ?? 0),
+    awarded_history_impact: Number(preview.awarded_history_impact ?? 0),
+    missing_students: Array.isArray(preview.missing_students) ? preview.missing_students : [],
+    candidates: Array.isArray(preview.candidates) ? preview.candidates.map((entry) => numeric(entry as Record<string, unknown>)) : [],
+    recorded: Array.isArray(preview.recorded) ? preview.recorded.map((entry) => numeric(entry as Record<string, unknown>)) : [],
+    differences: {
+      added: Array.isArray(differences.added) ? differences.added.map((entry) => numeric(entry as Record<string, unknown>)) : [],
+      removed: Array.isArray(differences.removed) ? differences.removed.map((entry) => numeric(entry as Record<string, unknown>)) : [],
+      changed: Array.isArray(differences.changed) ? differences.changed.map((entry) => numeric(entry as Record<string, unknown>)) : [],
+    },
+  } as QuizTopThreePreview
+}
+
+function normalizeRewardOverview(value: unknown): QuizRewardOverview {
+  const overview = (value ?? {}) as Record<string, unknown>
+  const mapRecords = (records: unknown) => Array.isArray(records) ? records.map((record) => {
+    const item = record as Record<string, unknown>
+    return { ...item, rank: Number(item.rank ?? 0), score: Number(item.score ?? 0) }
+  }) : []
+  const mapProgress = (rows: unknown) => Array.isArray(rows) ? rows.map((row) => {
+    const item = row as Record<string, unknown>
+    return {
+      ...item,
+      unredeemed_count: Number(item.unredeemed_count ?? 0),
+      ...(item.reward_count === undefined ? {} : { reward_count: Number(item.reward_count) }),
+      records: mapRecords(item.records),
+    }
+  }) : []
+  const history = Array.isArray(overview.history) ? overview.history.map((row) => {
+    const item = row as Record<string, unknown>
+    return { ...item, records: mapRecords(item.records) }
+  }) : []
+  return {
+    pending_count: Number(overview.pending_count ?? 0),
+    pending: mapProgress(overview.pending),
+    progress: mapProgress(overview.progress),
+    history,
+  } as QuizRewardOverview
 }

@@ -142,5 +142,7 @@ describe('contextual back navigation', () => {
     })
     expect(getDefaultBackTarget('/attendance/session/session-1')).toEqual({ to: '/attendance', label: '课程' })
     expect(getDefaultBackTarget('/settings/backup')).toEqual({ to: '/settings', label: '设置' })
+    expect(isSafeInternalRoute('/grades/rewards?classId=class-42&rewardTab=history')).toBe(true)
+    expect(getDefaultBackTarget('/grades/rewards')).toEqual({ to: '/grades/quizzes', label: '补习班小测' })
   })
 })

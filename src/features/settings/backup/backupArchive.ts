@@ -2,8 +2,16 @@ import JSZip from 'jszip'
 import { BACKUP_TABLES, type BackupRecord, type BackupTableData, type BackupTableName } from './backupSchema'
 
 export const BACKUP_TIMEZONE = 'Asia/Kuala_Lumpur'
-export const BACKUP_SCHEMA_VERSION = 'phase8'
-export const BACKUP_FORMAT_VERSION = 1
+export const BACKUP_SCHEMA_VERSION = 'quiz-rewards-v1'
+export const BACKUP_FORMAT_VERSION = 2
+const LEGACY_PHASE8_TABLES = BACKUP_TABLES
+  .map((table) => table.name)
+  .filter((name) => ![
+    'tuition_quiz_ranking_confirmations',
+    'tuition_quiz_top_three_records',
+    'quiz_reward_claims',
+    'quiz_reward_claim_items',
+  ].includes(name))
 
 export interface SignatureSourceFile {
   storagePath: string
@@ -75,6 +83,8 @@ function addReadableColumns(tableName: BackupTableName, rows: BackupRecord[], ta
   const sessions = indexById(tables.class_sessions)
   const exams = indexById(tables.school_exams)
   const quizzes = indexById(tables.tuition_quizzes)
+  const rankingRecords = indexById(tables.tuition_quiz_top_three_records)
+  const rewardClaims = indexById(tables.quiz_reward_claims)
   const temporaryClasses = indexById(tables.temporary_classes)
   const temporaryEnrollments = indexById(tables.temporary_class_enrollments)
 
@@ -140,6 +150,30 @@ function addReadableColumns(tableName: BackupTableName, rows: BackupRecord[], ta
       readable.quiz_name = quiz?.name ?? ''
       readable.quiz_date = quiz?.quiz_date ?? ''
       readable.class_name = quiz ? classes.get(String(quiz.class_id))?.name ?? '' : ''
+    }
+    if (tableName === 'tuition_quiz_ranking_confirmations') {
+      const quiz = quizzes.get(String(row.quiz_id))
+      readable.quiz_name = quiz?.name ?? ''
+      readable.quiz_date = quiz?.quiz_date ?? ''
+      readable.class_name = classes.get(String(row.class_id))?.name ?? ''
+    }
+    if (tableName === 'tuition_quiz_top_three_records') {
+      const quiz = quizzes.get(String(row.quiz_id))
+      readable.student_name = students.get(String(row.student_id))?.name ?? ''
+      readable.quiz_name = quiz?.name ?? ''
+      readable.quiz_date = quiz?.quiz_date ?? ''
+      readable.class_name = classes.get(String(row.class_id))?.name ?? ''
+    }
+    if (tableName === 'quiz_reward_claims') {
+      readable.student_name = students.get(String(row.student_id))?.name ?? ''
+      readable.class_name = classes.get(String(row.class_id))?.name ?? ''
+    }
+    if (tableName === 'quiz_reward_claim_items') {
+      const claim = rewardClaims.get(String(row.claim_id))
+      const ranking = rankingRecords.get(String(row.ranking_record_id))
+      readable.student_name = claim ? students.get(String(claim.student_id))?.name ?? '' : ''
+      readable.class_name = claim ? classes.get(String(claim.class_id))?.name ?? '' : ''
+      readable.quiz_id = ranking?.quiz_id ?? ''
     }
     if (tableName === 'temporary_class_enrollments') {
       readable.student_name = students.get(String(row.student_id))?.name ?? ''
@@ -220,7 +254,12 @@ export async function verifyBackupArchive(bytes: Uint8Array): Promise<BackupMani
   if (!manifestFile || !readmeFile) throw new Error('备份验证失败：缺少 manifest.json 或 README.txt。')
 
   const manifest = JSON.parse(await manifestFile.async('string')) as BackupManifest
-  for (const table of BACKUP_TABLES) {
+  const expectedTables = manifest.backup_format >= 2
+    ? BACKUP_TABLES.map((table) => table.name)
+    : LEGACY_PHASE8_TABLES
+  for (const tableName of expectedTables) {
+    const table = BACKUP_TABLES.find((candidate) => candidate.name === tableName)
+    if (!table) throw new Error(`备份验证失败：不认识资料表 ${tableName}。`)
     const jsonFile = Object.values(zip.files).find((file) => file.name.endsWith(`/json/${table.name}.json`))
     const csvFile = Object.values(zip.files).find((file) => file.name.endsWith(`/csv/${table.name}.csv`))
     if (!jsonFile || !csvFile) throw new Error(`备份验证失败：缺少 ${table.name} 的 JSON 或 CSV。`)
@@ -243,6 +282,26 @@ export async function verifyBackupArchive(bytes: Uint8Array): Promise<BackupMani
     if (bytesInZip.byteLength !== signature.byte_size) throw new Error(`备份验证失败：签名 ${signature.storage_path} 大小不一致。`)
   }
   return manifest
+}
+
+export async function readBackupArchiveData(bytes: Uint8Array): Promise<{ manifest: BackupManifest; tables: BackupTableData }> {
+  const manifest = await verifyBackupArchive(bytes)
+  const zip = await JSZip.loadAsync(bytes)
+  const tables = {} as BackupTableData
+  for (const table of BACKUP_TABLES) {
+    const file = Object.values(zip.files).find((entry) => entry.name.endsWith(`/json/${table.name}.json`))
+    if (!file) {
+      if (manifest.backup_format < 2 && !LEGACY_PHASE8_TABLES.includes(table.name)) {
+        tables[table.name] = []
+        continue
+      }
+      throw new Error(`备份读取失败：缺少 ${table.name}.json。`)
+    }
+    const records = JSON.parse(await file.async('string')) as unknown
+    if (!Array.isArray(records)) throw new Error(`备份读取失败：${table.name}.json 格式不正确。`)
+    tables[table.name] = records as BackupRecord[]
+  }
+  return { manifest, tables }
 }
 
 export async function buildBackupArchive(input: BackupArchiveInput): Promise<BackupArchiveResult> {
@@ -308,4 +367,3 @@ export async function buildBackupArchive(input: BackupArchiveInput): Promise<Bac
   await verifyBackupArchive(bytes)
   return { bytes, rootName, fileName: `${rootName}.zip`, manifest }
 }
-

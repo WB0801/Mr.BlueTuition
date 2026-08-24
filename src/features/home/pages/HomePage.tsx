@@ -2,12 +2,14 @@ import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Badge, CardLink, Icon, SectionHeader, type AppIconName } from '../../../components/ui'
 import { countPendingReceipts } from '../../fees/api/feesService'
+import { countPendingQuizRewards } from '../../grades/api/gradesService'
 
 interface HomeEntry {
   icon: AppIconName
   label: string
   path: string
   showsReceiptCount?: boolean
+  showsRewardCount?: boolean
 }
 
 const commonEntries: HomeEntry[] = [
@@ -18,13 +20,14 @@ const commonEntries: HomeEntry[] = [
 
 const managementEntries: HomeEntry[] = [
   { label: '学费', path: '/fees', icon: 'fees', showsReceiptCount: true },
-  { label: '成绩', path: '/grades', icon: 'grades' },
+  { label: '成绩', path: '/grades', icon: 'grades', showsRewardCount: true },
   { label: '临时班', path: '/temporary-classes', icon: 'temporary' },
   { label: '设置', path: '/settings', icon: 'settings' },
 ]
 
 export function HomePage() {
   const receiptCount = useQuery({ queryKey: ['pending-receipt-count'], queryFn: countPendingReceipts })
+  const rewardCount = useQuery({ queryKey: ['pending-quiz-reward-count'], queryFn: countPendingQuizRewards })
 
   useEffect(() => {
     document.title = '蓝老师补习班'
@@ -45,7 +48,7 @@ export function HomePage() {
           <SectionHeader id="management-functions-title" title="管理" />
           <div className="home-grid home-grid-management">
             {managementEntries.map((entry) => (
-              <HomeEntryCard entry={entry} key={entry.path} receiptCount={receiptCount.data ?? 0} />
+              <HomeEntryCard entry={entry} key={entry.path} receiptCount={receiptCount.data ?? 0} rewardCount={rewardCount.data ?? 0} />
             ))}
           </div>
         </section>
@@ -54,7 +57,7 @@ export function HomePage() {
   )
 }
 
-function HomeEntryCard({ entry, receiptCount = 0 }: { entry: HomeEntry; receiptCount?: number }) {
+function HomeEntryCard({ entry, receiptCount = 0, rewardCount = 0 }: { entry: HomeEntry; receiptCount?: number; rewardCount?: number }) {
   return (
     <CardLink ariaLabel={entry.label} className="home-entry" to={entry.path}>
       <span className="entry-icon" aria-hidden="true"><Icon name={entry.icon} /></span>
@@ -62,6 +65,7 @@ function HomeEntryCard({ entry, receiptCount = 0 }: { entry: HomeEntry; receiptC
         <span className="entry-title-row">
           <span className="entry-label">{entry.label}</span>
           {entry.showsReceiptCount && receiptCount > 0 && <Badge tone="danger">待开收据 {receiptCount}</Badge>}
+          {entry.showsRewardCount && rewardCount > 0 && <Badge tone="danger">待奖励 {rewardCount}</Badge>}
         </span>
       </span>
       <Icon className="entry-chevron" name="chevron-right" size={20} />

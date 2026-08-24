@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { listStudentSchoolExamScores, listStudentTuitionQuizScores } from '../api/gradesService'
 import { GradeHistoryContent } from './GradeHistoryContent'
+import { StudentQuizRewards } from './StudentQuizRewards'
 
 export function StudentGradesSection({ studentId }: { studentId: string }) {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -40,6 +41,7 @@ export function StudentGradesSection({ studentId }: { studentId: string }) {
         activeSection={activeTab}
         backLabel="学生"
       />
+      {activeTab === 'quiz' && <StudentQuizRewards studentId={studentId} />}
     </section>
   )
 }

@@ -30,6 +30,7 @@ const SchoolExamEntryPage = lazy(() => import('../features/grades/pages/SchoolEx
 const TuitionQuizzesPage = lazy(() => import('../features/grades/pages/TuitionQuizzesPage').then((module) => ({ default: module.TuitionQuizzesPage })))
 const TuitionQuizFormPage = lazy(() => import('../features/grades/pages/TuitionQuizFormPage').then((module) => ({ default: module.TuitionQuizFormPage })))
 const TuitionQuizDetailPage = lazy(() => import('../features/grades/pages/TuitionQuizDetailPage').then((module) => ({ default: module.TuitionQuizDetailPage })))
+const QuizRewardsPage = lazy(() => import('../features/grades/pages/QuizRewardsPage').then((module) => ({ default: module.QuizRewardsPage })))
 const TemporaryClassesPage = lazy(() => import('../features/temporary-classes/pages/TemporaryClassesPage').then((module) => ({ default: module.TemporaryClassesPage })))
 const TemporaryClassFormPage = lazy(() => import('../features/temporary-classes/pages/TemporaryClassFormPage').then((module) => ({ default: module.TemporaryClassFormPage })))
 const TemporaryClassDetailPage = lazy(() => import('../features/temporary-classes/pages/TemporaryClassDetailPage').then((module) => ({ default: module.TemporaryClassDetailPage })))
@@ -77,6 +78,7 @@ const router = createHashRouter([
         { path: 'grades/quizzes', element: routePage(<TuitionQuizzesPage />) },
         { path: 'grades/quizzes/new', element: routePage(<TuitionQuizFormPage />) },
         { path: 'grades/quizzes/:quizId', element: routePage(<TuitionQuizDetailPage />) },
+        { path: 'grades/rewards', element: routePage(<QuizRewardsPage />) },
         { path: 'temporary-classes', element: routePage(<TemporaryClassesPage />) },
         { path: 'temporary-classes/new', element: routePage(<TemporaryClassFormPage />) },
         { path: 'temporary-classes/:temporaryClassId', element: routePage(<TemporaryClassDetailPage />) },

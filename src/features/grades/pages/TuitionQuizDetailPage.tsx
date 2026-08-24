@@ -7,6 +7,7 @@ import { PageHeader } from '../../../components/shared/PageHeader'
 import { formatDate } from '../../../utils/format'
 import { GradeEntryTable } from '../components/GradeEntryTable'
 import { GradeFlowSteps } from '../components/GradeFlowSteps'
+import { QuizTopThreeSection } from '../components/QuizTopThreeSection'
 import {
   getTuitionQuiz,
   listTuitionQuizRoster,
@@ -49,10 +50,19 @@ export function TuitionQuizDetailPage() {
           onSaved={() => setFlowStep(3)}
           onSave={async (payload) => {
             await saveTuitionQuizScores(quizId, payload)
-            await queryClient.invalidateQueries({ queryKey: ['tuition-quiz', quizId, 'scores'] })
+            await Promise.all([
+              queryClient.invalidateQueries({ queryKey: ['tuition-quiz', quizId, 'scores'] }),
+              queryClient.invalidateQueries({ queryKey: ['tuition-quiz', quizId, 'top-three'] }),
+            ])
           }}
         />
       )}
+
+      <QuizTopThreeSection
+        quiz={quiz.data}
+        roster={roster.data ?? []}
+        scores={scores.data ?? []}
+      />
 
       <PermanentDeleteZone
         entityType="tuition_quiz"
