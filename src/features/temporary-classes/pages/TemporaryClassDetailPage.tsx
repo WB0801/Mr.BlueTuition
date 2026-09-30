@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
@@ -22,6 +22,8 @@ const sessionStatusLabels = { scheduled: '可点名', cancelled: '已停课', co
 
 export function TemporaryClassDetailPage() {
   const { temporaryClassId = '' } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const paymentId = searchParams.get('paymentId') ?? ''
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [error, setError] = useState('')
@@ -89,12 +91,14 @@ export function TemporaryClassDetailPage() {
       </nav>
 
       <section className="content-section">
+        {paymentId && <div className="scope-notice"><strong>收据对应的临时班缴费记录</strong><button className="button button-text" type="button" onClick={() => { const next = new URLSearchParams(searchParams); next.delete('paymentId'); setSearchParams(next, { replace: true }) }}>显示全部学生缴费记录</button></div>}
         <div className="section-heading-row">
           <h2>学生名单 {enrollmentCount} 人</h2>
         </div>
         {!enrollments.data?.length && <EmptyBlock message="目前还没有学生报名。" />}
         <div className="temporary-enrollment-list compact-data-list">
-          {enrollments.data?.map((enrollment) => <TemporaryPaymentRow enrollment={enrollment} allowActions key={enrollment.id} />)}
+          {enrollments.data?.filter((enrollment) => !paymentId || enrollment.payment?.id === paymentId).map((enrollment) => <TemporaryPaymentRow enrollment={enrollment} allowActions key={enrollment.id} />)}
+          {paymentId && !enrollments.data?.some((enrollment) => enrollment.payment?.id === paymentId) && <EmptyBlock message="这笔缴费记录已不存在或不属于此临时班。" />}
         </div>
         {isActive && <TemporaryClassRegistrationPanel classId={data.id} enrollments={enrollments.data ?? []} />}
       </section>

@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useLocation, useParams } from 'react-router-dom'
+import { useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { ContextLink } from '../../../components/navigation/ContextLink'
-import { ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
+import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { getErrorMessage } from '../../../utils/errors'
-import { formatDateTime, formatSessionTimeRange } from '../../../utils/format'
+import { formatDateTime, formatSessionTimeRange, toMalaysiaDateInput, todayInMalaysia } from '../../../utils/format'
 import { getSessionRoster } from '../../attendance/api/attendanceService'
 import { AttendanceRoster } from '../../attendance/components/AttendanceRoster'
 import { CrossClassGuestPanel } from '../../attendance/components/CrossClassGuestPanel'
@@ -22,6 +22,8 @@ const statusLabels = {
 export function SessionDetailPage() {
   const { sessionId = '' } = useParams()
   const location = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const rosterFilter = searchParams.get('roster') ?? 'all'
   const queryClient = useQueryClient()
   const [error, setError] = useState('')
   const session = useQuery({ queryKey: ['session', sessionId], queryFn: () => getSession(sessionId) })
@@ -53,6 +55,8 @@ export function SessionDetailPage() {
   const hasValidAttendance = signedCount > 0
   const className = data.class?.name ?? data.temporary_class?.name ?? '课程详情'
   const subjectName = data.class?.subject?.name ?? data.temporary_class?.subject?.name
+  const savedName = (location.state as { signedStudentName?: string } | null)?.signedStudentName
+  const visibleRoster = (roster.data ?? []).filter((entry) => rosterFilter === 'signed' ? Boolean(entry.attendance_record_id) : rosterFilter === 'unsigned' ? !entry.attendance_record_id : true)
 
   async function handleStop() {
     if (!window.confirm('确定将这堂课程标记为停课？课程不会删除，并会保留在历史中。')) return
@@ -73,16 +77,15 @@ export function SessionDetailPage() {
         <span className={`session-status status-${data.status}`}>{statusLabels[data.status]}</span>
       </div>
       {(location.state as { signatureSaved?: boolean } | null)?.signatureSaved && (
-        <p className="form-success signature-success" role="status">签名已保存。</p>
+        <p className="form-success signature-success" role="status">{savedName ?? '学生'}的签名已保存。请选择下一位学生。</p>
       )}
       <dl className="details-card details-grid session-overview">
         <div><dt>日期与时间</dt><dd>{formatSessionTimeRange(data.current_start_at, data.current_end_at)}</dd></div>
-        <div><dt>点名进度</dt><dd>{signedCount} / {roster.data?.length ?? 0}</dd></div>
         <div><dt>课程类型</dt><dd>{data.session_type === 'temporary' ? '临时班' : data.session_type === 'extra' ? '额外补课' : '常态课程'}</dd></div>
         {wasRescheduled && <div><dt>原定时间</dt><dd>{formatSessionTimeRange(data.original_start_at, data.original_end_at)}</dd></div>}
       </dl>
       <nav className="related-nav" aria-label="课程相关资料">
-        <ContextLink backLabel="课程" to="/attendance">今天其他课程</ContextLink>
+        <ContextLink backLabel="课程" to={`/attendance${data.class ? `?classId=${data.class.id}` : ''}`}>其他课程</ContextLink>
         {data.class && <ContextLink backLabel="课程" to={`/classes/${data.class.id}`}>班级详情</ContextLink>}
         {data.class && <ContextLink backLabel="课程" to={`/classes/${data.class.id}/sessions`}>本班课程</ContextLink>}
         {data.temporary_class && <ContextLink backLabel="课程" to={`/temporary-classes/${data.temporary_class.id}`}>临时班详情</ContextLink>}
@@ -93,9 +96,19 @@ export function SessionDetailPage() {
           <h2>学生点名</h2>
           <span className="attendance-progress">{signedCount} / {roster.data?.length ?? 0} 已签到</span>
         </div>
+        <div className="segmented-control roster-filter" aria-label="点名名单筛选">
+          {(['all', 'unsigned', 'signed'] as const).map((filter) => <button type="button" key={filter} className={rosterFilter === filter ? 'active' : ''} aria-pressed={rosterFilter === filter} onClick={() => {
+            const next = new URLSearchParams(searchParams)
+            if (filter === 'all') next.delete('roster')
+            else next.set('roster', filter)
+            setSearchParams(next, { replace: true })
+          }}>{filter === 'all' ? '全部' : filter === 'signed' ? `已签到 ${signedCount}` : `${toMalaysiaDateInput(data.current_start_at) > todayInMalaysia() ? '待签到' : '未签到'} ${(roster.data?.length ?? 0) - signedCount}`}</button>)}
+        </div>
         {roster.isLoading && <LoadingBlock />}
         {roster.isError && <ErrorBlock message="点名名单载入失败，请重试。" />}
-        {roster.data && <AttendanceRoster session={data} entries={roster.data} />}
+        {roster.data && (visibleRoster.length === 0 && roster.data.length > 0
+          ? <EmptyBlock message={rosterFilter === 'signed' ? '还没有学生签到。' : '所有学生均已签到。'} />
+          : <AttendanceRoster session={data} entries={visibleRoster} />)}
       </section>
 
       {data.status === 'scheduled' && data.session_type !== 'temporary' && (
@@ -145,7 +158,7 @@ export function SessionDetailPage() {
 
         {canRestoreSession(data.status, data.class?.status ?? data.temporary_class?.status) && (
           <div className="restore-session-panel">
-            <div><strong>恢复这堂课程</strong><p>恢复后复用原 Session 与目前课程时间。</p></div>
+            <div><strong>恢复这堂课程</strong><p>恢复后沿用目前课程时间。</p></div>
             <button className="button button-primary" type="button" onClick={handleRestore} disabled={restoreMutation.isPending}>
               {restoreMutation.isPending ? '处理中…' : '恢复上课'}
             </button>

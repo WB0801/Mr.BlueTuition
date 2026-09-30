@@ -1,6 +1,19 @@
-import { mapMonthlyFeeDetails } from './feesService'
+import { countPendingReceipts, listReceiptQueue, mapMonthlyFeeDetails } from './feesService'
+
+const query = vi.hoisted(() => ({ from: vi.fn(), select: vi.fn(), eq: vi.fn(), order: vi.fn() }))
+vi.mock('../../../lib/requireSupabase', () => ({ requireSupabase: () => ({ from: query.from }) }))
 
 describe('fee query mapping', () => {
+  it('counts and lists the same pending receipt queue including temporary-class payments', async () => {
+    const rows = [{ receipt_key: 'monthly_fee:a', amount: '120' }, { receipt_key: 'temporary_class_payment:b', amount: '50' }]
+    const builder = { select: query.select, eq: query.eq, order: query.order, then: (resolve: (value: unknown) => unknown) => Promise.resolve(resolve({ data: rows, count: 2, error: null })) }
+    Object.values(query).forEach((mock) => mock.mockReset().mockReturnValue(builder))
+    expect(await countPendingReceipts()).toBe(2)
+    expect(await listReceiptQueue('pending')).toMatchObject([{ receipt_key: 'monthly_fee:a', amount: 120 }, { receipt_key: 'temporary_class_payment:b', amount: 50 }])
+    expect(query.from.mock.calls).toEqual([['receipt_queue'], ['receipt_queue']])
+    expect(query.eq.mock.calls).toEqual([['receipt_status', 'pending'], ['receipt_status', 'pending']])
+    expect(query.select).toHaveBeenCalledWith('receipt_key', { count: 'exact', head: true })
+  })
   it('reads the student through the enrollment relationship', () => {
     const result = mapMonthlyFeeDetails({
       id: 'fee-1',

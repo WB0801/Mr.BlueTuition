@@ -25,8 +25,6 @@ export function ClassScheduleSection({ tuitionClass }: ClassScheduleSectionProps
 
   return (
     <>
-      <ClassFixedScheduleSection tuitionClass={tuitionClass} />
-
       <section className="content-section">
         <h2>接下来课程（{future.length}）</h2>
         {sessions.isLoading && <LoadingBlock />}
@@ -37,7 +35,7 @@ export function ClassScheduleSection({ tuitionClass }: ClassScheduleSectionProps
 
       {laterSessions.length > 0 && (
         <details className="history-panel">
-          <summary>更后的课程（{laterSessions.length}）</summary>
+          <summary>稍后课程（{laterSessions.length}）</summary>
           <div className="compact-data-list">{laterSessions.map((session) => <SessionCard session={session} key={session.id} />)}</div>
         </details>
       )}
@@ -49,7 +47,11 @@ export function ClassScheduleSection({ tuitionClass }: ClassScheduleSectionProps
           : <div className="compact-data-list">{history.map((session) => <SessionCard session={session} key={session.id} />)}</div>}
       </details>
 
-      <ClassScheduleHistory tuitionClass={tuitionClass} />
+      <details className="management-panel">
+        <summary>固定课表与调整历史</summary>
+        <ClassFixedScheduleSection tuitionClass={tuitionClass} />
+        <ClassScheduleHistory tuitionClass={tuitionClass} />
+      </details>
     </>
   )
 }

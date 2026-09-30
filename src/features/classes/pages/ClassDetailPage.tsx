@@ -17,7 +17,6 @@ import { StudentIdentity } from '../../students/components/StudentIdentity'
 import { endClass, getClass } from '../api/classesService'
 import { getEndClassConfirmationMessage } from '../classActions'
 import { AddStudentToClass } from '../components/AddStudentToClass'
-import { ClassScheduleSummary } from '../components/ClassScheduleSummary'
 import { PermanentDeleteZone } from '../../deletion/components/PermanentDeleteZone'
 
 export function ClassDetailPage() {
@@ -67,13 +66,11 @@ export function ClassDetailPage() {
       <dl className="details-card details-grid class-overview">
         <div><dt>当前学生</dt><dd>{current.length} 人</dd></div>
         <div><dt>每月学费</dt><dd>{formatMoney(data.monthly_fee)}</dd></div>
-        <div><dt>固定课表</dt><dd><ClassScheduleSummary tuitionClass={data} /></dd></div>
-        <div><dt>开班日期</dt><dd>{formatDate(data.start_date)}</dd></div>
       </dl>
 
       <nav className="related-nav" aria-label="班级相关资料">
         <ContextLink backLabel="班级" to={`/classes/${classId}/sessions`}>课程</ContextLink>
-        <ContextLink backLabel="班级" to="/attendance">点名</ContextLink>
+        <ContextLink backLabel="班级" to={`/attendance?classId=${classId}`}>点名</ContextLink>
         <ContextLink backLabel="班级" to={`/fees?classId=${classId}`}>学费</ContextLink>
         <ContextLink backLabel="班级" to={`/grades/quizzes?classId=${classId}`}>小测与成绩</ContextLink>
       </nav>
@@ -97,12 +94,10 @@ export function ClassDetailPage() {
         {!enrollments.isLoading && current.length === 0 && <EmptyBlock message="目前没有在读学生。" />}
         <div className="compact-data-list">
           {current.map((item) => item.student && (
-            <div className="compact-data-row class-student-row" key={item.id}>
-              <ContextLink backLabel="班级" className="identity-link" to={`/students/${item.student.id}`}>
+              <ContextLink backLabel="班级" className="compact-data-row compact-data-link" to={`/students/${item.student.id}`} key={item.id}>
                 <StudentIdentity student={item.student} />
+                <Icon className="record-chevron" name="chevron-right" size={20} />
               </ContextLink>
-              <EndEnrollmentAction enrollmentId={item.id} studentName={item.student.name} />
-            </div>
           ))}
         </div>
       </section>
@@ -124,16 +119,25 @@ export function ClassDetailPage() {
         </details>
       )}
 
-      <ClassCourseSummary classId={classId} />
-
       <details className="management-panel">
         <summary>班级管理</summary>
+        <p className="record-meta">开班日期：{formatDate(data.start_date)}</p>
         <div className="management-links">
           <ContextLink backLabel="班级" className="button button-secondary" to={`/classes/${classId}/edit`}>编辑班级资料</ContextLink>
         </div>
         <ClassFixedScheduleSection tuitionClass={data} />
         <ClassScheduleHistory tuitionClass={data} />
-      </details>
+        <ClassCourseSummary classId={classId} />
+
+        <details className="history-panel">
+          <summary>报读管理</summary>
+          {enrollments.isLoading && <LoadingBlock />}
+          {enrollments.isError && <ErrorBlock message="报读名单载入失败。" />}
+          <div className="compact-data-list">{current.map((item) => item.student && <div className="compact-data-row class-student-row" key={item.id}>
+            <StudentIdentity student={item.student} />
+            <EndEnrollmentAction enrollmentId={item.id} studentName={item.student.name} />
+          </div>)}</div>
+        </details>
 
       {data.status === 'active' && (
         <details className="danger-panel">
@@ -166,6 +170,7 @@ export function ClassDetailPage() {
           navigate('/classes', { replace: true, state: { successMessage: `已永久删除班级「${data.name}」及其关联资料。` } })
         }}
       />
+      </details>
     </section>
   )
 }

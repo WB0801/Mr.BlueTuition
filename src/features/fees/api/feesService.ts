@@ -101,6 +101,21 @@ export async function completeReceipts(receiptKeys: string[]): Promise<number> {
   return Number(data ?? 0)
 }
 
+export async function getReceiptPaymentTarget(receipt: ReceiptQueueItem): Promise<string> {
+  if (receipt.source_type === 'monthly_fee') {
+    const params = new URLSearchParams({ studentId: receipt.student_id, month: receipt.receipt_period.slice(0, 7), status: 'paid', feeId: receipt.source_id })
+    return `/fees?${params}`
+  }
+  const { data, error } = await requireSupabase().from('temporary_class_payments')
+    .select('id,enrollment:temporary_class_enrollments!temporary_class_payments_enrollment_owner_fk(student_id,temporary_class_id)')
+    .eq('id', receipt.source_id).single()
+  if (error) throw error
+  const raw = data?.enrollment
+  const enrollment = (Array.isArray(raw) ? raw[0] : raw) as { student_id: string; temporary_class_id: string } | null
+  if (!enrollment?.temporary_class_id || enrollment.student_id !== receipt.student_id) throw new Error('无法确认这笔收据的原缴费记录。')
+  return `/temporary-classes/${encodeURIComponent(enrollment.temporary_class_id)}?paymentId=${encodeURIComponent(receipt.source_id)}`
+}
+
 export async function restoreReceipt(receiptKey: string): Promise<boolean> {
   const { data, error } = await requireSupabase().rpc('restore_receipt', {
     p_receipt_key: receiptKey,

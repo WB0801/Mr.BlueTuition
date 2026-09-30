@@ -50,5 +50,9 @@ describe('ClassDetailPage hierarchy and connected navigation', () => {
     expect(screen.getByRole('link', { name: '课程' })).toHaveAttribute('href', '/classes/class-1/sessions')
     expect(screen.getByRole('link', { name: '学费' })).toHaveAttribute('href', '/fees?classId=class-1')
     expect(screen.getByRole('link', { name: '小测与成绩' })).toHaveAttribute('href', '/grades/quizzes?classId=class-1')
+    const container = management.closest('details')!
+    expect(container).not.toHaveAttribute('open')
+    expect(container).toContainElement(screen.getByText('结束此班'))
+    expect(container).toContainElement(screen.getByText('永久删除班级'))
   })
 })

@@ -1,74 +1,31 @@
 import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Badge, CardLink, Icon, SectionHeader, type AppIconName } from '../../../components/ui'
+import { ContextLink } from '../../../components/navigation/ContextLink'
+import { Icon } from '../../../components/ui'
 import { countPendingReceipts } from '../../fees/api/feesService'
 import { countPendingQuizRewards } from '../../grades/api/gradesService'
-
-interface HomeEntry {
-  icon: AppIconName
-  label: string
-  path: string
-  showsReceiptCount?: boolean
-  showsRewardCount?: boolean
-}
-
-const commonEntries: HomeEntry[] = [
-  { label: '点名', path: '/attendance', icon: 'attendance' },
-  { label: '学生', path: '/students', icon: 'students' },
-  { label: '班级', path: '/classes', icon: 'classes' },
-]
-
-const managementEntries: HomeEntry[] = [
-  { label: '学费', path: '/fees', icon: 'fees', showsReceiptCount: true },
-  { label: '成绩', path: '/grades', icon: 'grades', showsRewardCount: true },
-  { label: '临时班', path: '/temporary-classes', icon: 'temporary' },
-  { label: '设置', path: '/settings', icon: 'settings' },
-]
+import { GlobalStudentSearch } from '../../students/components/GlobalStudentSearch'
 
 export function HomePage() {
-  const receiptCount = useQuery({ queryKey: ['pending-receipt-count'], queryFn: countPendingReceipts })
-  const rewardCount = useQuery({ queryKey: ['pending-quiz-reward-count'], queryFn: countPendingQuizRewards })
-
-  useEffect(() => {
-    document.title = '蓝老师补习班'
-  }, [])
-
-  return (
-    <section className="home-page">
-      <h1 className="sr-only">蓝老师补习班</h1>
-      <nav className="home-function-lobby" aria-label="主要功能">
-        <section aria-labelledby="common-functions-title">
-          <SectionHeader id="common-functions-title" title="常用" />
-          <div className="home-grid home-grid-primary">
-            {commonEntries.map((entry) => <HomeEntryCard entry={entry} key={entry.path} />)}
-          </div>
-        </section>
-
-        <section aria-labelledby="management-functions-title">
-          <SectionHeader id="management-functions-title" title="管理" />
-          <div className="home-grid home-grid-management">
-            {managementEntries.map((entry) => (
-              <HomeEntryCard entry={entry} key={entry.path} receiptCount={receiptCount.data ?? 0} rewardCount={rewardCount.data ?? 0} />
-            ))}
-          </div>
-        </section>
-      </nav>
+  const receipts = useQuery({ queryKey: ['pending-receipt-count'], queryFn: countPendingReceipts })
+  const rewards = useQuery({ queryKey: ['pending-quiz-reward-count'], queryFn: countPendingQuizRewards })
+  useEffect(() => { document.title = '蓝老师补习班' }, [])
+  return <section className="home-page daily-home">
+    <h1>首页</h1>
+    <div className="daily-actions">
+      <ContextLink backLabel="首页" className="daily-attendance-action" to="/attendance">
+        <Icon name="attendance" size={30} /><strong>开始点名</strong><Icon name="chevron-right" size={22} />
+      </ContextLink>
+      <ContextLink backLabel="首页" className="daily-receipt-action" to="/fees/receipts">
+        <Icon name="fees" size={26} />
+        <strong>{receipts.isLoading ? '读取待处理收据…' : receipts.isError ? '待处理收据暂时无法读取' : `待处理收据 ${receipts.data ?? 0} 张`}</strong>
+        <Icon name="chevron-right" size={20} />
+      </ContextLink>
+    </div>
+    <section className="home-payment-search" aria-labelledby="home-payment-title">
+      <div className="section-heading-row"><h2 id="home-payment-title">找学生收学费</h2><ContextLink backLabel="首页" to="/fees">全部缴费记录</ContextLink></div>
+      <GlobalStudentSearch destination="fees" placeholder="搜索姓名，例如：炜滨" />
     </section>
-  )
-}
-
-function HomeEntryCard({ entry, receiptCount = 0, rewardCount = 0 }: { entry: HomeEntry; receiptCount?: number; rewardCount?: number }) {
-  return (
-    <CardLink ariaLabel={entry.label} className="home-entry" to={entry.path}>
-      <span className="entry-icon" aria-hidden="true"><Icon name={entry.icon} /></span>
-      <span className="entry-content">
-        <span className="entry-title-row">
-          <span className="entry-label">{entry.label}</span>
-          {entry.showsReceiptCount && receiptCount > 0 && <Badge tone="danger">待开收据 {receiptCount}</Badge>}
-          {entry.showsRewardCount && rewardCount > 0 && <Badge tone="danger">待奖励 {rewardCount}</Badge>}
-        </span>
-      </span>
-      <Icon className="entry-chevron" name="chevron-right" size={20} />
-    </CardLink>
-  )
+    {rewards.data ? <ContextLink backLabel="首页" className="home-secondary-link" to="/grades/rewards">待奖励 {rewards.data} 份 <Icon name="chevron-right" size={18} /></ContextLink> : null}
+  </section>
 }

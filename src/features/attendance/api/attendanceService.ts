@@ -1,4 +1,5 @@
 import { requireSupabase } from '../../../lib/requireSupabase'
+import { getErrorMessage } from '../../../utils/errors'
 import type {
   AttendanceCorrection,
   AttendanceRecord,
@@ -54,6 +55,71 @@ export async function addSessionGuest(
   })
   if (error) throw error
   return data as MakeupLink
+}
+
+export interface SessionGuestRequest {
+  enrollmentId: string
+  studentId: string
+  studentName: string
+  linkType: 'makeup' | 'extra'
+  sourceSessionId: string | null
+  verifyBeforeRetry?: boolean
+}
+
+export type SessionGuestResult = SessionGuestRequest & { success: boolean; uncertain?: boolean; error?: string }
+
+// Each existing RPC is atomic. Report every result; never retry successful students.
+export async function addSessionGuests(sessionId: string, requests: SessionGuestRequest[]): Promise<SessionGuestResult[]> {
+  const results: SessionGuestResult[] = []
+  const seen = new Set<string>()
+  for (const request of requests) {
+    if (seen.has(request.studentId) || (request.linkType === 'makeup' && !request.sourceSessionId)) {
+      results.push({ ...request, success: false, error: '学生重复或尚未选择原缺席课程。' })
+      continue
+    }
+    seen.add(request.studentId)
+    if (request.verifyBeforeRetry) {
+      try {
+        const entry = (await getSessionRoster(sessionId)).find((row) => row.student_id === request.studentId)
+        if (entry) {
+          const matches = entry.participation_type === request.linkType && (request.linkType === 'extra' || entry.source_session_id === request.sourceSessionId)
+          results.push(matches ? { ...request, success: true } : { ...request, success: false, error: '此学生已在目标课程名单，关联与本次选择不同，请先核对名单。' })
+          continue
+        }
+      } catch {
+        results.push({ ...request, success: false, uncertain: true, error: '仍无法确认上次是否已加入；未重复提交，请刷新点名名单核对。' })
+        continue
+      }
+    }
+    try {
+      const { data, error } = await requireSupabase().from('enrollments').select('student_id').eq('id', request.enrollmentId).single()
+      if (error) throw error
+      if (data?.student_id !== request.studentId) throw new Error('原报读与所选学生不一致，请重新选择。')
+      if (request.linkType === 'makeup') {
+        const sources = await listMakeupSourceSessions(sessionId, request.enrollmentId)
+        if (!sources.some((source) => source.session_id === request.sourceSessionId)) throw new Error('原缺席课程已不符合条件，请逐人重新选择。')
+      }
+    } catch (error) {
+      results.push({ ...request, success: false, error: getErrorMessage(error, '核验原报读与原缺席课程失败，未提交此学生。') })
+      continue
+    }
+    try {
+      await addSessionGuest(sessionId, request.enrollmentId, request.linkType, request.sourceSessionId)
+      results.push({ ...request, success: true })
+    } catch (error) {
+      // A lost response can follow a committed RPC. Verify before offering a retry.
+      try {
+        const roster = await getSessionRoster(sessionId)
+        const added = roster.some((entry) => entry.student_id === request.studentId
+          && entry.participation_type === request.linkType
+          && (request.linkType === 'extra' || entry.source_session_id === request.sourceSessionId))
+        results.push(added ? { ...request, success: true } : { ...request, success: false, error: getErrorMessage(error, '加入失败，请检查资格或原缺席课程后重试。') })
+      } catch {
+        results.push({ ...request, success: false, uncertain: true, error: '无法确认是否已加入。请刷新点名名单核对后再重试。' })
+      }
+    }
+  }
+  return results
 }
 
 export function buildSignaturePath(

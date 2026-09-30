@@ -3,7 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ContextLink } from '../../../components/navigation/ContextLink'
 import type { MonthlyFeeDetails } from '../../../types/domain'
 import { getErrorMessage } from '../../../utils/errors'
-import { formatMalaysiaDateTime, formatMoney } from '../../../utils/format'
+import { formatFeeMonth, formatMalaysiaDateTime, formatMoney } from '../../../utils/format'
+import { StudentIdentity } from '../../students/components/StudentIdentity'
 import {
   markMonthlyFeePaid,
   undoMonthlyFeePayment,
@@ -73,13 +74,14 @@ export function MonthlyFeeCard({ fee, showClass = true, showStudent = true, read
       <div className="fee-card-main">
         {showStudent && fee.student && (
           <ContextLink backLabel="学费" className="fee-entity-link" to={`/students/${fee.student.id}`}>
-            <strong>{fee.student.name}</strong>
+            <StudentIdentity student={fee.student} />
           </ContextLink>
         )}
         {showClass && (fee.enrollment?.class
           ? <ContextLink backLabel="学费" className="record-meta fee-entity-link" to={`/classes/${fee.enrollment.class.id}`}>{fee.enrollment.class.name}</ContextLink>
           : <span className="record-meta">班级资料不可用</span>)}
         <div className="fee-amount-row">
+          <span className="fee-period">{formatFeeMonth(fee.fee_month)}</span>
           <strong>{fee.actual_amount === fee.normal_amount ? formatMoney(fee.actual_amount) : `本月 ${formatMoney(fee.actual_amount)}`}</strong>
           {fee.actual_amount !== fee.normal_amount && <span>标准 {formatMoney(fee.normal_amount)}</span>}
         </div>

@@ -1,11 +1,12 @@
 import { requireSupabase } from '../../../lib/requireSupabase'
 import type { Student, StudentInput } from '../../../types/domain'
 
-export async function listStudents(search = ''): Promise<Student[]> {
+export async function listStudents(search = '', limit?: number): Promise<Student[]> {
   const client = requireSupabase()
   let query = client.from('students').select('*').order('name').order('school_class')
 
   if (search.trim()) query = query.ilike('name', `%${search.trim()}%`)
+  if (limit) query = query.limit(limit)
 
   const { data, error } = await query
   if (error) throw error
@@ -21,6 +22,13 @@ export async function getStudent(studentId: string): Promise<Student> {
 
   if (error) throw error
   return data as Student
+}
+
+export async function listStudentsByIds(ids: string[]): Promise<Student[]> {
+  if (!ids.length) return []
+  const { data, error } = await requireSupabase().from('students').select('*').in('id', ids)
+  if (error) throw error
+  return (data ?? []) as Student[]
 }
 
 export async function createStudent(ownerId: string, input: StudentInput): Promise<Student> {

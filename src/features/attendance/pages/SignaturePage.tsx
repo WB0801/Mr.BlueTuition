@@ -20,7 +20,7 @@ import {
   savePendingSignature,
   type PendingSignature,
 } from '../offline/pendingSignatureStore'
-import { findNextUnsignedStudentId } from '../signatureFlow'
+import { signatureReturnTarget } from '../signatureFlow'
 
 const leaveMessage = '此签名尚未保存，确定离开？'
 
@@ -109,13 +109,8 @@ export function SignaturePage() {
       await queryClient.invalidateQueries({ queryKey: ['attendance', sessionId, 'roster'] })
       await queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
       allowNavigationRef.current = true
-      const nextUnsignedStudentId = findNextUnsignedStudentId(roster.data ?? [], studentId)
-      navigate(
-        nextUnsignedStudentId
-          ? `/attendance/session/${sessionId}/sign/${nextUnsignedStudentId}`
-          : `/attendance/session/${sessionId}`,
-        { replace: true, state: { signatureSaved: true } },
-      )
+      const target = signatureReturnTarget(sessionId, entry?.student_name ?? '学生', location.state)
+      navigate(target.to, { replace: true, state: target.state })
     } catch (caughtError) {
       const retainedItem = { ...item, wasOffline: true }
       setPending(retainedItem)
@@ -171,13 +166,11 @@ export function SignaturePage() {
         backLabel="课程点名"
       />
       <div className="signature-context">
-        {(location.state as { signatureSaved?: boolean } | null)?.signatureSaved && <span className="form-success signature-inline-success">上一位学生的签名已保存</span>}
         <strong>{session.data.class?.name ?? session.data.temporary_class?.name}</strong>
         <span>{formatSessionTimeRange(session.data.current_start_at, session.data.current_end_at)}</span>
         {isBackfill && <span className="attendance-label attendance-backfill">补签：保存实际签名时间</span>}
       </div>
       <div className="signature-card">
-        <p className="signature-instruction">请在下方签名</p>
         <SignatureCanvas ref={canvasRef} onInkChange={setHasInk} />
         {pending && <p className="sync-warning" role="status">尚未同步 · 签名已安全保存在此设备</p>}
         {error && <p className="form-error" role="alert">{error}</p>}

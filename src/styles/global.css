@@ -156,6 +156,69 @@ h1 { margin: 0; color: var(--color-text-primary); font-size: var(--font-size-pag
 .student-search input:disabled { cursor: not-allowed; }
 
 .home-page { max-width: 980px; margin: 0 auto; }
+
+/* Daily workflows reuse the brand tokens and existing form controls. */
+.header-workflow-inner { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 20px; }
+.header-workflow-inner .header-sign-out { justify-self: end; }
+.primary-navigation { display: flex; align-items: center; gap: 4px; }
+.primary-navigation > a, .more-navigation > summary { display: flex; align-items: center; gap: 6px; justify-content: center; min-height: 44px; padding: 8px 18px; border-radius: 9px; font-weight: 650; text-decoration: none; color: var(--color-text-primary); cursor: pointer; list-style: none; white-space: nowrap; }
+.more-navigation > summary svg { flex-shrink: 0; }
+.more-navigation > summary::-webkit-details-marker { display: none; }
+.primary-navigation > a.active, .more-navigation.active > summary { background: #e5edf3; color: #102743; }
+.primary-navigation > a:hover, .more-navigation > summary:hover { background: #edf1f4; }
+.more-navigation { position: relative; }
+.more-navigation-menu { position: absolute; z-index: 40; right: 0; top: calc(100% + 8px); min-width: 176px; padding: 6px; background: white; border: 1px solid #d7dfe6; border-radius: 12px; box-shadow: var(--shadow-overlay); }
+.more-navigation-menu a { display: block; min-height: 44px; padding: 11px 14px; border-radius: 7px; text-decoration: none; }
+.more-navigation-menu a:hover, .more-navigation-menu a.active { background: #eaf0f5; }
+.daily-home h1 { margin-bottom: 24px; }
+.daily-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
+.daily-actions > a { display: flex; align-items: center; gap: 16px; min-height: 96px; padding: 24px; border-radius: 14px; text-decoration: none; border: 1px solid #d7dfe6; }
+.daily-actions > a strong { flex: 1; font-size: clamp(18px, 2vw, 23px); line-height: 1.5; }
+.daily-attendance-action { background: #102743; color: white; }
+.daily-attendance-action:hover { background: #183a5d; }
+.daily-receipt-action { background: white; color: #102743; }
+.daily-receipt-action:hover { border-color: #102743; background: #f4f7f9; }
+.home-payment-search h2 { margin: 0; font-size: 21px; }
+.home-payment-search .global-search { margin: 16px 0; }
+.home-payment-search .search-results { margin-top: 14px; box-shadow: none; }
+.home-student-result { display: flex; gap: 16px; align-items: center; justify-content: space-between; }
+.home-student-result .identity-link { min-width: 0; flex: 1; text-decoration: none; padding: 4px 0; }
+.home-student-result .button { flex-shrink: 0; }
+.home-secondary-link { display: inline-flex; align-items: center; gap: 12px; min-height: 44px; }
+.scope-notice { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 16px; background: #edf3f7; border-radius: 10px; margin: 12px 0 20px; }
+.related-nav button { min-height: 44px; padding: 10px 16px; border: 0; border-radius: 8px; background: #eaf0f5; color: #102743; cursor: pointer; font: inherit; font-weight: 600; }
+.related-nav button:hover { background: #dfeaf3; }
+.roster-filter { margin-bottom: 16px; }
+.guest-candidates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.guest-candidate { display: flex; gap: 12px; align-items: center; padding: 12px; border: 1px solid #d7dfe6; border-radius: 10px; min-height: 64px; cursor: pointer; }
+.guest-candidate:has(input:checked) { background: #edf3f7; border-color: #668ba8; }
+.guest-candidate input { width: 20px; height: 20px; flex-shrink: 0; }
+.guest-selection { border: 1px solid #d7dfe6; border-radius: 10px; padding: 16px; margin: 14px 0; min-width: 0; }
+.guest-selection legend { font-weight: 650; padding: 0 6px; }
+.guest-selection .inline-actions label { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; }
+.guest-results { padding: 16px; background: #f1f5f7; border-radius: 10px; }
+.guest-results li { margin: 8px 0; }
+.fee-period { font-weight: 600; color: #526477; }
+.fees-workflow-header .fees-filters { align-items: start; }
+.primary-navigation :focus-visible, .related-nav button:focus-visible { outline: 3px solid #668ba8; outline-offset: 3px; }
+@media (max-width: 900px) {
+  .fee-actions .button, .fee-more-menu > summary { min-height: 44px; min-width: 44px; }
+  .header-workflow-inner { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 8px 0; }
+  .header-workflow-inner .primary-navigation { grid-column: 1 / -1; grid-row: 2; justify-content: center; }
+  .header-workflow-inner .header-sign-out { grid-row: 1; grid-column: 2; }
+}
+@media (max-width: 560px) {
+  .daily-actions { grid-template-columns: 1fr; gap: 12px; margin-bottom: 24px; }
+  .daily-actions > a { min-height: 78px; padding: 18px; }
+  .primary-navigation { width: 100%; }
+  .primary-navigation > a, .more-navigation { flex: 1 1 0; min-width: 0; }
+  .primary-navigation > a, .more-navigation > summary { padding: 8px; }
+  .guest-candidates { grid-template-columns: 1fr; }
+  .home-payment-search .section-heading-row { align-items: center; gap: 8px; }
+  .home-payment-search h2 { font-size: 19px; }
+  .home-student-result { gap: 8px; }
+  .home-student-result .button { padding: 10px; }
+}
 .home-function-lobby { display: grid; gap: var(--space-7); }
 .home-grid { display: grid; gap: var(--space-3); }
 .home-grid-primary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -659,8 +722,11 @@ a.record-card:hover { border-color: color-mix(in srgb, var(--color-navy) 34%, va
   font-size: 0.76rem;
   font-weight: 700;
 }
+.session-card .attendance-label { font-size: 0.84rem; padding: 5px 9px; }
 .attendance-present { color: #05603a; background: #e9f8f0; }
 .attendance-absent { color: #7a271a; background: #fff0ed; }
+.attendance-pending { color: #475467; background: #eef0f4; }
+.attendance-made-up { color: #1e40af; background: #eaf2ff; }
 .attendance-backfill { color: #854d0e; background: #fef3c7; }
 .makeup-complete-note { color: #1e40af; font-weight: 650; }
 .signed-time, .future-attendance-note, .offline-signature-note { color: var(--muted); font-size: 0.82rem; }
@@ -707,7 +773,6 @@ a.record-card:hover { border-color: color-mix(in srgb, var(--color-navy) 34%, va
   border: 1px solid var(--border);
   border-radius: 13px;
 }
-.signature-instruction { margin: 0 0 12px; font-weight: 700; }
 .signature-canvas {
   width: 100%;
   height: clamp(300px, 48vh, 440px);
@@ -1689,3 +1754,11 @@ label.receipt-row { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+/* Focused daily workflows: controls remain touch-sized without emphasizing danger. */
+.search-result-label { font-weight: 650; }
+.shared-makeup-source { padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-md); display: grid; gap: 12px; }
+.receipt-check { display: flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; align-self: start; cursor: pointer; }
+.receipt-check input { width: 21px; height: 21px; margin: 0; }
+.receipt-payment-link { display: inline-flex; align-items: center; min-height: 44px; width: fit-content; font-weight: 600; }
+.receipt-details { min-width: 0; }
+.history-load-more { margin-top: 20px; }
