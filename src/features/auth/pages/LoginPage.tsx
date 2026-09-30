@@ -47,7 +47,6 @@ export function LoginPage() {
           <img src={`${import.meta.env.BASE_URL}brand/app-icon.png`} alt="" />
         </div>
         <h1 id="login-title">蓝老师补习班</h1>
-        <p className="muted">请登录以继续</p>
 
         {!isConfigured && (
           <div className="notice" role="status">

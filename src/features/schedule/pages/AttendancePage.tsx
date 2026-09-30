@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { useInfiniteQuery, useQueries, useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { getSessionRoster } from '../../attendance/api/attendanceService'
 import { listAttendanceHistoryPage, listAttendanceSessions, listStudentAttendanceHistoryPage, loadStudentAttendanceScope, type AttendanceHistoryCursor, type AttendanceView } from '../api/scheduleService'
-import { formatDate, toMalaysiaDateInput, todayInMalaysia } from '../../../utils/format'
+import { formatDate, formatFeeMonth, toMalaysiaDateInput, todayInMalaysia } from '../../../utils/format'
+import { getStudent } from '../../students/api/studentsService'
 import { AllDayStopPanel } from '../components/AllDayStopPanel'
 import { SessionCard } from '../components/SessionCard'
 
@@ -21,6 +22,7 @@ export function AttendancePage() {
   const requestedView = searchParams.get('view')
   const classId = searchParams.get('classId') ?? ''
   const studentId = searchParams.get('studentId') ?? ''
+  const student = useQuery({ queryKey: ['student', studentId], queryFn: () => getStudent(studentId), enabled: Boolean(studentId) })
   const view: AttendanceView = requestedView === 'week' || requestedView === 'history' ? requestedView : 'today'
   const selectView = (next: AttendanceView) => {
     const params = new URLSearchParams(searchParams)
@@ -76,24 +78,24 @@ export function AttendancePage() {
 
   return (
     <section className="attendance-page">
-      <PageHeader title="点名" />
-      {(classId || studentId) && <div className="scope-notice"><strong>{studentId ? '指定学生的出席与课程' : '指定班级的课程'}</strong><button className="button button-text" type="button" onClick={() => {
+      <PageHeader title={studentId ? student.data?.name ?? '出席记录' : '点名'} />
+      {studentId && student.data && <h2 className="attendance-subtitle">出席记录</h2>}
+      {studentId && student.isLoading && <LoadingBlock message="正在读取学生姓名…" />}
+      {studentId && student.isError && <div className="identity-error"><ErrorBlock message="学生姓名读取失败。" /><button className="button button-secondary" type="button" onClick={() => void student.refetch()}>重试学生姓名</button></div>}
+      {(classId || studentId) && <div className="scope-notice"><strong>{studentId ? classId ? '此学生 · 指定班级范围' : '此学生' : '指定班级的课程'}</strong><button className="button button-text" type="button" onClick={() => {
         const next = new URLSearchParams(searchParams); next.delete('classId'); next.delete('studentId'); setSearchParams(next, { replace: true })
       }}>显示全部课程</button></div>}
-      {view === 'history' && <p className="field-hint">{earliest && `已加载至：${formatDate(toMalaysiaDateInput(earliest))} · `}仅显示已加载记录</p>}
       <div className="attendance-toolbar">
-        <div className="segmented-control" aria-label="课程日期范围">
+        <div className="attendance-tabs" role="group" aria-label="课程日期范围">
+          <span aria-hidden="true" className="attendance-tab-marker" style={{ transform: `translateX(${(view === 'today' ? 0 : view === 'week' ? 1 : 2) * 100}%)` }} />
           {(Object.keys(viewLabels) as AttendanceView[]).map((item) => (
-            <button type="button" className={view === item ? 'active' : ''} onClick={() => selectView(item)} key={item}>
+            <button type="button" aria-pressed={view === item} className={view === item ? 'active' : ''} onClick={() => selectView(item)} key={item}>
               {viewLabels[item]}
             </button>
           ))}
         </div>
-        <details className="action-panel all-day-stop-panel" onToggle={(event) => setStopPreviewOpen(event.currentTarget.open)}>
-          <summary>全日停课</summary>
-          {stopPreviewOpen && <AllDayStopPanel />}
-        </details>
       </div>
+      {view === 'history' && <p className="field-hint attendance-range">{earliest && `已加载至：${formatDate(toMalaysiaDateInput(earliest))} · `}仅显示已加载记录</p>}
 
       {(activeQuery.isLoading || (view === 'history' && studentId && studentScope.isLoading)) && <LoadingBlock />}
       {view === 'history' && studentId && studentScope.isError && <><ErrorBlock message="学生报读及补课范围载入失败，无法确认课程，请重试。" /><button type="button" className="button button-secondary" onClick={() => void studentScope.refetch()}>重试</button></>}
@@ -120,9 +122,20 @@ export function AttendancePage() {
         </div>
       ) : (
         <div className="compact-data-list">
-          {rows.map(renderCard)}
+          {rows.map((row, index) => {
+            const month = toMalaysiaDateInput(row.session.current_start_at).slice(0, 7)
+            const previousMonth = index > 0 ? toMalaysiaDateInput(rows[index - 1].session.current_start_at).slice(0, 7) : null
+            return <Fragment key={row.session.id}>
+              {view === 'history' && month !== previousMonth && <h2 className="attendance-month">{formatFeeMonth(month)}</h2>}
+              {renderCard(row)}
+            </Fragment>
+          })}
         </div>
       )}
+      <details className="action-panel all-day-stop-panel" onToggle={(event) => setStopPreviewOpen(event.currentTarget.open)}>
+        <summary>全日停课</summary>
+        {stopPreviewOpen && <AllDayStopPanel />}
+      </details>
       {view === 'history' && history.data && <div className="history-load-more">
         {history.hasNextPage ? <button className="button button-secondary" type="button" disabled={history.isFetchingNextPage} onClick={() => void history.fetchNextPage()}>{history.isFetchingNextPage ? '正在读取更早课程…' : '继续查看更早课程'}</button> : <p className="field-hint">没有更早的课程</p>}
         {history.isFetchNextPageError && <p role="alert" className="form-error">更早课程读取失败，已加载资料保留，请重试。</p>}

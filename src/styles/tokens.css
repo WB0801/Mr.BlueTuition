@@ -2,13 +2,13 @@
   color-scheme: light;
 
   /* Color */
-  --color-bg: #fbf8f1;
+  --color-bg: #ffffff;
   --color-surface: #ffffff;
-  --color-surface-soft: #f7f3ea;
-  --color-surface-hover: #faf8f3;
+  --color-surface-soft: #f3f7fb;
+  --color-surface-hover: #f3f7fb;
   --color-navy: #102743;
   --color-navy-hover: #183957;
-  --color-primary-soft: #edf3f8;
+  --color-primary-soft: #e8f2fb;
   --color-text-primary: #142033;
   --color-text-secondary: #667085;
   --color-text-tertiary: #8a93a2;
@@ -22,8 +22,8 @@
   --color-danger-bg: #fff1f1;
   --color-info: #285b82;
   --color-info-bg: #edf5fb;
-  --color-border: #dedbd3;
-  --color-border-strong: #c9c5bb;
+  --color-border: #e5e9ef;
+  --color-border-strong: #d7dce4;
   --color-focus: #316b9a;
 
   /* Spacing */
@@ -44,8 +44,8 @@
   --radius-round: 999px;
 
   /* Shadow */
-  --shadow-card: 0 1px 2px rgb(16 39 67 / 4%);
-  --shadow-card-hover: 0 4px 12px rgb(16 39 67 / 7%);
+  --shadow-card: none;
+  --shadow-card-hover: none;
   --shadow-overlay: 0 12px 32px rgb(16 39 67 / 14%);
 
   /* Typography */
@@ -54,12 +54,12 @@
   --font-size-sm: 0.875rem;
   --font-size-body: 1rem;
   --font-size-card-title: 1rem;
-  --font-size-section-title: 1.2rem;
-  --font-size-page-title: clamp(1.75rem, 3vw, 2rem);
+  --font-size-section-title: 1.125rem;
+  --font-size-page-title: 1.75rem;
   --line-height-body: 1.6;
   --font-weight-medium: 550;
   --font-weight-semibold: 650;
-  --font-weight-bold: 720;
+  --font-weight-bold: 700;
 
   /* Layout */
   --max-width-content: 1040px;

@@ -1,0 +1,66 @@
+:root {
+  --motion-press: 160ms;
+  --motion-state: 200ms;
+  --motion-page: 180ms;
+  --motion-ease: cubic-bezier(.2, .8, .2, 1);
+}
+
+.button, .daily-actions > a {
+  transition: transform var(--motion-press) var(--motion-ease), background-color var(--motion-state) ease, border-color var(--motion-state) ease, color var(--motion-state) ease;
+}
+.button:not(:disabled):active, .daily-actions > a:active { transform: scale(.98); }
+.record-card, .search-result, .compact-data-link, .settings-menu-item {
+  transition: background-color var(--motion-press) ease;
+}
+.record-card:active, .search-result:active, .compact-data-link:active { background: var(--color-primary-soft); }
+.navigation-marker { transition: transform 220ms var(--motion-ease); }
+.attendance-tab-marker { transition: transform var(--motion-state) var(--motion-ease); }
+
+/* Native details retains keyboard, focus and open state; unsupported browsers
+   fall back to an immediate disclosure rather than delaying its contents. */
+details > summary::marker { color: var(--color-text-secondary); }
+details:not(.more-navigation, .fee-more-menu) > summary { list-style: none; }
+details:not(.more-navigation, .fee-more-menu) > summary::-webkit-details-marker { display: none; }
+details:not(.more-navigation, .fee-more-menu) > summary::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 12px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform var(--motion-state) var(--motion-ease);
+}
+details:not(.more-navigation, .fee-more-menu)[open] > summary::before { transform: rotate(45deg); }
+details > summary svg { transition: transform var(--motion-state) var(--motion-ease); }
+.more-navigation[open] > summary svg { transform: rotate(90deg); }
+@supports (interpolate-size: allow-keywords) {
+  details:not(.more-navigation, .fee-more-menu)::details-content {
+    interpolate-size: allow-keywords;
+    block-size: 0;
+    overflow: clip;
+    transition: block-size var(--motion-state) var(--motion-ease), content-visibility var(--motion-state) allow-discrete;
+  }
+  details:not(.more-navigation, .fee-more-menu)[open]::details-content { block-size: auto; overflow: visible; }
+  .more-navigation::details-content { transition: content-visibility var(--motion-state) allow-discrete; }
+  .more-navigation-menu {
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity var(--motion-state) ease, transform var(--motion-state) var(--motion-ease);
+  }
+  .more-navigation[open] .more-navigation-menu { opacity: 1; transform: none; }
+  @starting-style { .more-navigation[open] .more-navigation-menu { opacity: 0; transform: translateY(-4px); } }
+}
+
+/* Keyed rows animate once on insertion, never by remounting the business page. */
+.search-result, .session-card { animation: result-enter 160ms ease both; }
+.form-success, .ui-notice-success { animation: success-feedback var(--motion-state) ease both; }
+.attendance-label { animation: success-feedback var(--motion-state) ease both; }
+@keyframes result-enter { from { opacity: 0; } to { opacity: 1; } }
+@keyframes success-feedback { from { opacity: .4; } to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition-duration: 0ms !important; }
+  .button:active, .daily-actions > a:active, .more-navigation-menu, .more-navigation > summary svg { transform: none !important; }
+}

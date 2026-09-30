@@ -50,7 +50,6 @@ export function AllDayStopPanel() {
           }}
         />
       </label>
-      <p className="muted compact-copy">以下是当天所有尚未停课的课程，不需要填写停课理由。</p>
 
       {sessions.isLoading && <LoadingBlock message="正在载入当天课程…" />}
       {sessions.isError && <ErrorBlock message="当天课程载入失败，请重试。" />}

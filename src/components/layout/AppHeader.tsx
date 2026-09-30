@@ -11,6 +11,7 @@ export function AppHeader({ isSigningOut, onSignOut }: AppHeaderProps) {
   const { pathname } = useLocation()
   const moreRef = useRef<HTMLDetailsElement>(null)
   const isMore = !['/', '/attendance', '/fees'].some((path) => path === '/' ? pathname === path : pathname.startsWith(path))
+  const activeIndex = pathname === '/' ? 0 : pathname.startsWith('/attendance') ? 1 : pathname.startsWith('/fees') ? 2 : 3
   useEffect(() => { if (moreRef.current) moreRef.current.open = false }, [pathname])
 
   return (
@@ -21,6 +22,7 @@ export function AppHeader({ isSigningOut, onSignOut }: AppHeaderProps) {
           <span>蓝老师补习班</span>
         </Link>
         <nav className="primary-navigation" aria-label="主要导航">
+          <span aria-hidden="true" className="navigation-marker" style={{ transform: `translateX(${activeIndex * 100}%)` }} />
           <NavLink end to="/">首页</NavLink>
           <NavLink to="/attendance">点名</NavLink>
           <NavLink to="/fees">学费</NavLink>

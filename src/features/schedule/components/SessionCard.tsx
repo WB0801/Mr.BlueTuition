@@ -1,6 +1,6 @@
 import { ContextLink } from '../../../components/navigation/ContextLink'
 import type { ClassSessionWithClass, SessionRosterEntry } from '../../../types/domain'
-import { formatDateTime, toMalaysiaDateInput, todayInMalaysia } from '../../../utils/format'
+import { formatDate, formatDateTime, toMalaysiaDateInput, toMalaysiaTimeInput, todayInMalaysia } from '../../../utils/format'
 
 interface SessionCardProps {
   session: ClassSessionWithClass
@@ -16,21 +16,29 @@ const statusLabels = {
 
 export function SessionCard({ session, showClass = false, attendanceSummary, studentAttendance }: SessionCardProps) {
   const studentStatus = studentAttendance === undefined ? null : getStudentStatus(session, studentAttendance)
+  const date = toMalaysiaDateInput(session.current_start_at)
+  const weekday = new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Kuala_Lumpur', weekday: 'short' }).format(new Date(session.current_start_at))
   return (
     <ContextLink backLabel="课程" className={`record-card session-card ${session.status === 'cancelled' ? 'cancelled-session' : ''}`} to={`/attendance/session/${session.id}`}>
-      <span className="record-main">
+      <time className="session-date" dateTime={session.current_start_at} aria-label={formatDateTime(session.current_start_at)}>
+        <strong>{Number(date.slice(-2))}</strong><small>{weekday}</small>
+      </time>
+      <span className="record-main session-course">
+        {!showClass && <strong>{formatDate(date)}</strong>}
         {showClass && <strong>{session.class?.name ?? session.temporary_class?.name ?? '未知班级'}</strong>}
         {showClass && <span className="record-meta">{session.class?.subject?.name ?? session.temporary_class?.subject?.name}</span>}
-        <span>{formatDateTime(session.current_start_at)}</span>
+        <span className="record-meta">{toMalaysiaTimeInput(session.current_start_at)}{session.current_end_at && ` – ${toMalaysiaTimeInput(session.current_end_at)}`}</span>
         <span className="session-labels">
           {session.session_type === 'extra' && <span className="session-type-label">额外补课</span>}
           {session.session_type === 'temporary' && <span className="session-type-label">临时班</span>}
-          {studentStatus && <span className={`attendance-label ${studentStatus.tone}`}>{studentStatus.label}</span>}
           {studentAttendance?.participation_type === 'makeup' && <span className="session-type-label">跨班补课</span>}
           {studentAttendance?.participation_type === 'extra' && <span className="session-type-label">额外参加</span>}
-          {(session.status === 'cancelled' || !studentStatus) && <span className={`session-status status-${session.status}`}>{statusLabels[session.status]}</span>}
-          {attendanceSummary && !studentStatus && <span className={`attendance-label ${attendanceSummary.total > 0 && attendanceSummary.signed === attendanceSummary.total ? 'attendance-present' : 'attendance-absent'}`}>全班已签到 {attendanceSummary.signed}/{attendanceSummary.total}</span>}
         </span>
+      </span>
+      <span className="session-attendance">
+        {studentStatus && <span key={studentStatus.label} className={`attendance-label ${studentStatus.tone}`}>{studentStatus.label}</span>}
+        {(session.status === 'cancelled' || !studentStatus) && <span className={`session-status status-${session.status}`}>{statusLabels[session.status]}</span>}
+        {attendanceSummary && !studentStatus && <span className={`attendance-label ${attendanceSummary.total > 0 && attendanceSummary.signed === attendanceSummary.total ? 'attendance-present' : 'attendance-absent'}`}>全班已签到 {attendanceSummary.signed}/{attendanceSummary.total}</span>}
       </span>
       <span className="chevron" aria-hidden="true">›</span>
     </ContextLink>

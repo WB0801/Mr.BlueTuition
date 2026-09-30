@@ -5,6 +5,7 @@ import { AppProviders } from './app/providers'
 import { ErrorBoundary } from './components/feedback/ErrorBoundary'
 import './styles/tokens.css'
 import './styles/global.css'
+import './styles/motion.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

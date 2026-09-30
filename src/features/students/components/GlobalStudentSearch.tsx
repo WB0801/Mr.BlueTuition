@@ -60,7 +60,7 @@ export function GlobalStudentSearch({ placeholder = '搜索学生姓名……', 
           {rows?.map((student) => (
             <div className="search-result home-student-result" key={student.id}>
               <ContextLink backLabel="首页" className="identity-link" to={`/students/${student.id}`}><StudentIdentity student={student} /></ContextLink>
-              {destination === 'fees' && <ContextLink backLabel="首页" className="button button-secondary" to={`/fees?studentId=${student.id}&month=all&status=all`}>缴费记录</ContextLink>}
+              {destination === 'fees' && <ContextLink backLabel="首页" className="button button-text home-fee-link" to={`/fees?studentId=${student.id}&month=all&status=all`}>缴费记录</ContextLink>}
             </div>
           ))}
           {deferredSearch && rows?.length === 40 && <p className="search-note">显示前 40 项，请输入更多姓名缩小范围。</p>}

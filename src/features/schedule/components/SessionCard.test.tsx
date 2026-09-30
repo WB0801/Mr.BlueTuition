@@ -27,6 +27,10 @@ const extraSession: ClassSessionWithClass = {
 }
 
 describe('SessionCard', () => {
+  it('keeps the full calendar date visible for class courses without month headings', () => {
+    render(<MemoryRouter><SessionCard session={extraSession} /></MemoryRouter>)
+    expect(screen.getByText('2026/8/19')).toBeInTheDocument()
+  })
   it('clearly marks extra sessions and uses the user-facing stop wording', () => {
     render(<MemoryRouter><SessionCard session={extraSession} showClass /></MemoryRouter>)
 

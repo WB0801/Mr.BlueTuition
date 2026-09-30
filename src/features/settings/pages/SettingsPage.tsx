@@ -14,7 +14,7 @@ export function SettingsPage() {
           <h2 id="settings-general-heading">一般设置</h2>
           <ContextLink backLabel="设置" className="settings-menu-item" to="/settings/app">
             <span className="settings-menu-icon"><Icon name="settings" size={21} /></span>
-            <span><strong>App、离线与更新</strong><small>安装状态、离线准备及版本检查</small></span>
+            <span><strong>App、离线与更新</strong></span>
             <Icon name="chevron-right" size={19} />
           </ContextLink>
         </section>
@@ -22,7 +22,7 @@ export function SettingsPage() {
           <h2 id="settings-data-heading">资料管理</h2>
           <ContextLink backLabel="设置" className="settings-menu-item" to="/settings/backup">
             <span className="settings-menu-icon"><Icon name="classes" size={21} /></span>
-            <span><strong>完整资料备份</strong><small>建立、验证并下载 ZIP 备份</small></span>
+            <span><strong>完整资料备份</strong></span>
             <Icon name="chevron-right" size={19} />
           </ContextLink>
           <ContextLink backLabel="设置" className="settings-menu-item" to="/settings/activity">
