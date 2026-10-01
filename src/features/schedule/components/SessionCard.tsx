@@ -7,6 +7,7 @@ interface SessionCardProps {
   showClass?: boolean
   attendanceSummary?: { signed: number; total: number }
   studentAttendance?: SessionRosterEntry | null
+  onSelect?: (sessionId: string) => void
 }
 const statusLabels = {
   scheduled: '已安排',
@@ -14,12 +15,11 @@ const statusLabels = {
   completed: '已完成',
 } as const
 
-export function SessionCard({ session, showClass = false, attendanceSummary, studentAttendance }: SessionCardProps) {
+export function SessionCard({ session, showClass = false, attendanceSummary, studentAttendance, onSelect }: SessionCardProps) {
   const studentStatus = studentAttendance === undefined ? null : getStudentStatus(session, studentAttendance)
   const date = toMalaysiaDateInput(session.current_start_at)
   const weekday = new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Kuala_Lumpur', weekday: 'short' }).format(new Date(session.current_start_at))
-  return (
-    <ContextLink backLabel="课程" className={`record-card session-card ${session.status === 'cancelled' ? 'cancelled-session' : ''}`} to={`/attendance/session/${session.id}`}>
+  const content = <>
       <time className="session-date" dateTime={session.current_start_at} aria-label={formatDateTime(session.current_start_at)}>
         <strong>{Number(date.slice(-2))}</strong><small>{weekday}</small>
       </time>
@@ -41,8 +41,10 @@ export function SessionCard({ session, showClass = false, attendanceSummary, stu
         {attendanceSummary && !studentStatus && <span className={`attendance-label ${attendanceSummary.total > 0 && attendanceSummary.signed === attendanceSummary.total ? 'attendance-present' : 'attendance-absent'}`}>全班已签到 {attendanceSummary.signed}/{attendanceSummary.total}</span>}
       </span>
       <span className="chevron" aria-hidden="true">›</span>
-    </ContextLink>
-  )
+    </>
+  const className = `record-card session-card ${session.status === 'cancelled' ? 'cancelled-session' : ''}`
+  return onSelect ? <button className={className} type="button" data-context-record={session.id} onClick={() => onSelect(session.id)}>{content}</button>
+    : <ContextLink backLabel="课程" className={className} to={`/attendance/session/${session.id}`}>{content}</ContextLink>
 }
 
 function getStudentStatus(session: ClassSessionWithClass, entry: SessionRosterEntry | null) {

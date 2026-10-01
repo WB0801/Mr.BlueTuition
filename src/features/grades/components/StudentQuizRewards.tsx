@@ -5,10 +5,11 @@ import { Badge } from '../../../components/ui'
 import { formatDate } from '../../../utils/format'
 import { getStudentQuizRewardSummary } from '../api/gradesService'
 
-export function StudentQuizRewards({ studentId }: { studentId: string }) {
+export function StudentQuizRewards({ studentId, active = true }: { studentId: string; active?: boolean }) {
   const summary = useQuery({
     queryKey: ['quiz-rewards', 'student', studentId],
     queryFn: () => getStudentQuizRewardSummary(studentId),
+    enabled: active,
   })
   if (summary.isLoading) return <LoadingBlock message="正在载入前三名累计…" />
   if (summary.isError) return <ErrorBlock message="前三名累计载入失败。" />

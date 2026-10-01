@@ -4,12 +4,19 @@ export function signatureReturnTarget(sessionId: string, studentName: string, na
   const path = `/attendance/session/${sessionId}`
   const source = readContextBack(navigationState)
   const isSameSession = source?.to.split('?')[0] === path
+  const [pathname, query = ''] = source?.to.split('?') ?? []
+  const params = new URLSearchParams(query)
+  const panel = params.get('panel')
+  const isEmbeddedSession = /^\/(students|classes)\/[A-Za-z0-9_-]+$/.test(pathname ?? '')
+    && (panel === 'attendance' || panel === 'courses') && params.get(`${panel}.record`) === sessionId
+  const validSource = isSameSession || isEmbeddedSession
   return {
-    to: isSameSession ? source.to : path,
+    to: validSource ? source!.to : path,
     state: {
-      ...(isSameSession && source.state && typeof source.state === 'object' ? source.state : {}),
+      ...(validSource && source?.state && typeof source.state === 'object' ? source.state : {}),
       restoreContextScroll: true,
       signatureSaved: true,
+      signedSessionId: sessionId,
       signedStudentName: studentName,
     },
   }

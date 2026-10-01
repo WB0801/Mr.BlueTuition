@@ -1,4 +1,5 @@
 import { QueryClient } from '@tanstack/react-query'
+import { installContextDataInvalidation } from '../components/contextual/contextDataInvalidation'
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -10,3 +11,5 @@ export const queryClient = new QueryClient({
     mutations: { retry: 0 },
   },
 })
+
+installContextDataInvalidation(queryClient)

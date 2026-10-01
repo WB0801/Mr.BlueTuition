@@ -1789,3 +1789,40 @@ label.receipt-row { cursor: pointer; }
 .receipt-payment-link { display: inline-flex; align-items: center; min-height: 44px; width: fit-content; font-weight: 600; }
 .receipt-details { min-width: 0; }
 .history-load-more { margin-top: 20px; }
+
+/* Contextual viewing: identity stays above one lazily opened content area. */
+.context-data-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 20px 0 24px; }
+.context-data-tabs button { min-width: 0; min-height: 48px; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface-soft); color: var(--color-navy); cursor: pointer; font-weight: 600; overflow-wrap: anywhere; transition: background 160ms ease, border-color 160ms ease; }
+.context-data-tabs button:hover { background: var(--color-primary-soft); border-color: var(--color-navy); }
+.context-data-tabs button[aria-pressed="true"] { background: var(--color-navy); color: white; border-color: var(--color-navy); }
+.context-data-tabs button:disabled { cursor: wait; opacity: .65; }
+.context-data-content { min-width: 0; padding-top: 2px; }
+.context-data-content [hidden] { display: none !important; }
+.context-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; border: 0; margin: 16px 0; padding: 0; }
+.context-record-row { width: 100%; text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--color-border); color: inherit; font: inherit; cursor: pointer; min-height: 64px; gap: 12px; }
+.context-record-row:hover, button.session-card:hover { background: var(--color-surface-hover); }
+.context-record-row .record-main { min-width: 0; overflow-wrap: anywhere; }
+.context-record-status { display: grid; text-align: right; gap: 4px; flex-shrink: 0; font-size: .85rem; }
+.context-record-status strong { font-size: 1rem; }
+button.session-card { width: 100%; color: inherit; font: inherit; text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--color-border); cursor: pointer; }
+.context-back-link { min-height: 44px; padding: 8px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-navy); background: white; cursor: pointer; font-weight: 600; margin-bottom: 16px; }
+.context-back-link:disabled { opacity: .6; cursor: wait; }
+.context-record-detail { min-width: 0; }
+.context-record-detail > h2 { margin-top: 0; }
+.context-home-actions { grid-template-columns: 1.3fr 1fr; grid-template-rows: repeat(2, minmax(110px, 1fr)); min-height: clamp(240px, 34vh, 320px); }
+.context-home-actions > .daily-attendance-action { grid-row: span 2; padding: 28px; }
+.context-home-actions > .daily-attendance-action strong { font-size: 1.65rem; }
+.context-home-actions > .daily-receipt-action { padding: 24px; }
+.home-student-search { margin-top: 24px; }
+@media (max-width: 700px) {
+  .context-data-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 20px; }
+  .context-filters { gap: 12px; }
+  .context-record-row { gap: 8px; }
+  .context-record-status { max-width: 110px; white-space: normal; }
+  .context-home-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto auto; min-height: 0; gap: 10px; }
+  .context-home-actions > .daily-attendance-action { grid-row: 1; grid-column: 1 / -1; min-height: 132px; padding: 24px; }
+  .context-home-actions > .daily-receipt-action { min-height: 104px; padding: 12px; gap: 8px; }
+  .context-home-actions > .daily-receipt-action strong { font-size: 1rem; }
+  .context-home-actions > .daily-receipt-action > svg:last-child { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .context-data-tabs button { transition: none; } }

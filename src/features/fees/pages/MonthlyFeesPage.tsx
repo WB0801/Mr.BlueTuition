@@ -33,8 +33,10 @@ export function MonthlyFeesPage({ view }: MonthlyFeesPageProps) {
   const allMonths = monthInput === 'all'
   const feeMonth = allMonths ? currentMonthInMalaysia() : normalizeMonthInput(monthInput)
   const ensure = useQuery({
-    queryKey: ['monthly-fees', 'ensure', feeMonth],
+    queryKey: ['monthly-fees-generation', feeMonth],
     queryFn: () => ensureMonthlyFees(feeMonth),
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
   })
   const fees = useQuery({
     queryKey: ['monthly-fees', 'list', allMonths ? 'all' : feeMonth, classId, studentId],
@@ -43,7 +45,7 @@ export function MonthlyFeesPage({ view }: MonthlyFeesPageProps) {
       classId: classId || undefined,
       studentId: studentId || undefined,
     }),
-    enabled: ensure.isSuccess,
+    enabled: ensure.isSuccess && !ensure.isFetching,
   })
   const classes = useQuery({ queryKey: ['classes', 'active'], queryFn: () => listClasses('active') })
 

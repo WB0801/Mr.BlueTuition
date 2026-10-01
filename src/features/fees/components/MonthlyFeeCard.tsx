@@ -12,19 +12,22 @@ import {
   waiveMonthlyFee,
 } from '../api/feesService'
 import { canWaiveFinalMonth, getFeeStatusLabel } from '../feePresentation'
+import { useContextDataBusy } from '../../../components/contextual/contextDataState'
 
 interface MonthlyFeeCardProps {
   fee: MonthlyFeeDetails
   showClass?: boolean
   showStudent?: boolean
   readonly?: boolean
+  backLabel?: string
 }
 
-export function MonthlyFeeCard({ fee, showClass = true, showStudent = true, readonly = false }: MonthlyFeeCardProps) {
+export function MonthlyFeeCard({ fee, showClass = true, showStudent = true, readonly = false, backLabel = '学费' }: MonthlyFeeCardProps) {
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState(false)
   const [amount, setAmount] = useState(String(fee.actual_amount))
   const [error, setError] = useState('')
+  useContextDataBusy(editing)
 
   const refresh = async () => {
     await Promise.all([
@@ -73,12 +76,12 @@ export function MonthlyFeeCard({ fee, showClass = true, showStudent = true, read
     <article className="fee-card">
       <div className="fee-card-main">
         {showStudent && fee.student && (
-          <ContextLink backLabel="学费" className="fee-entity-link" to={`/students/${fee.student.id}`}>
+          <ContextLink backLabel={backLabel} className="fee-entity-link" to={`/students/${fee.student.id}`}>
             <StudentIdentity student={fee.student} />
           </ContextLink>
         )}
         {showClass && (fee.enrollment?.class
-          ? <ContextLink backLabel="学费" className="record-meta fee-entity-link" to={`/classes/${fee.enrollment.class.id}`}>{fee.enrollment.class.name}</ContextLink>
+          ? <ContextLink backLabel={backLabel} className="record-meta fee-entity-link" to={`/classes/${fee.enrollment.class.id}`}>{fee.enrollment.class.name}</ContextLink>
           : <span className="record-meta">班级资料不可用</span>)}
         <div className="fee-amount-row">
           <span className="fee-period">{formatFeeMonth(fee.fee_month)}</span>

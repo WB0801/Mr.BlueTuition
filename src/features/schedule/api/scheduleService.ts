@@ -75,8 +75,9 @@ export async function listStudentAttendanceHistoryPage(
   scope: StudentAttendanceScope,
   referenceDate = todayInMalaysia(),
   classId = '',
+  ensure = true,
 ): Promise<AttendanceHistoryPage> {
-  if (!cursor) await ensureRollingSessions(referenceDate)
+  if (!cursor && ensure) await ensureRollingSessions(referenceDate)
   const cursorFilter = cursor ? historyCursorFilter(cursor) : null
   const todayStart = malaysiaDateTime(referenceDate, '00:00')
   type Source = { type: 'enrollment'; window: StudentEnrollmentWindow } | { type: 'temporary' | 'makeup'; ids: string[] }
@@ -133,8 +134,8 @@ function historyCursorFilter(cursor: AttendanceHistoryCursor) {
 }
 
 // Stable keyset pagination: equal timestamps use the UUID as a second ordering key.
-export async function listAttendanceHistoryPage(cursor: AttendanceHistoryCursor | null, classId = '', referenceDate = todayInMalaysia()): Promise<AttendanceHistoryPage> {
-  if (!cursor) await ensureRollingSessions(referenceDate)
+export async function listAttendanceHistoryPage(cursor: AttendanceHistoryCursor | null, classId = '', referenceDate = todayInMalaysia(), ensure = true): Promise<AttendanceHistoryPage> {
+  if (!cursor && ensure) await ensureRollingSessions(referenceDate)
   const todayStart = malaysiaDateTime(referenceDate, '00:00')
   let query = requireSupabase().from('class_sessions').select(sessionSelection)
     .lt('current_start_at', todayStart)
@@ -194,8 +195,8 @@ export async function listScheduleRules(classId: string): Promise<ClassScheduleR
   return (data ?? []) as ClassScheduleRule[]
 }
 
-export async function listClassSessions(classId: string): Promise<ClassSessionWithClass[]> {
-  await ensureRollingSessions()
+export async function listClassSessions(classId: string, ensure = true): Promise<ClassSessionWithClass[]> {
+  if (ensure) await ensureRollingSessions()
   const { data, error } = await requireSupabase()
     .from('class_sessions')
     .select(sessionSelection)
@@ -207,13 +208,13 @@ export async function listClassSessions(classId: string): Promise<ClassSessionWi
   return (data ?? []) as unknown as ClassSessionWithClass[]
 }
 
-export async function listAttendanceSessions(view: AttendanceView): Promise<ClassSessionWithClass[]> {
-  await ensureRollingSessions()
+export async function listAttendanceSessions(view: AttendanceView, classId = '', ensure = true): Promise<ClassSessionWithClass[]> {
+  if (ensure) await ensureRollingSessions()
   const today = todayInMalaysia()
   const todayStart = malaysiaDateTime(today, '00:00')
 
   if (view === 'today') {
-    return queryScheduledRange(todayStart, malaysiaDateTime(addCalendarDays(today, 1), '00:00'))
+    return queryScheduledRange(todayStart, malaysiaDateTime(addCalendarDays(today, 1), '00:00'), classId)
   }
 
   if (view === 'week') {
@@ -221,6 +222,7 @@ export async function listAttendanceSessions(view: AttendanceView): Promise<Clas
     return queryScheduledRange(
       malaysiaDateTime(monday, '00:00'),
       malaysiaDateTime(addCalendarDays(monday, 7), '00:00'),
+      classId,
     )
   }
 
@@ -250,15 +252,16 @@ export async function listAttendanceSessions(view: AttendanceView): Promise<Clas
   return sessions.sort((left, right) => right.current_start_at.localeCompare(left.current_start_at))
 }
 
-async function queryScheduledRange(from: string, to: string): Promise<ClassSessionWithClass[]> {
-  const { data, error } = await requireSupabase()
+async function queryScheduledRange(from: string, to: string, classId = ''): Promise<ClassSessionWithClass[]> {
+  let query = requireSupabase()
     .from('class_sessions')
     .select(sessionSelection)
     .eq('status', 'scheduled')
     .gte('current_start_at', from)
     .lt('current_start_at', to)
     .order('current_start_at', { ascending: true })
-
+  if (classId) query = query.eq('class_id', classId)
+  const { data, error } = await query
   if (error) throw error
   return (data ?? []) as unknown as ClassSessionWithClass[]
 }

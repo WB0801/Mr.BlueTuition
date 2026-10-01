@@ -1,6 +1,7 @@
 import { useDeferredValue, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { objectEditReturnTarget } from '../../../components/navigation/objectEditReturn'
 import { ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { useAuth } from '../../auth/authContext'
@@ -14,6 +15,7 @@ export function StudentFormPage() {
   const isEditing = Boolean(studentId)
   const { user } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
   const [error, setError] = useState('')
   const [draft, setDraft] = useState<StudentInput>({ name: '', school_class: '', phone: '' })
@@ -36,7 +38,8 @@ export function StudentFormPage() {
     onSuccess: async (saved) => {
       await queryClient.invalidateQueries({ queryKey: ['students'] })
       queryClient.setQueryData(['student', saved.id], saved)
-      navigate(`/students/${saved.id}`, { replace: true })
+      const target = objectEditReturnTarget('students', studentId, saved.id, location.state)
+      navigate(target.to, { replace: true, state: target.state })
     },
     onError: (caughtError) => setError(getErrorMessage(caughtError, '学生资料保存失败，请重试。')),
   })

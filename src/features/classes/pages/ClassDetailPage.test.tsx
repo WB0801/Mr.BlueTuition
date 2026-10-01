@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
 import { ClassDetailPage } from './ClassDetailPage'
 
 vi.mock('../api/classesService', () => ({
@@ -45,13 +46,15 @@ describe('ClassDetailPage hierarchy and connected navigation', () => {
     )
 
     const students = await screen.findByRole('heading', { name: /当前学生/ })
-    const management = screen.getByText('班级管理')
-    expect(students.compareDocumentPosition(management) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(screen.getByRole('link', { name: '课程' })).toHaveAttribute('href', '/classes/class-1/sessions')
-    expect(screen.getByRole('link', { name: '学费' })).toHaveAttribute('href', '/fees?classId=class-1')
-    expect(screen.getByRole('link', { name: '小测与成绩' })).toHaveAttribute('href', '/grades/quizzes?classId=class-1')
-    const container = management.closest('details')!
-    expect(container).not.toHaveAttribute('open')
+    const management = screen.getByRole('button', { name: '班级管理' })
+    expect(students).toBeVisible()
+    expect(screen.getByRole('button', { name: '学生名单' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: '课程' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '学费' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '小测与成绩' })).toBeInTheDocument()
+    expect(screen.queryByText('永久删除班级')).not.toBeInTheDocument()
+    await userEvent.setup().click(management)
+    const container = screen.getByRole('region', { name: '班级管理' })
     expect(container).toContainElement(screen.getByText('结束此班'))
     expect(container).toContainElement(screen.getByText('永久删除班级'))
   })

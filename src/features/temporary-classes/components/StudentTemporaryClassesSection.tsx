@@ -4,10 +4,12 @@ import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedba
 import { formatMoney, formatSessionTimeRange } from '../../../utils/format'
 import { listStudentTemporaryClasses } from '../api/temporaryClassesService'
 
-export function StudentTemporaryClassesSection({ studentId }: { studentId: string }) {
+export function StudentTemporaryClassesSection({ studentId, active = true }: { studentId: string; active?: boolean }) {
   const participations = useQuery({
     queryKey: ['temporary-classes', 'student', studentId],
     queryFn: () => listStudentTemporaryClasses(studentId),
+    enabled: active,
+    staleTime: Infinity,
   })
 
   return (

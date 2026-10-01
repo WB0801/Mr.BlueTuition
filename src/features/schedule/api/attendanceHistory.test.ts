@@ -1,4 +1,4 @@
-import { listAttendanceHistoryPage } from './scheduleService'
+import { listAttendanceHistoryPage, listAttendanceSessions, listClassSessions } from './scheduleService'
 const mocks = vi.hoisted(() => ({ calls: [] as { method: string; args: unknown[] }[][], rpc: vi.fn() }))
 let rows: { id: string; current_start_at: string }[] = []
 vi.mock('../../../lib/requireSupabase', () => ({ requireSupabase: () => ({ rpc: mocks.rpc, from: () => {
@@ -10,6 +10,13 @@ vi.mock('../../../lib/requireSupabase', () => ({ requireSupabase: () => ({ rpc: 
   return builder
 } }) }))
 beforeEach(() => { mocks.calls.length = 0; mocks.rpc.mockReset().mockResolvedValue({ error: null }); rows = [] })
+it('does not repeat generation for a prepared object panel and scopes the database query', async () => {
+  await listAttendanceHistoryPage(null, 'class-a', '2026-09-29', false)
+  await listAttendanceSessions('today', 'class-a', false)
+  await listClassSessions('class-a', false)
+  expect(mocks.rpc).not.toHaveBeenCalled()
+  for (const calls of mocks.calls) expect(calls).toContainEqual({ method: 'eq', args: ['class_id', 'class-a'] })
+})
 it('loads 100 past sessions plus one sentinel, with stable timestamp and UUID ordering', async () => {
   rows = Array.from({ length: 101 }, (_, i) => ({ id: `session-${100 - i}`, current_start_at: '2026-08-01T06:00:00+00:00' }))
   const result = await listAttendanceHistoryPage(null, 'class-a', '2026-09-29')

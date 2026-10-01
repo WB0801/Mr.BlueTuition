@@ -69,3 +69,21 @@ it('keeps an uncertain student selected and requests verification on retry', asy
   await user.click(screen.getByRole('button', { name: '加入所选 1 人' }))
   await waitFor(() => expect(addSessionGuests).toHaveBeenCalledWith('target', [expect.objectContaining({ enrollmentId: 'enrollment-a', sourceSessionId: 'absent-a', verifyBeforeRetry: true })]))
 })
+
+it('retains failed selections across an independent operation and only retries those students', async () => {
+  vi.mocked(listMakeupSourceSessions).mockResolvedValue([{ session_id: 'absent-a', session_start_at: '2026-08-20T06:00:00Z', class_name: '原班' }])
+  vi.mocked(addSessionGuests).mockImplementation(async (_session, requests) => requests.map(request => ({ ...request, success: false, uncertain: true, error: '待确认' })))
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const content = <QueryClientProvider client={client}><CrossClassGuestPanel sessionId="retained-target" /></QueryClientProvider>
+  const view = render(content); const user = userEvent.setup()
+  await user.click(await screen.findByRole('checkbox', { name: /学生a/ }))
+  await within(screen.getByRole('combobox', { name: '学生a的原缺席课程' })).findByRole('option', { name: /原班/ })
+  await user.selectOptions(screen.getByRole('combobox', { name: '学生a的原缺席课程' }), 'absent-a')
+  await user.click(screen.getByRole('button', { name: '加入所选 1 人' }))
+  await screen.findByText('已加入 0 人 · 未加入 0 人 · 待确认 1 人')
+  view.unmount(); render(content)
+  expect(await screen.findByRole('combobox', { name: '学生a的原缺席课程' })).toHaveValue('absent-a')
+  vi.mocked(addSessionGuests).mockClear()
+  await user.click(screen.getByRole('button', { name: '加入所选 1 人' }))
+  await waitFor(() => expect(addSessionGuests).toHaveBeenCalledWith('retained-target', [expect.objectContaining({ enrollmentId: 'enrollment-a', verifyBeforeRetry: true })]))
+})

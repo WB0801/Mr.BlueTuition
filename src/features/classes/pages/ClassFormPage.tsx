@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { objectEditReturnTarget } from '../../../components/navigation/objectEditReturn'
 import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
@@ -11,6 +12,7 @@ import { useAuth } from '../../auth/authContext'
 import { createClass, getClass, updateClass } from '../api/classesService'
 import { listSubjects } from '../api/subjectsService'
 import { ClassForm } from '../components/ClassForm'
+import { invalidateContextClassCreation } from '../../../components/contextual/contextDataInvalidation'
 
 const newClassDefaults: ClassInput = {
   name: '',
@@ -27,6 +29,7 @@ export function ClassFormPage() {
   const isEditing = Boolean(classId)
   const { user } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
   const [error, setError] = useState('')
   const subjects = useQuery({ queryKey: ['subjects'], queryFn: listSubjects })
@@ -40,9 +43,11 @@ export function ClassFormPage() {
       ? updateClass(classId!, input)
       : createClass(user!.id, input),
     onSuccess: async (saved) => {
+      if (!isEditing) await invalidateContextClassCreation(queryClient)
       await queryClient.invalidateQueries({ queryKey: ['classes'] })
       queryClient.setQueryData(['class', saved.id], saved)
-      navigate(`/classes/${saved.id}`, { replace: true })
+      const target = objectEditReturnTarget('classes', classId, saved.id, location.state)
+      navigate(target.to, { replace: true, state: target.state })
     },
     onError: (caughtError) => setError(getErrorMessage(caughtError, '班级资料保存失败，请重试。')),
   })

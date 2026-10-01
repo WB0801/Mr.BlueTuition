@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { vi } from 'vitest'
@@ -10,9 +10,32 @@ import { StudentGradesSection } from './StudentGradesSection'
 vi.mock('../api/gradesService', () => ({
   listStudentSchoolExamScores: vi.fn(),
   listStudentTuitionQuizScores: vi.fn(),
+  getStudentQuizRewardSummary: vi.fn().mockResolvedValue({ pending: [], progress: [], history: [] }),
 }))
 
 describe('StudentGradesSection', () => {
+  it('does not describe a rejected grade query as an empty grade history', async () => {
+    vi.mocked(listStudentSchoolExamScores).mockRejectedValue(new Error('offline'))
+    vi.mocked(listStudentTuitionQuizScores).mockResolvedValue([])
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const router = createMemoryRouter([{ path: '/', element: <StudentGradesSection studentId="a" embedded /> }])
+    render(<QueryClientProvider client={client}><RouterProvider router={router} /></QueryClientProvider>)
+    expect(await screen.findByText('成绩资料载入失败。')).toBeVisible()
+    expect(screen.queryByText('目前没有学校成绩。')).not.toBeInTheDocument()
+  })
+  it('opens the actual zero score in-place and returns to the retained school list', async () => {
+    vi.mocked(listStudentSchoolExamScores).mockResolvedValue([{ id: 'zero-score', score: 0, exam: { id: 'exam-zero', name: '零分考试', exam_date: '2026-06-01', max_score: 100 } }] as never)
+    vi.mocked(listStudentTuitionQuizScores).mockResolvedValue([])
+    const router = createMemoryRouter([{ path: '/students/:studentId', element: <StudentGradesSection studentId="student-1" embedded /> }], { initialEntries: ['/students/student-1?panel=grades'] })
+    render(<QueryClientProvider client={new QueryClient()}><RouterProvider router={router} /></QueryClientProvider>)
+    const user = userEvent.setup()
+    await user.click(await screen.findByRole('button', { name: /零分考试/ }))
+    expect(router.state.location.pathname).toBe('/students/student-1')
+    expect(screen.getByRole('heading', { name: '零分考试' })).toBeInTheDocument()
+    expect(within(screen.getByRole('heading', { name: '零分考试' }).closest('section')!).getByText('0 / 100')).toBeVisible()
+    await user.click(screen.getByRole('button', { name: '← 返回成绩列表' }))
+    expect(screen.getByRole('button', { name: /零分考试/ })).toBeVisible()
+  })
   it('switches grade tabs, preserves the student URL and returns from a quiz to that student', async () => {
     const user = userEvent.setup()
     vi.mocked(listStudentSchoolExamScores).mockResolvedValue([{

@@ -12,7 +12,7 @@ export function HomePage() {
   useEffect(() => { document.title = '蓝老师补习班' }, [])
   return <section className="home-page daily-home">
     <h1>首页</h1>
-    <div className="daily-actions">
+    <div className="daily-actions context-home-actions">
       <ContextLink backLabel="首页" className="daily-attendance-action" to="/attendance">
         <Icon name="attendance" size={30} /><strong>开始点名</strong><Icon name="chevron-right" size={22} />
       </ContextLink>
@@ -21,11 +21,14 @@ export function HomePage() {
         <strong>{receipts.isLoading ? '读取待处理收据…' : receipts.isError ? '待处理收据暂时无法读取' : `待处理收据 ${receipts.data ?? 0} 张`}</strong>
         <Icon name="chevron-right" size={20} />
       </ContextLink>
+      <ContextLink backLabel="首页" className="daily-receipt-action daily-reward-action" to="/grades/rewards">
+        <Icon name="grades" size={26} />
+        <strong>{rewards.isLoading ? '读取待奖励…' : rewards.isError ? '待奖励暂时无法读取' : `待奖励 ${rewards.data ?? 0} 份`}</strong>
+        <Icon name="chevron-right" size={20} />
+      </ContextLink>
     </div>
-    <section className="home-payment-search" aria-labelledby="home-payment-title">
-      <div className="section-heading-row"><h2 id="home-payment-title">找学生收学费</h2><ContextLink backLabel="首页" to="/fees">全部缴费记录</ContextLink></div>
-      <GlobalStudentSearch destination="fees" placeholder="搜索姓名" />
+    <section className="home-student-search" aria-label="搜索学生与最近查看">
+      <GlobalStudentSearch placeholder="搜索学生" />
     </section>
-    {rewards.data ? <ContextLink backLabel="首页" className="home-secondary-link" to="/grades/rewards">待奖励 {rewards.data} 份 <Icon name="chevron-right" size={18} /></ContextLink> : null}
   </section>
 }

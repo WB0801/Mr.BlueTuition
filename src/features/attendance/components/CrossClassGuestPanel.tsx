@@ -1,23 +1,31 @@
-import { useDeferredValue, useState } from 'react'
+import { useDeferredValue, useEffect, useState } from 'react'
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { CrossClassCandidate } from '../../../types/domain'
 import { getErrorMessage } from '../../../utils/errors'
 import { formatDateTime } from '../../../utils/format'
 import { SearchInput } from '../../../components/ui'
+import { useContextDataBusy } from '../../../components/contextual/contextDataState'
 import { addSessionGuests, listMakeupSourceSessions, searchCrossClassCandidates, type SessionGuestRequest, type SessionGuestResult } from '../api/attendanceService'
 
 type Selection = { candidate: CrossClassCandidate; linkType: 'makeup' | 'extra'; sourceSessionId: string }
+type GuestDraft = { search: string; selected: Record<string, Selection>; results: SessionGuestResult[]; error: string; sharedSource: string; applicationNotice: string }
 
 export function CrossClassGuestPanel({ sessionId }: { sessionId: string }) {
   const queryClient = useQueryClient()
-  const [search, setSearch] = useState('')
+  const draftKey = ['attendance', sessionId, 'guest-draft']
+  const [draft] = useState(() => queryClient.getQueryData<GuestDraft>(draftKey))
+  const [search, setSearch] = useState(draft?.search ?? '')
   const deferredSearch = useDeferredValue(search.trim())
-  const [selected, setSelected] = useState<Record<string, Selection>>({})
-  const [results, setResults] = useState<SessionGuestResult[]>([])
+  const [selected, setSelected] = useState<Record<string, Selection>>(draft?.selected ?? {})
+  const [results, setResults] = useState<SessionGuestResult[]>(draft?.results ?? [])
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-  const [sharedSource, setSharedSource] = useState('')
-  const [applicationNotice, setApplicationNotice] = useState('')
+  useContextDataBusy(busy)
+  const [error, setError] = useState(draft?.error ?? '')
+  const [sharedSource, setSharedSource] = useState(draft?.sharedSource ?? '')
+  const [applicationNotice, setApplicationNotice] = useState(draft?.applicationNotice ?? '')
+  useEffect(() => {
+    queryClient.setQueryData<GuestDraft>(['attendance', sessionId, 'guest-draft'], { search, selected, results, error, sharedSource, applicationNotice })
+  }, [queryClient, sessionId, search, selected, results, error, sharedSource, applicationNotice])
   const candidates = useQuery({
     queryKey: ['attendance', sessionId, 'cross-class-candidates', deferredSearch],
     queryFn: () => searchCrossClassCandidates(sessionId, deferredSearch),
