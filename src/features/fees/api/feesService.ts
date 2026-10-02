@@ -23,6 +23,8 @@ interface FeeFilters {
   classId?: string
   studentId?: string
   enrollmentId?: string
+  range?: readonly [number, number]
+  signal?: AbortSignal
 }
 
 export async function ensureMonthlyFees(fromMonth: string, toMonth = fromMonth): Promise<EnsureMonthlyFeesResult> {
@@ -49,6 +51,8 @@ export async function listMonthlyFees(filters: FeeFilters = {}): Promise<Monthly
   if (filters.classId) query = query.eq('enrollment.class_id', filters.classId)
   if (filters.studentId) query = query.eq('student_id', filters.studentId)
   if (filters.enrollmentId) query = query.eq('enrollment_id', filters.enrollmentId)
+  if (filters.range) query = query.order('id').range(...filters.range)
+  if (filters.signal) query = query.abortSignal(filters.signal)
 
   const { data, error } = await query
   if (error) throw error

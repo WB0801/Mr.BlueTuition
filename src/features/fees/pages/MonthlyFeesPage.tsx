@@ -115,7 +115,7 @@ export function MonthlyFeesPage({ view }: MonthlyFeesPageProps) {
             {completedFees.length === 0 ? <p className="settings-note">目前没有已处理收据。</p> : <div className="fee-list">{completedFees.map((fee) => <MonthlyFeeCard fee={fee} key={fee.id} />)}</div>}
           </section>
         </div>
-      ) : <div className="fee-list">{visibleFees.map((fee) => <MonthlyFeeCard fee={fee} key={fee.id} />)}</div>}
+      ) : <div className="fee-list">{visibleFees.map((fee) => <MonthlyFeeCard fee={fee} key={fee.id} showReminder />)}</div>}
     </FeesShell>
   )
 }

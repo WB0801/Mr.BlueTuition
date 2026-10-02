@@ -8,6 +8,7 @@ import { completeReceipts, ensureMonthlyFees, listMonthlyFees, restoreReceipt } 
 import { matchesFeeStatus, sortFeesForWorkflow, type FeeStatusFilter } from '../feePresentation'
 import { MonthlyFeeCard } from './MonthlyFeeCard'
 import { getErrorMessage } from '../../../utils/errors'
+import { FeeReminderButton } from './FeeReminderButton'
 
 export interface FeeRecordScope { studentId?: string; classId?: string }
 
@@ -50,7 +51,7 @@ export function FeeRecords({ scope, prefix = 'fees', active = true }: { scope: F
     {recordId && <RecordDetailFrame title={get('receipt') === '1' ? '收据详情' : '缴费记录详情'} backLabel="缴费记录" onBack={() => set('record', '', true)}>
       {fees.isSuccess && !record && <ErrorBlock message="此范围内找不到该笔缴费记录。" />}
       {record && <>
-        <div hidden={get('receipt') === '1'}><MonthlyFeeCard key={record.id} fee={record} showStudent={!scope.studentId} showClass={!scope.classId} backLabel={scope.studentId ? '学生' : '班级'} />
+        <div hidden={get('receipt') === '1'}><MonthlyFeeCard key={record.id} fee={record} showStudent={!scope.studentId} showClass={!scope.classId} backLabel={scope.studentId ? '学生' : '班级'} showReminder={Boolean(scope.studentId)} />
           {record.payment_status === 'paid' && <button type="button" className="button button-secondary" onClick={() => set('receipt', '1', true)} disabled={locked}>查看收据详情</button>}
         </div>
         {get('receipt') === '1' && <FeeReceiptDetails fee={record} onBack={() => set('receipt', '', true)} />}
@@ -60,12 +61,12 @@ export function FeeRecords({ scope, prefix = 'fees', active = true }: { scope: F
 }
 
 export function FeeRecordList({ records, studentScoped, onSelect }: { records: MonthlyFeeDetails[]; studentScoped?: boolean; onSelect: (id: string) => void }) {
-  return <div className="record-list">{records.map(fee => <button className="compact-data-row context-record-row" type="button" key={fee.id} data-context-record={fee.id} onClick={() => onSelect(fee.id)}>
+  return <div className="record-list">{records.map(fee => <div className="fee-record-item" key={fee.id}><button className="compact-data-row context-record-row" type="button" data-context-record={fee.id} onClick={() => onSelect(fee.id)}>
     <span className="record-main"><strong>{formatFeeMonth(fee.fee_month)}{!studentScoped && ` · ${fee.student?.name ?? '学生资料不可用'}`}</strong>
       {!studentScoped && <small>{[fee.student?.school_class, fee.student?.phone].filter(Boolean).join(' · ')}</small>}
       <span className="record-meta">{fee.enrollment?.class?.name ?? '班级资料不可用'}</span><span className="sr-only">查看记录</span></span>
     <span className="context-record-status"><strong>{formatMoney(fee.actual_amount)}</strong><span>{fee.payment_status === 'paid' ? fee.receipt_status === 'pending' ? '已缴 · 待开收据' : '已缴 · 收据已处理' : fee.payment_status === 'waived' ? '本月不再追缴' : '未缴'}</span></span><span aria-hidden="true">›</span>
-  </button>)}</div>
+  </button>{studentScoped && <FeeReminderButton fee={fee} />}</div>)}</div>
 }
 
 function FeeReceiptDetails({ fee, onBack }: { fee: MonthlyFeeDetails; onBack: () => void }) {

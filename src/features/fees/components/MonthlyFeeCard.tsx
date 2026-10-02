@@ -13,6 +13,7 @@ import {
 } from '../api/feesService'
 import { canWaiveFinalMonth, getFeeStatusLabel } from '../feePresentation'
 import { useContextDataBusy } from '../../../components/contextual/contextDataState'
+import { FeeReminderButton } from './FeeReminderButton'
 
 interface MonthlyFeeCardProps {
   fee: MonthlyFeeDetails
@@ -20,9 +21,10 @@ interface MonthlyFeeCardProps {
   showStudent?: boolean
   readonly?: boolean
   backLabel?: string
+  showReminder?: boolean
 }
 
-export function MonthlyFeeCard({ fee, showClass = true, showStudent = true, readonly = false, backLabel = '学费' }: MonthlyFeeCardProps) {
+export function MonthlyFeeCard({ fee, showClass = true, showStudent = true, readonly = false, backLabel = '学费', showReminder = false }: MonthlyFeeCardProps) {
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState(false)
   const [amount, setAmount] = useState(String(fee.actual_amount))
@@ -99,6 +101,7 @@ export function MonthlyFeeCard({ fee, showClass = true, showStudent = true, read
               <button className="button button-primary button-small" type="button" disabled={mutation.isPending} onClick={() => mutation.mutate('paid')}>
                 确认已缴
               </button>
+              {showReminder && <FeeReminderButton fee={fee} disabled={mutation.isPending} />}
               <details className="fee-more-menu">
                 <summary aria-label={`更多${fee.student?.name ?? ''}的学费操作`}>⋯</summary>
                 <div>
