@@ -16,12 +16,13 @@ type FeeQueryRow = MonthlyFee & {
   }) | null
 }
 
-interface FeeFilters {
+export interface FeeFilters {
   feeMonth?: string
   paymentStatus?: 'unpaid' | 'paid' | 'waived'
   receiptStatus?: 'pending' | 'completed'
   classId?: string
   studentId?: string
+  studentIds?: readonly string[]
   enrollmentId?: string
   range?: readonly [number, number]
   signal?: AbortSignal
@@ -39,6 +40,7 @@ export async function ensureMonthlyFees(fromMonth: string, toMonth = fromMonth):
 }
 
 export async function listMonthlyFees(filters: FeeFilters = {}): Promise<MonthlyFeeDetails[]> {
+  if (filters.studentIds?.length === 0) return []
   let query = requireSupabase()
     .from('monthly_fees')
     .select(feeSelection)
@@ -50,6 +52,7 @@ export async function listMonthlyFees(filters: FeeFilters = {}): Promise<Monthly
   if (filters.receiptStatus) query = query.eq('receipt_status', filters.receiptStatus)
   if (filters.classId) query = query.eq('enrollment.class_id', filters.classId)
   if (filters.studentId) query = query.eq('student_id', filters.studentId)
+  if (filters.studentIds) query = query.in('student_id', [...filters.studentIds])
   if (filters.enrollmentId) query = query.eq('enrollment_id', filters.enrollmentId)
   if (filters.range) query = query.order('id').range(...filters.range)
   if (filters.signal) query = query.abortSignal(filters.signal)

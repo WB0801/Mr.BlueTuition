@@ -1829,6 +1829,15 @@ button.session-card { width: 100%; color: inherit; font: inherit; text-align: le
 
 /* Manual fee reminder: secondary entry, one read-only preview, no page navigation. */
 .fee-reminder-trigger { min-height: 44px; font-size: .85rem; }
+.batch-reminder-progress { margin-bottom: 16px; overflow-wrap: anywhere; }
+.batch-reminder-progress p { margin: 6px 0; font-size: var(--font-size-sm); }
+.batch-reminder-select-all { min-height: 44px; }
+.batch-reminder-candidates { list-style: none; padding: 0; margin: 0; }
+.batch-reminder-candidates li { border-bottom: 1px solid var(--color-border); }
+.batch-reminder-candidates label { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 0; min-height: 44px; cursor: pointer; }
+.batch-reminder-candidates label > span { display: grid; gap: 4px; overflow-wrap: anywhere; }
+.batch-reminder-candidates label > span > span { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+.batch-reminder-end { margin-top: 16px; }
 .fee-record-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; border-bottom: 1px solid var(--color-border); }
 .fee-record-item .context-record-row { border-bottom: 0; }
 .fee-record-item > .fee-reminder-trigger { margin-right: 8px; }

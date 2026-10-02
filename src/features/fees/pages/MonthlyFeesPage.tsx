@@ -7,6 +7,7 @@ import { currentMonthInMalaysia, normalizeMonthInput } from '../../../utils/form
 import { ensureMonthlyFees, listMonthlyFees } from '../api/feesService'
 import { FeesShell } from '../components/FeesShell'
 import { MonthlyFeeCard } from '../components/MonthlyFeeCard'
+import { BatchFeeReminderButton } from '../components/BatchFeeReminderButton'
 import { matchesFeeStatus, sortFeesForWorkflow, type FeeStatusFilter } from '../feePresentation'
 
 type FeesView = 'current' | 'unpaid' | 'history'
@@ -98,6 +99,10 @@ export function MonthlyFeesPage({ view }: MonthlyFeesPageProps) {
           ))}
         </div>
       </div>
+
+      <BatchFeeReminderButton initialMonth={allMonths ? '' : feeMonth} available={status === 'unpaid'}
+        scope={{ classId: classId || undefined, studentId: studentId || undefined, search }}
+        scopeLabel={[classId ? classes.data?.find(item => item.id === classId)?.name ?? '指定班级' : '全部班级', studentId ? fees.data?.[0]?.student?.name ?? '指定学生' : '全部学生', search.trim() ? `搜索：${search.trim()}` : ''].filter(Boolean).join(' · ')} />
 
       {(ensure.isLoading || fees.isLoading) && <LoadingBlock message="正在准备月费记录…" />}
       {(ensure.isError || fees.isError) && <ErrorBlock message="月费资料载入失败，请稍后重试。" />}
