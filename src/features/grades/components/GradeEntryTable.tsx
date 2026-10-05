@@ -5,6 +5,7 @@ import type { GradeEntryRow } from '../../../types/domain'
 import { getErrorMessage } from '../../../utils/errors'
 import type { ScorePayload } from '../api/gradesService'
 import { calculateGradeStats, parseScoreColumnPaste, scoreValuesEqual, validateScoreValue } from '../gradeEntry'
+import { usePwaUpdateGuard } from '../../settings/pwa/updateProtection'
 
 interface GradeEntryTableProps {
   rows: GradeEntryRow[]
@@ -42,6 +43,7 @@ export function GradeEntryTable({
   const [activeIndex, setActiveIndex] = useState(0)
   const inputRefs = useRef<Array<HTMLInputElement | null>>([])
   const isDirty = !scoreValuesEqual(values, savedValues)
+  usePwaUpdateGuard(isDirty || isSaving || !!pastePlan, '请先保存或取消成绩编辑，再更新。')
   const blocker = useBlocker(useCallback(() => isDirty, [isDirty]))
   const stats = calculateGradeStats(rows.map((row) => values[row.student_id] ?? ''), rows.length)
 

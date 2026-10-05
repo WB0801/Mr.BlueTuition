@@ -4,6 +4,7 @@ import { formatFeeMonth, formatMoney } from '../../../utils/format'
 import type { MonthlyFeeDetails } from '../../../types/domain'
 import { loadFeeReminder, type FeeReminderSnapshot } from '../api/feeReminderService'
 import { buildReminderMessage, buildWhatsAppUrl, summarizeUnpaidMonth } from '../reminderRules'
+import { usePwaUpdateGuard } from '../../settings/pwa/updateProtection'
 
 export type ReminderPreviewState = 'ready' | 'updated' | 'unavailable'
 
@@ -41,6 +42,7 @@ function ReminderEditor({ snapshot, records, total, month }: { snapshot: FeeRemi
   const [message, setMessage] = useState(template ?? '')
   const [copyStatus, setCopyStatus] = useState('')
   const [copying, setCopying] = useState(false)
+  usePwaUpdateGuard(copying || phone !== (snapshot.student.phone ?? '') || message !== (template ?? ''), '请先处理或关闭当前提醒预览，再更新。')
   const body = useRef<HTMLTextAreaElement>(null)
   const alive = useRef(true)
   const revision = useRef(0)

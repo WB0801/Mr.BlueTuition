@@ -8,6 +8,7 @@ import { loadFeeReminder, type FeeReminderSnapshot } from '../api/feeReminderSer
 import type { MonthlyFeeDetails } from '../../../types/domain'
 import { FeeRecordList } from './FeeRecords'
 import { MonthlyFeeCard } from './MonthlyFeeCard'
+import { updateProtection } from '../../settings/pwa/updateProtection'
 
 vi.mock('../api/feeReminderService', () => ({ loadFeeReminder: vi.fn() }))
 const business = vi.hoisted(() => ({ paid: vi.fn(), ensure: vi.fn() }))
@@ -76,7 +77,9 @@ it('clears failed reads and retries without exposing cached outgoing data', asyn
 it('stops reminders when records became paid and does not reuse the previous opening edit', async () => {
   const user = userEvent.setup(); setup(); const trigger = screen.getByRole('button', { name: /^WhatsApp 提醒/ })
   await user.click(trigger); const body = await screen.findByLabelText('消息正文'); await user.clear(body); await user.type(body, 'edited')
+  expect(updateProtection.reason()).toContain('提醒')
   await user.click(screen.getByRole('button', { name: '关闭预览' })); expect(trigger).toHaveFocus()
+  expect(updateProtection.reason()).toBe('')
   vi.mocked(loadFeeReminder).mockResolvedValue({ student, fees: [] })
   await user.click(trigger)
   expect(await screen.findByText('状态已更新：这个月份已没有需要追缴的学费。')).toBeInTheDocument()

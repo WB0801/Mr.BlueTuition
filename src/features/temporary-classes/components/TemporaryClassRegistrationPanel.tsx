@@ -8,6 +8,7 @@ import { StudentForm } from '../../students/components/StudentForm'
 import { StudentIdentity } from '../../students/components/StudentIdentity'
 import { filterEligibleStudents } from '../../classes/studentPicker'
 import { addStudentToTemporaryClass, createStudentForTemporaryClass } from '../api/temporaryClassesService'
+import { usePwaUpdateGuard } from '../../settings/pwa/updateProtection'
 
 export function TemporaryClassRegistrationPanel({
   classId,
@@ -19,6 +20,7 @@ export function TemporaryClassRegistrationPanel({
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  usePwaUpdateGuard(selectedIds.length > 0, '请先完成或取消报名选择，再更新。')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const deferredSearch = useDeferredValue(search)

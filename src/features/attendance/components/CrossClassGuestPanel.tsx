@@ -5,6 +5,7 @@ import { getErrorMessage } from '../../../utils/errors'
 import { formatDateTime } from '../../../utils/format'
 import { SearchInput } from '../../../components/ui'
 import { useContextDataBusy } from '../../../components/contextual/contextDataState'
+import { usePwaUpdateGuard } from '../../settings/pwa/updateProtection'
 import { addSessionGuests, listMakeupSourceSessions, searchCrossClassCandidates, type SessionGuestRequest, type SessionGuestResult } from '../api/attendanceService'
 
 type Selection = { candidate: CrossClassCandidate; linkType: 'makeup' | 'extra'; sourceSessionId: string }
@@ -17,6 +18,7 @@ export function CrossClassGuestPanel({ sessionId }: { sessionId: string }) {
   const [search, setSearch] = useState(draft?.search ?? '')
   const deferredSearch = useDeferredValue(search.trim())
   const [selected, setSelected] = useState<Record<string, Selection>>(draft?.selected ?? {})
+  usePwaUpdateGuard(Object.keys(selected).length > 0, '请先完成补课处理或取消选择，再更新；失败项尚未处理。')
   const [results, setResults] = useState<SessionGuestResult[]>(draft?.results ?? [])
   const [busy, setBusy] = useState(false)
   useContextDataBusy(busy)

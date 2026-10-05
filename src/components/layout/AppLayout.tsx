@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../features/auth/authContext'
-import { PwaUpdatePrompt } from '../../features/settings/pwa/PwaUpdatePrompt'
 import { AppHeader } from './AppHeader'
 import { useContextScrollRestoration } from '../navigation/useContextScrollRestoration'
+import { usePwaUpdateGuard } from '../../features/settings/pwa/updateProtection'
 
 export function AppLayout() {
   useContextScrollRestoration()
@@ -24,6 +24,7 @@ export function AppLayout() {
     return () => { animation?.cancel(); preference.removeEventListener('change', cancel) }
   }, [pathname])
   const [isSigningOut, setIsSigningOut] = useState(false)
+  usePwaUpdateGuard(isSigningOut, '正在退出，请稍后更新。')
   const [signOutError, setSignOutError] = useState('')
 
   async function handleSignOut() {
@@ -46,7 +47,6 @@ export function AppLayout() {
       <main className="page-container ui-page-enter" ref={contentRef}>
         <Outlet />
       </main>
-      <PwaUpdatePrompt />
     </div>
   )
 }

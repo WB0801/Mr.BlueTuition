@@ -8,6 +8,7 @@ import {
   toMalaysiaTimeInput,
 } from '../../../utils/format'
 import { rescheduleSession } from '../api/scheduleService'
+import { preparePwaFormSave } from '../../settings/pwa/updateProtection'
 
 interface RescheduleSessionFormProps {
   session: ClassSession
@@ -38,7 +39,8 @@ export function RescheduleSessionForm({ session }: RescheduleSessionFormProps) {
       return
     }
     setError('')
-    try { await mutation.mutateAsync() } catch { /* mutation displays the error */ }
+    const acknowledgeSave = preparePwaFormSave(event.currentTarget)
+    try { await mutation.mutateAsync(); acknowledgeSave() } catch { /* mutation displays the error */ }
   }
 
   return (

@@ -21,6 +21,7 @@ import {
   type PendingSignature,
 } from '../offline/pendingSignatureStore'
 import { signatureReturnTarget } from '../signatureFlow'
+import { usePwaUpdateGuard } from '../../settings/pwa/updateProtection'
 
 const leaveMessage = '此签名尚未保存，确定离开？'
 
@@ -38,6 +39,7 @@ export function SignaturePage() {
   const [isSyncing, setIsSyncing] = useState(false)
   const [error, setError] = useState('')
   const [recovered, setRecovered] = useState(false)
+  usePwaUpdateGuard(hasInk || !!pending || isSyncing || !recovered, '请先完成签名或同步，再更新。')
 
   const session = useQuery({
     queryKey: ['session', sessionId],

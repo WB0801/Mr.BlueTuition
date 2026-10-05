@@ -1,15 +1,21 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 import { VitePWA } from 'vite-plugin-pwa'
+import { createHash, randomUUID } from 'node:crypto'
 
 const base = process.env.VITE_BASE_PATH ?? '/'
+// One identity shared by the JS and uncached metadata of this exact build, including uncommitted builds.
+const appBuild = { id: createHash('sha256').update(randomUUID()).digest('hex').slice(0, 20), builtAt: new Date().toISOString() }
 
 export default defineConfig({
   base,
+  define: { __APP_BUILD__: JSON.stringify(appBuild) },
   plugins: [
+    { name: 'app-build-identity', generateBundle() { this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify(appBuild) }) } },
     react(),
     VitePWA({
       registerType: 'prompt',
+      injectRegister: null,
       includeAssets: [
         'favicon-32x32.png',
         'apple-touch-icon.png',
@@ -36,6 +42,9 @@ export default defineConfig({
         ],
       },
       workbox: {
+        clientsClaim: true,
+        skipWaiting: false,
+        globIgnores: ['**/version.json'],
         cleanupOutdatedCaches: true,
         navigateFallback: 'index.html',
       },

@@ -1514,6 +1514,7 @@ label.receipt-row { cursor: pointer; }
 .settings-app-details > div { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 12px; }
 .settings-app-details dt { color: var(--muted); }
 .settings-app-details dd { margin: 0; font-weight: 650; }
+.settings-app-details .app-build-id { overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .settings-app-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .settings-activity-section > summary { cursor: pointer; font-weight: 750; }
 .settings-activity-page { width: min(100%, 820px); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 0 var(--space-5); }
@@ -1541,7 +1542,10 @@ label.receipt-row { cursor: pointer; }
 .pwa-status-prompt > span strong { font-weight: var(--font-weight-bold); }
 .pwa-status-prompt > span small { color: var(--muted); line-height: 1.4; }
 .pwa-status-prompt > div { display: flex; gap: 8px; }
-.pwa-status-offline { border-color: #e8c98d; background: var(--color-warning-bg); }
+.pwa-status-prompt button { white-space: nowrap; }
+body:has(.pwa-status-prompt) .page-container,
+body:has(.pwa-status-prompt) .login-page { padding-bottom: 180px; }
+.pwa-status-offline, .pwa-status-error { border-color: #e8c98d; background: var(--color-warning-bg); }
 .pwa-status-success { border-color: #b9ddce; background: var(--color-success-bg); }
 
 .form-warning,

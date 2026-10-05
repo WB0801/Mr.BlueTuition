@@ -5,6 +5,7 @@ import { getErrorMessage } from '../../../utils/errors'
 import { addCalendarDays, todayInMalaysia, weekdayLabels } from '../../../utils/format'
 import { changeClassSchedule, previewScheduleChange } from '../api/scheduleService'
 import { getScheduleChangeConfirmationMessage } from '../scheduleActions'
+import { preparePwaFormSave, usePwaUpdateGuard } from '../../settings/pwa/updateProtection'
 
 interface ScheduleChangeFormProps {
   classId: string
@@ -26,6 +27,8 @@ export function ScheduleChangeForm({ classId, currentRule }: ScheduleChangeFormP
   })
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [isChecking, setIsChecking] = useState(false)
+  usePwaUpdateGuard(isChecking, '课表检查或保存中，请完成后再更新。')
   const mutation = useMutation({
     mutationFn: (input: ScheduleChangeInput) => changeClassSchedule(classId, currentRule.id, input),
     onSuccess: async () => {
@@ -49,12 +52,17 @@ export function ScheduleChangeForm({ classId, currentRule }: ScheduleChangeFormP
 
     setError('')
     setSuccess('')
+    const acknowledgeSave = preparePwaFormSave(event.currentTarget)
+    setIsChecking(true)
     try {
       const preview = await previewScheduleChange(classId, currentRule.id, form.effective_from)
       if (!window.confirm(getScheduleChangeConfirmationMessage(preview))) return
       await mutation.mutateAsync(form)
+      acknowledgeSave()
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, '无法检查或修改未来课表，请重试。'))
+    } finally {
+      setIsChecking(false)
     }
   }
 
@@ -84,8 +92,8 @@ export function ScheduleChangeForm({ classId, currentRule }: ScheduleChangeFormP
       </label>
       {error && <p className="form-error" role="alert">{error}</p>}
       {success && <p className="form-success" role="status">{success}</p>}
-      <button className="button button-primary" type="submit" disabled={mutation.isPending}>
-        {mutation.isPending ? '处理中…' : '检查影响并修改'}
+      <button className="button button-primary" type="submit" disabled={isChecking || mutation.isPending}>
+        {isChecking || mutation.isPending ? '处理中…' : '检查影响并修改'}
       </button>
     </form>
   )

@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { vi } from 'vitest'
 import { BackupSection } from './BackupSection'
 import { createCompleteBackup, downloadBackupFile } from './backupService'
+import { updateProtection } from '../pwa/updateProtection'
 
 vi.mock('../../auth/authContext', () => ({ useAuth: () => ({ user: { id: 'owner-1' } }) }))
 vi.mock('./backupService', () => ({ createCompleteBackup: vi.fn(), downloadBackupFile: vi.fn() }))
@@ -29,9 +30,11 @@ describe('BackupSection', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '下载完整备份' }))
     expect(await screen.findByText('正在读取资料 1 / 19')).toBeInTheDocument()
+    expect(updateProtection.reason()).toContain('备份')
     resolveBackup(archive)
 
     expect(await screen.findByText(/备份已下载：2 张签名，4 笔资料/)).toBeInTheDocument()
+    expect(updateProtection.reason()).toBe('')
     expect(screen.getByText(archive.fileName)).toBeInTheDocument()
     expect(screen.getByText('已验证')).toBeInTheDocument()
     expect(downloadBackupFile).toHaveBeenCalledWith(archive)

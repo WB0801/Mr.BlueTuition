@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { ContextLink } from '../../../components/navigation/ContextLink'
 import type { StudentInput } from '../../../types/domain'
 import type { DuplicateStudentWarning } from '../api/studentsService'
+import { preparePwaFormSave } from '../../settings/pwa/updateProtection'
 
 interface StudentFormProps {
   initialValue?: StudentInput
@@ -37,8 +38,10 @@ export function StudentForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    const acknowledgeSave = preparePwaFormSave(event.currentTarget)
     try {
       await onSubmit(form)
+      acknowledgeSave()
     } catch {
       // The parent displays the mutation error.
     }

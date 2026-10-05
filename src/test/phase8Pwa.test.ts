@@ -4,6 +4,7 @@ import { resolve } from 'node:path'
 const viteConfig = readFileSync(resolve(process.cwd(), 'vite.config.ts'), 'utf8')
 const indexHtml = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8')
 const provider = readFileSync(resolve(process.cwd(), 'src/features/settings/pwa/PwaProvider.tsx'), 'utf8')
+const controller = readFileSync(resolve(process.cwd(), 'src/features/settings/pwa/updateController.ts'), 'utf8')
 
 describe('Phase 8 PWA configuration', () => {
   it('keeps GitHub Pages base path in manifest scope and launch URL', () => {
@@ -24,10 +25,11 @@ describe('Phase 8 PWA configuration', () => {
   it('prompts before reloading and periodically checks for safe updates', () => {
     expect(viteConfig).toContain("registerType: 'prompt'")
     expect(viteConfig).toContain('cleanupOutdatedCaches: true')
-    expect(provider).toContain('60 * 60 * 1000')
-    expect(provider).toContain('updateServiceWorker(true)')
-    expect(provider).toContain("window.addEventListener('offline', handleOffline)")
-    expect(provider).toContain("window.addEventListener('online', handleOnline)")
-    expect(provider).toContain('App 已更新至最新版本。')
+    expect(provider).toContain('5 * 60 * 1000')
+    expect(viteConfig).toContain('injectRegister: null')
+    expect(viteConfig).toContain("globIgnores: ['**/version.json']")
+    expect(controller).toContain("updateViaCache: 'none'")
+    expect(provider).toContain("window.addEventListener('offline', offline)")
+    expect(provider).toContain("window.addEventListener('online', online)")
   })
 })

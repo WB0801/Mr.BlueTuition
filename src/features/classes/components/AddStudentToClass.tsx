@@ -7,6 +7,7 @@ import { ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryStat
 import { getErrorMessage } from '../../../utils/errors'
 import { todayInMalaysia } from '../../../utils/format'
 import { filterEligibleStudents } from '../studentPicker'
+import { usePwaUpdateGuard } from '../../settings/pwa/updateProtection'
 
 interface AddStudentToClassProps {
   classId: string
@@ -17,6 +18,7 @@ export function AddStudentToClass({ classId, enrolledStudentIds }: AddStudentToC
   const [search, setSearch] = useState('')
   const [joinDate, setJoinDate] = useState(todayInMalaysia())
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  usePwaUpdateGuard(selectedIds.length > 0, '请先完成或取消加入学生的选择，再更新。')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const deferredSearch = useDeferredValue(search)

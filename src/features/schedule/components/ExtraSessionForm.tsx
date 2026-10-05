@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { getErrorMessage } from '../../../utils/errors'
 import { malaysiaDateTime, todayInMalaysia } from '../../../utils/format'
 import { createExtraSession } from '../api/scheduleService'
+import { preparePwaFormSave } from '../../settings/pwa/updateProtection'
 
 interface ExtraSessionFormProps {
   classId: string
@@ -38,7 +39,8 @@ export function ExtraSessionForm({ classId, defaultStartTime, defaultEndTime }: 
     }
     setError('')
     setSuccess('')
-    try { await mutation.mutateAsync() } catch { /* mutation displays the error */ }
+    const acknowledgeSave = preparePwaFormSave(event.currentTarget)
+    try { await mutation.mutateAsync(); acknowledgeSave() } catch { /* mutation displays the error */ }
   }
 
   return (

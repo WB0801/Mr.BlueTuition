@@ -14,15 +14,19 @@ export function PwaUpdatePrompt() {
     needRefresh,
     reloadToUpdate,
     statusMessage,
+    phase,
+    checking,
+    applying,
+    checkForUpdate,
   } = usePwa()
 
   if (needRefresh) {
     return (
       <aside className="pwa-status-prompt pwa-status-update" aria-live="polite" aria-label="App 更新">
-        <span><strong>有新版本可用</strong><small>重新载入即可使用最新版。</small></span>
+        <span><strong>{applying ? '正在更新…' : '有新版本可用'}</strong><small>{statusMessage || '更新后保留当前页面。'}</small></span>
         <div>
-          <button className="button button-secondary" onClick={dismissUpdate} type="button">稍后</button>
-          <button className="button button-primary" onClick={() => void reloadToUpdate()} type="button">立即更新</button>
+          <button className="button button-secondary" disabled={applying} onClick={dismissUpdate} type="button">稍后</button>
+          <button className="button button-primary" disabled={applying} onClick={() => void reloadToUpdate()} type="button">{applying ? '更新中…' : '立即更新'}</button>
         </div>
       </aside>
     )
@@ -36,11 +40,12 @@ export function PwaUpdatePrompt() {
     )
   }
 
-  if (connectionMessage || statusMessage === 'App 已更新至最新版本。') {
+  if (connectionMessage || statusMessage === 'App 已更新。' || phase === 'error' || phase === 'checking' || phase === 'preparing') {
     return (
-      <aside className="pwa-status-prompt pwa-status-success" aria-live="polite">
+      <aside className={`pwa-status-prompt ${phase === 'error' ? 'pwa-status-error' : checking ? 'pwa-status-update' : 'pwa-status-success'}`} aria-live="polite">
         <span><strong>{connectionMessage || statusMessage}</strong></span>
-        <button className="button button-secondary" onClick={dismissStatus} type="button">知道了</button>
+        <div>{phase === 'error' && <button className="button button-primary" onClick={() => void checkForUpdate()} type="button">重试</button>}
+        <button className="button button-secondary" disabled={checking} onClick={dismissStatus} type="button">知道了</button></div>
       </aside>
     )
   }

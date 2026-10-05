@@ -5,6 +5,7 @@ import { loadBatchReminderCandidates, type BatchReminderScope } from '../api/bat
 import { normalizeMalaysiaPhone } from '../reminderRules'
 import { FeeReminderModal } from './FeeReminderModal'
 import { FeeReminderPreview, type ReminderPreviewState } from './FeeReminderPreview'
+import { usePwaUpdateGuard } from '../../settings/pwa/updateProtection'
 
 type Outcome = 'pending' | 'processed' | 'skipped' | 'updated'
 interface Batch { month: string; ids: string[]; outcomes: Outcome[]; index: number; scopeLabel: string }
@@ -28,6 +29,7 @@ export function BatchFeeReminderButton({ initialMonth, scope, scopeLabel, availa
     setBatch(current => current && { ...current, index: current.index + 1, outcomes: current.outcomes.map((value, index) => index === current.index ? outcome : value) })
   }
   const complete = batch && batch.index >= batch.ids.length
+  usePwaUpdateGuard(!!batch && !complete, '请先结束本批次再更新；更新会清除本批次进度。')
   const counts = (outcome: Outcome) => batch?.outcomes.filter(value => value === outcome).length ?? 0
   function actions(state: ReminderPreviewState) {
     return <div className="fee-reminder-actions">
@@ -66,7 +68,9 @@ function CandidateSelection({ initialMonth, scope, scopeLabel, onStart }: Omit<P
   const id = useId()
   const [monthInput, setMonthInput] = useState(initialMonth.slice(0, 7))
   const [selected, setSelected] = useState<string[]>([])
+  usePwaUpdateGuard(selected.length > 0, '请先开始或取消提醒名单选择，再更新。')
   const [preparing, setPreparing] = useState(false)
+  usePwaUpdateGuard(preparing, '正在准备提醒清单，请稍后更新。')
   const [updated, setUpdated] = useState(false)
   const alive = useRef(true)
   useEffect(() => { alive.current = true; return () => { alive.current = false } }, [])

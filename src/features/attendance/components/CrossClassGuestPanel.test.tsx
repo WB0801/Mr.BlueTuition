@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, within, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { CrossClassGuestPanel } from './CrossClassGuestPanel'
+import { updateProtection } from '../../settings/pwa/updateProtection'
 import { addSessionGuests, listMakeupSourceSessions } from '../api/attendanceService'
 vi.mock('../api/attendanceService', () => ({
   searchCrossClassCandidates: vi.fn().mockResolvedValue(['a', 'b'].map((id) => ({ source_enrollment_id: `enrollment-${id}`, student_id: id, student_name: `学生${id}`, source_class_name: `原班${id}`, school_class: '高一', phone: null }))),
@@ -13,6 +14,7 @@ it('requires an absent source for every selected student and retains only failur
   render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><CrossClassGuestPanel sessionId="target" /></QueryClientProvider>)
   const user = userEvent.setup()
   await user.click(await screen.findByRole('checkbox', { name: /学生a/ }))
+  expect(updateProtection.reason()).toContain('补课')
   await user.click(screen.getByRole('checkbox', { name: /学生b/ }))
   expect(screen.getByRole('button', { name: '加入所选 2 人' })).toBeDisabled()
   await within(screen.getByRole('combobox', { name: '学生a的原缺席课程' })).findByRole('option', { name: /enrollment-a/ })
@@ -21,6 +23,7 @@ it('requires an absent source for every selected student and retains only failur
   await user.selectOptions(screen.getByRole('combobox', { name: '学生b的原缺席课程' }), 'absent-enrollment-b')
   await user.click(screen.getByRole('button', { name: '加入所选 2 人' }))
   await screen.findByText('已加入 1 人 · 未加入 1 人')
+  expect(updateProtection.reason()).toContain('失败项')
   const selections = screen.getByRole('region', { name: '所选学生与原缺席课程' })
   expect(within(selections).queryByRole('combobox', { name: '学生a的原缺席课程' })).not.toBeInTheDocument()
   expect(within(selections).getByRole('combobox', { name: '学生b的原缺席课程' })).toHaveValue('absent-enrollment-b')

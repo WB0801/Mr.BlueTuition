@@ -4,6 +4,7 @@ import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedba
 import { getErrorMessage } from '../../../utils/errors'
 import { listSchoolExamHistoricalCandidates, saveSchoolExamScores } from '../api/gradesService'
 import { validateScoreValue } from '../gradeEntry'
+import { preparePwaFormSave, usePwaUpdateGuard } from '../../settings/pwa/updateProtection'
 
 interface HistoricalSchoolScorePanelProps {
   examId: string
@@ -19,6 +20,7 @@ export function HistoricalSchoolScorePanel({ examId, maxScore, existingScores }:
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [isSaving, setIsSaving] = useState(false)
+  usePwaUpdateGuard(isSaving, '成绩正在保存，请完成后再更新。')
   const candidates = useQuery({
     queryKey: ['school-exam', examId, 'historical-candidates', search.trim()],
     queryFn: () => listSchoolExamHistoricalCandidates(examId, search),
@@ -36,6 +38,7 @@ export function HistoricalSchoolScorePanel({ examId, maxScore, existingScores }:
     }
 
     setIsSaving(true)
+    const acknowledgeSave = preparePwaFormSave(event.currentTarget)
     setError('')
     setSuccess('')
     try {
@@ -44,6 +47,7 @@ export function HistoricalSchoolScorePanel({ examId, maxScore, existingScores }:
         score: score.trim() === '' ? null : Number(score),
       }])
       await queryClient.invalidateQueries({ queryKey: ['school-exam', examId, 'scores'] })
+      acknowledgeSave()
       setSuccess(score.trim() === '' ? '这位学生的成绩记录已清除。' : '历史成绩已保存。')
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, '历史成绩保存失败，请重试。'))

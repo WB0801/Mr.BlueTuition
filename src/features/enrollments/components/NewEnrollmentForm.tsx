@@ -4,6 +4,7 @@ import type { TuitionClass } from '../../../types/domain'
 import { getErrorMessage } from '../../../utils/errors'
 import { todayInMalaysia } from '../../../utils/format'
 import { createEnrollment } from '../api/enrollmentsService'
+import { preparePwaFormSave } from '../../settings/pwa/updateProtection'
 
 interface NewEnrollmentFormProps {
   studentId: string
@@ -19,9 +20,9 @@ export function NewEnrollmentForm({ studentId, classes, excludedClassIds = [], o
   const [error, setError] = useState('')
   const queryClient = useQueryClient()
   const mutation = useMutation({
-    mutationFn: () => createEnrollment(studentId, classId, joinDate),
-    onSuccess: async () => {
-      setClassId('')
+    mutationFn: (input: { classId: string; joinDate: string }) => createEnrollment(studentId, input.classId, input.joinDate),
+    onSuccess: async (_, input) => {
+      setClassId(current => current === input.classId ? '' : current)
       await queryClient.invalidateQueries({ queryKey: ['enrollments'] })
       onSuccess?.()
     },
@@ -31,8 +32,11 @@ export function NewEnrollmentForm({ studentId, classes, excludedClassIds = [], o
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError('')
+    const classField = event.currentTarget.querySelector('select')!
+    const acknowledgeSave = preparePwaFormSave(event.currentTarget)
     try {
-      await mutation.mutateAsync()
+      await mutation.mutateAsync({ classId, joinDate })
+      acknowledgeSave(new Map([[classField, '']]))
     } catch {
       // Error is displayed by the mutation callback.
     }

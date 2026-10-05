@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { BatchFeeReminderButton } from './BatchFeeReminderButton'
+import { updateProtection } from '../../settings/pwa/updateProtection'
 import { loadBatchReminderCandidates } from '../api/batchFeeReminderService'
 import { loadFeeReminder, type FeeReminderSnapshot } from '../api/feeReminderService'
 
@@ -18,6 +19,7 @@ function setup(initialMonth = '2026-09-01') {
 async function start(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: '批量提醒' }))
   await user.click(await screen.findByRole('checkbox', { name: '全选符合条件的学生' }))
+  expect(updateProtection.reason()).toContain('提醒名单')
   await user.click(screen.getByRole('button', { name: '开始提醒' }))
 }
 beforeEach(() => {
@@ -38,6 +40,7 @@ it('requires an explicit single month for all-months, shows effective scope, the
 it('uses fresh candidates at start, fixed-month preview, edited body/phone, and never advances on an external click or copy', async () => {
   const user = userEvent.setup(); const clipboard = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(); setup(); await start(user)
   const body = await screen.findByLabelText('消息正文'); expect(body).toHaveValue('炜滨，提醒一下，9月的学费还没有给我哦，如果转了的话再 screenshot 给我，谢谢你')
+  expect(updateProtection.reason()).toContain('批次')
   expect(loadBatchReminderCandidates).toHaveBeenCalledTimes(2); expect(loadFeeReminder).toHaveBeenCalledTimes(1)
   expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
   await user.clear(body); await user.type(body, '你好 & A'); await user.clear(screen.getByLabelText('收件电话号码')); await user.type(screen.getByLabelText('收件电话号码'), '+60 12-0000002')

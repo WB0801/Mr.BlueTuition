@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../../auth/authContext'
 import { getErrorMessage } from '../../../utils/errors'
 import { createCompleteBackup, downloadBackupFile } from './backupService'
+import { usePwaUpdateGuard } from '../pwa/updateProtection'
 
 const LAST_BACKUP_KEY = 'lan-laoshi-last-complete-backup-at'
 
@@ -28,6 +29,7 @@ function formatLastBackup(value: string): string {
 export function BackupSection() {
   const { user } = useAuth()
   const [isPreparing, setIsPreparing] = useState(false)
+  usePwaUpdateGuard(isPreparing, '备份正在准备，请完成后再更新。')
   const [progress, setProgress] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')

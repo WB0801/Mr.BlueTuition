@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useId, useLayoutEffect, useRef } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom'
+import { usePwaUpdateGuard } from '../../features/settings/pwa/updateProtection'
 
 export const ContextDataState = createContext<{ locked: boolean; setBusy: (id: string, busy: boolean) => void } | null>(null)
 
@@ -17,6 +18,7 @@ export function consumeCompletedContextOperation(state: unknown): boolean {
 }
 
 export function useContextDataBusy(busy: boolean) {
+  usePwaUpdateGuard(busy)
   const context = useContext(ContextDataState)
   const id = useId()
   const setBusy = context?.setBusy

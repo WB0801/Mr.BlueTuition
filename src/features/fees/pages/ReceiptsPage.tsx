@@ -15,6 +15,7 @@ import {
   getReceiptPaymentTarget,
 } from '../api/feesService'
 import { FeesShell } from '../components/FeesShell'
+import { usePwaUpdateGuard } from '../../settings/pwa/updateProtection'
 
 export function ReceiptsPage() {
   const queryClient = useQueryClient()
@@ -22,6 +23,7 @@ export function ReceiptsPage() {
   const studentId = searchParams.get('studentId') ?? ''
   const classId = searchParams.get('classId') ?? ''
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  usePwaUpdateGuard(selected.size > 0, '请先处理或取消收据选择，再更新。')
   const [error, setError] = useState('')
   const requestedMonth = searchParams.get('completedMonth') ?? ''
   const completedMonth = /^\d{4}-(0[1-9]|1[0-2])$/.test(requestedMonth) ? requestedMonth : currentMonthInMalaysia().slice(0, 7)

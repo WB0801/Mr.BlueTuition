@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react'
+import type { UpdatePhase } from './updateController'
 
 export interface PwaContextValue {
   isSupported: boolean
@@ -7,6 +8,10 @@ export interface PwaContextValue {
   canInstall: boolean
   isOfflineReady: boolean
   needRefresh: boolean
+  phase: UpdatePhase
+  buildId: string
+  checking: boolean
+  applying: boolean
   statusMessage: string
   connectionMessage: string
   install: () => Promise<void>
