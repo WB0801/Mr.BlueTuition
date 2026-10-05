@@ -1,4 +1,5 @@
 import { requireSupabase } from '../../../lib/requireSupabase'
+import { parseTemporaryPaymentAmount } from '../paymentAmount'
 import type {
   ClassSession,
   StudentInput,
@@ -149,6 +150,18 @@ export async function createStudentForTemporaryClass(classId: string, input: Stu
 
 export async function markTemporaryClassPaymentPaid(paymentId: string) {
   return callPaymentRpc('mark_temporary_class_payment_paid', paymentId)
+}
+
+export async function updateTemporaryClassPaymentAmount(paymentId: string, classId: string, amount: number): Promise<TemporaryClassPayment> {
+  // Validate before transport too; never fall back to direct table writes.
+  parseTemporaryPaymentAmount(String(amount))
+  const { data, error } = await requireSupabase().rpc('update_temporary_class_payment_amount', {
+    p_payment_id: paymentId,
+    p_temporary_class_id: classId,
+    p_amount: amount,
+  })
+  if (error) throw error
+  return mapPayment(data)
 }
 
 export async function undoTemporaryClassPayment(paymentId: string) {

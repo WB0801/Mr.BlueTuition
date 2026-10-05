@@ -97,7 +97,7 @@ export function TemporaryClassDetailPage() {
         </div>
         {!enrollments.data?.length && <EmptyBlock message="目前还没有学生报名。" />}
         <div className="temporary-enrollment-list compact-data-list">
-          {enrollments.data?.filter((enrollment) => !paymentId || enrollment.payment?.id === paymentId).map((enrollment) => <TemporaryPaymentRow enrollment={enrollment} allowActions key={enrollment.id} />)}
+          {enrollments.data?.filter((enrollment) => !paymentId || enrollment.payment?.id === paymentId).map((enrollment) => <TemporaryPaymentRow enrollment={enrollment} allowActions allowAmountEdit={isActive} key={enrollment.id} />)}
           {paymentId && !enrollments.data?.some((enrollment) => enrollment.payment?.id === paymentId) && <EmptyBlock message="这笔缴费记录已不存在或不属于此临时班。" />}
         </div>
         {isActive && <TemporaryClassRegistrationPanel classId={data.id} enrollments={enrollments.data ?? []} />}
