@@ -4,16 +4,17 @@ import { ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryStat
 import { listEnrollmentTuitionQuizScores, listStudentSchoolExamScores } from '../api/gradesService'
 import { GradeHistoryContent } from './GradeHistoryContent'
 
-export function EnrollmentGradesSection({ enrollment }: { enrollment: EnrollmentDetails }) {
+export function EnrollmentGradesSection({ enrollment, active = true }: { enrollment: EnrollmentDetails; active?: boolean }) {
   const subjectId = enrollment.class?.subject_id ?? ''
   const schoolScores = useQuery({
     queryKey: ['grades', 'student', enrollment.student_id, 'subject', subjectId],
     queryFn: () => listStudentSchoolExamScores(enrollment.student_id, subjectId),
-    enabled: Boolean(subjectId),
+    enabled: active && Boolean(subjectId),
   })
   const quizScores = useQuery({
     queryKey: ['grades', 'enrollment', enrollment.id, 'quizzes'],
     queryFn: () => listEnrollmentTuitionQuizScores(enrollment.id),
+    enabled: active,
   })
   return (
     <section className="content-section enrollment-grades" id="enrollment-grades">

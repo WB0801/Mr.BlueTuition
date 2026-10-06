@@ -39,10 +39,10 @@ export function AddStudentToClass({ classId, enrolledStudentIds }: AddStudentToC
       for (const studentId of studentIds) await createEnrollment(studentId, classId, joinDate)
       return studentIds.length
     },
-    onSuccess: async (count) => {
+    onSuccess: async (count, submittedIds) => {
       setError('')
       setSuccess(`已加入 ${count} 位学生。`)
-      setSelectedIds([])
+      setSelectedIds(current => current.filter(id => !submittedIds.includes(id)))
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['enrollments'] }),
         queryClient.invalidateQueries({ queryKey: ['monthly-fees'] }),

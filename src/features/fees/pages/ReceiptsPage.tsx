@@ -16,6 +16,7 @@ import {
 } from '../api/feesService'
 import { FeesShell } from '../components/FeesShell'
 import { usePwaUpdateGuard } from '../../settings/pwa/updateProtection'
+import { ContextDataWorkspace } from '../../../components/contextual/ContextDataWorkspace'
 
 export function ReceiptsPage() {
   const queryClient = useQueryClient()
@@ -28,10 +29,11 @@ export function ReceiptsPage() {
   const requestedMonth = searchParams.get('completedMonth') ?? ''
   const completedMonth = /^\d{4}-(0[1-9]|1[0-2])$/.test(requestedMonth) ? requestedMonth : currentMonthInMalaysia().slice(0, 7)
   const historyOpen = searchParams.get('completed') === '1'
-  const pending = useQuery({ queryKey: ['pending-receipts'], queryFn: () => listReceiptQueue('pending') })
+  const pending = useQuery({ queryKey: ['pending-receipts'], queryFn: () => listReceiptQueue('pending'), enabled: !historyOpen })
   const completed = useQuery({
     queryKey: ['receipt-queue', 'completed', completedMonth],
     queryFn: () => listReceiptQueue('completed', normalizeMonthInput(completedMonth)),
+    enabled: historyOpen,
   })
 
   const classFees = useQuery({ queryKey: ['monthly-fees', 'receipt-scope', classId], queryFn: () => listMonthlyFees({ classId, paymentStatus: 'paid' }), enabled: Boolean(classId) })
@@ -75,6 +77,8 @@ export function ReceiptsPage() {
   return (
     <FeesShell>
       {(studentId || classId) && <div className="scope-notice"><strong>当前学生／班级范围的收据</strong><button className="button button-text" type="button" onClick={() => { setSelected(new Set()); const next = new URLSearchParams(searchParams); next.delete('studentId'); next.delete('classId'); setSearchParams(next, { replace: true }) }}>显示全部收据</button></div>}
+      <ContextDataWorkspace label="收据栏目" defaultPanel="0" panelParam="completed" sections={[
+      { id: '0', label: '待处理收据', render: () => <>
       <div className="section-heading-row receipts-heading">
         <div>
           <h2>{pending.isError || (classId && classFees.isError) ? '待处理收据载入失败' : pending.isLoading || (classId && classFees.isLoading) ? '正在读取待处理收据…' : `待处理收据 ${visiblePending.length} 张`}</h2>
@@ -125,11 +129,8 @@ export function ReceiptsPage() {
       )}
       {error && <p className="form-error" role="alert">{error}</p>}
 
-      <details className="history-panel receipt-history-panel" open={historyOpen}>
-        <summary onClick={(event) => {
-          event.preventDefault()
-          setSearchParams((current) => { const next = new URLSearchParams(current); if (!historyOpen) next.set('completed', '1'); else next.delete('completed'); return next }, { replace: true })
-        }}>已处理收据</summary>
+      </> },
+      { id: '1', label: '已处理收据', render: () => <section className="receipt-history-panel">
         <label className="field field-small receipt-history-month">
           <span>收费月份</span>
           <input type="month" value={completedMonth} onChange={(event) => { const next = new URLSearchParams(searchParams); next.set('completedMonth', event.target.value); setSearchParams(next, { replace: true }) }} />
@@ -153,7 +154,8 @@ export function ReceiptsPage() {
             </div>
           ))}
         </div>
-      </details>
+      </section> },
+      ]} />
     </FeesShell>
   )
 }

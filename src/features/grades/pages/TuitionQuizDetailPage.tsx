@@ -15,6 +15,8 @@ import {
   saveTuitionQuizScores,
 } from '../api/gradesService'
 import { PermanentDeleteZone } from '../../deletion/components/PermanentDeleteZone'
+import { ContextDataWorkspace } from '../../../components/contextual/ContextDataWorkspace'
+import { completedContextOperation } from '../../../components/contextual/contextDataState'
 
 export function TuitionQuizDetailPage() {
   const { quizId = '' } = useParams()
@@ -40,7 +42,8 @@ export function TuitionQuizDetailPage() {
         {quiz.data.class && <ContextLink backLabel="成绩" to={`/classes/${quiz.data.class.id}`}>{quiz.data.class.name}</ContextLink>}
         {' · '}{formatDate(quiz.data.quiz_date)} · 满分 {quiz.data.max_score}
       </p>
-      {roster.data?.length === 0 ? <EmptyBlock message="小测日期当天没有有效报读学生。" /> : (
+      <ContextDataWorkspace label="小测功能" defaultPanel="scores" sections={[
+      { id: 'scores', label: '成绩录入', render: () => roster.data?.length === 0 ? <EmptyBlock message="小测日期当天没有有效报读学生。" /> : (
         <GradeEntryTable
           key={quizId}
           rows={roster.data ?? []}
@@ -56,24 +59,24 @@ export function TuitionQuizDetailPage() {
             ])
           }}
         />
-      )}
-
-      <QuizTopThreeSection
+      ) },
+      { id: 'ranking', label: '前三名与奖励', render: active => <QuizTopThreeSection
         quiz={quiz.data}
         roster={roster.data ?? []}
         scores={scores.data ?? []}
-      />
-
-      <PermanentDeleteZone
+        active={active}
+      /> },
+      { id: 'management', label: '小测管理', render: () => <PermanentDeleteZone
         entityType="tuition_quiz"
         entityId={quizId}
         entityName={quiz.data.name}
         entityLabel="小测"
         onDeleted={async () => {
           await queryClient.invalidateQueries({ queryKey: ['tuition-quizzes'] })
-          navigate(`/grades/quizzes?classId=${quiz.data.class_id}`, { replace: true, state: { successMessage: `已永久删除小测「${quiz.data.name}」及其成绩。` } })
+          navigate(`/grades/quizzes?classId=${quiz.data.class_id}`, { replace: true, state: completedContextOperation({ successMessage: `已永久删除小测「${quiz.data.name}」及其成绩。` }) })
         }}
-      />
+      /> },
+      ]} />
     </section>
   )
 }

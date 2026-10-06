@@ -11,7 +11,7 @@ import { addSessionGuests, listMakeupSourceSessions, searchCrossClassCandidates,
 type Selection = { candidate: CrossClassCandidate; linkType: 'makeup' | 'extra'; sourceSessionId: string }
 type GuestDraft = { search: string; selected: Record<string, Selection>; results: SessionGuestResult[]; error: string; sharedSource: string; applicationNotice: string }
 
-export function CrossClassGuestPanel({ sessionId }: { sessionId: string }) {
+export function CrossClassGuestPanel({ sessionId, active = true }: { sessionId: string; active?: boolean }) {
   const queryClient = useQueryClient()
   const draftKey = ['attendance', sessionId, 'guest-draft']
   const [draft] = useState(() => queryClient.getQueryData<GuestDraft>(draftKey))
@@ -31,12 +31,13 @@ export function CrossClassGuestPanel({ sessionId }: { sessionId: string }) {
   const candidates = useQuery({
     queryKey: ['attendance', sessionId, 'cross-class-candidates', deferredSearch],
     queryFn: () => searchCrossClassCandidates(sessionId, deferredSearch),
+    enabled: active,
   })
   const selections = Object.values(selected)
   const sources = useQueries({ queries: selections.map((item) => ({
     queryKey: ['attendance', sessionId, 'makeup-sources', item.candidate.source_enrollment_id],
     queryFn: () => listMakeupSourceSessions(sessionId, item.candidate.source_enrollment_id),
-    enabled: item.linkType === 'makeup',
+    enabled: active && item.linkType === 'makeup',
   })) })
   const sharedChoices = new Map<string, { className: string; startAt: string; count: number }>()
   selections.forEach((item, index) => {
@@ -116,7 +117,7 @@ export function CrossClassGuestPanel({ sessionId }: { sessionId: string }) {
         <button className="button button-secondary" type="button" disabled={busy || !sharedChoices.has(sharedSource)} onClick={applySharedSource}>应用给符合条件者</button>
         {applicationNotice && <p className="field-hint" role="status">{applicationNotice}</p>}
       </div>}
-      {selections.map((item) => <GuestSelection key={item.candidate.source_enrollment_id} sessionId={sessionId} selection={item} busy={busy}
+      {selections.map((item) => <GuestSelection key={item.candidate.source_enrollment_id} sessionId={sessionId} selection={item} busy={busy} active={active}
         onChange={(value) => setSelected((current) => ({ ...current, [item.candidate.source_enrollment_id]: value }))}
         onRemove={() => toggle(item.candidate)} />)}
       <button className="button button-primary" type="button" disabled={!ready || busy} onClick={() => void submit()}>{busy ? '正在逐人加入…' : `加入所选 ${selections.length} 人`}</button>
@@ -130,13 +131,13 @@ export function CrossClassGuestPanel({ sessionId }: { sessionId: string }) {
   </div>
 }
 
-function GuestSelection({ sessionId, selection, busy, onChange, onRemove }: {
-  sessionId: string; selection: Selection; busy: boolean; onChange: (value: Selection) => void; onRemove: () => void
+function GuestSelection({ sessionId, selection, busy, active, onChange, onRemove }: {
+  sessionId: string; selection: Selection; busy: boolean; active: boolean; onChange: (value: Selection) => void; onRemove: () => void
 }) {
   const { candidate, linkType, sourceSessionId } = selection
   const sources = useQuery({
     queryKey: ['attendance', sessionId, 'makeup-sources', candidate.source_enrollment_id],
-    queryFn: () => listMakeupSourceSessions(sessionId, candidate.source_enrollment_id), enabled: linkType === 'makeup',
+    queryFn: () => listMakeupSourceSessions(sessionId, candidate.source_enrollment_id), enabled: active && linkType === 'makeup',
   })
   return <fieldset className="guest-selection" disabled={busy}>
     <legend>{candidate.student_name} · {candidate.source_class_name}</legend>

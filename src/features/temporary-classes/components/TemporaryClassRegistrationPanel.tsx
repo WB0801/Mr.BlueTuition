@@ -13,9 +13,13 @@ import { usePwaUpdateGuard } from '../../settings/pwa/updateProtection'
 export function TemporaryClassRegistrationPanel({
   classId,
   enrollments,
+  mode = 'join',
+  active = true,
 }: {
   classId: string
   enrollments: TemporaryClassEnrollment[]
+  mode?: 'join' | 'create'
+  active?: boolean
 }) {
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
@@ -27,6 +31,7 @@ export function TemporaryClassRegistrationPanel({
   const students = useQuery({
     queryKey: ['students', 'all'],
     queryFn: () => listStudents(),
+    enabled: active && mode === 'join',
   })
   const enrolledIds = useMemo(() => enrollments.map((item) => item.student_id), [enrollments])
   const candidates = useMemo(
@@ -49,10 +54,10 @@ export function TemporaryClassRegistrationPanel({
       for (const studentId of studentIds) await addStudentToTemporaryClass(classId, studentId)
       return studentIds.length
     },
-    onSuccess: async (count) => {
+    onSuccess: async (count, submittedIds) => {
       setError('')
       setSuccess(`已加入 ${count} 位学生。`)
-      setSelectedIds([])
+      setSelectedIds(current => current.filter(id => !submittedIds.includes(id)))
       await refresh()
     },
     onError: async (caughtError) => {
@@ -78,9 +83,9 @@ export function TemporaryClassRegistrationPanel({
   }
 
   return (
-    <details className="action-panel temporary-registration-panel" open>
-      <summary>加入学生</summary>
-      <div className="student-picker">
+    <section className="temporary-registration-panel">
+      <h2>{mode === 'join' ? '加入学生' : '新增学生并报名'}</h2>
+      {mode === 'join' && <div className="student-picker">
         <label className="field">
           <span>筛选学生</span>
           <input type="search" value={search} onChange={(event) => { setSearch(event.target.value); setSuccess('') }} placeholder="姓名、学校班级或电话" />
@@ -123,11 +128,11 @@ export function TemporaryClassRegistrationPanel({
             {add.isPending ? '加入中…' : '确认加入'}
           </button>
         </div>
-      </div>
-      <details className="nested-action-panel">
-        <summary>新增学生并报名</summary>
+      </div>}
+      {mode === 'create' && <>
         <StudentForm submitLabel="新增并报名" isSubmitting={create.isPending} error={create.error ? getErrorMessage(create.error) : ''} onSubmit={async (input) => { await create.mutateAsync(input) }} />
-      </details>
-    </details>
+        {success && <p className="form-success" role="status">{success}</p>}
+      </>}
+    </section>
   )
 }

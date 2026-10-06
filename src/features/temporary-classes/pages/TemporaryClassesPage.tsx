@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
+import { ContextDataWorkspace } from '../../../components/contextual/ContextDataWorkspace'
 import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
@@ -15,8 +16,10 @@ import {
 
 export function TemporaryClassesPage() {
   const location = useLocation()
-  const active = useQuery({ queryKey: ['temporary-classes', 'active'], queryFn: () => listTemporaryClasses('active') })
-  const ended = useQuery({ queryKey: ['temporary-classes', 'ended'], queryFn: () => listTemporaryClasses('ended') })
+  const [params] = useSearchParams()
+  const isEnded = params.get('panel') === 'ended'
+  const active = useQuery({ queryKey: ['temporary-classes', 'active'], queryFn: () => listTemporaryClasses('active'), enabled: !isEnded })
+  const ended = useQuery({ queryKey: ['temporary-classes', 'ended'], queryFn: () => listTemporaryClasses('ended'), enabled: isEnded })
 
   return (
     <section>
@@ -24,7 +27,8 @@ export function TemporaryClassesPage() {
       {(location.state as { successMessage?: string } | null)?.successMessage && (
         <p className="form-success list-success" role="status">{(location.state as { successMessage: string }).successMessage}</p>
       )}
-      <section className="content-section temporary-current-section">
+      <ContextDataWorkspace label="临时班名单" defaultPanel="active" sections={[
+      { id: 'active', label: '目前临时班', render: () => <section className="content-section temporary-current-section">
         <h2>目前临时班</h2>
         {active.isLoading && <LoadingBlock />}
         {active.isError && <ErrorBlock message="临时班载入失败。" />}
@@ -32,17 +36,17 @@ export function TemporaryClassesPage() {
         <div className="record-list compact-card-grid temporary-card-grid">
           {active.data?.map((item) => <TemporaryClassCard item={item} key={item.id} />)}
         </div>
-      </section>
-
-      <details className="history-panel temporary-history-panel">
-        <summary>已结束临时班（{ended.data?.length ?? 0}）</summary>
+      </section> },
+      { id: 'ended', label: '已结束临时班', render: () => <section className="temporary-history-panel">
+        <h2>已结束临时班</h2>
         {ended.isLoading && <LoadingBlock />}
         {ended.isError && <ErrorBlock message="历史临时班载入失败。" />}
         {!ended.isLoading && ended.data?.length === 0 && <EmptyBlock message="还没有已结束临时班。" />}
         <div className="record-list compact-card-grid temporary-card-grid">
           {ended.data?.map((item) => <TemporaryClassCard item={item} key={item.id} />)}
         </div>
-      </details>
+      </section> },
+      ]} />
     </section>
   )
 }

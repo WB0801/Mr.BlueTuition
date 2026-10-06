@@ -12,9 +12,10 @@ interface QuizTopThreeSectionProps {
   quiz: TuitionQuiz
   roster: TuitionQuizRosterEntry[]
   scores: TuitionQuizScore[]
+  active?: boolean
 }
 
-export function QuizTopThreeSection({ quiz, roster, scores }: QuizTopThreeSectionProps) {
+export function QuizTopThreeSection({ quiz, roster, scores, active = true }: QuizTopThreeSectionProps) {
   const queryClient = useQueryClient()
   const [confirming, setConfirming] = useState(false)
   const [allowIncomplete, setAllowIncomplete] = useState(false)
@@ -23,6 +24,7 @@ export function QuizTopThreeSection({ quiz, roster, scores }: QuizTopThreeSectio
   const preview = useQuery({
     queryKey: ['tuition-quiz', quiz.id, 'top-three'],
     queryFn: () => previewTuitionQuizTopThree(quiz.id),
+    enabled: active,
   })
   const scoreByStudent = useMemo(() => new Map(scores.map((score) => [score.student_id, score.score])), [scores])
   const localCandidates = useMemo(() => calculateQuizTopThree(roster.map((student) => ({

@@ -17,11 +17,16 @@ import {
 import { TemporaryClassRegistrationPanel } from '../components/TemporaryClassRegistrationPanel'
 import { TemporaryPaymentRow } from '../components/TemporaryPaymentRow'
 import { PermanentDeleteZone } from '../../deletion/components/PermanentDeleteZone'
+import { ContextDataWorkspace } from '../../../components/contextual/ContextDataWorkspace'
+import { completedContextOperation } from '../../../components/contextual/contextDataState'
 
 const sessionStatusLabels = { scheduled: '可点名', cancelled: '已停课', completed: '已结束' } as const
 
 export function TemporaryClassDetailPage() {
   const { temporaryClassId = '' } = useParams()
+  return <TemporaryClassDetailView key={temporaryClassId} temporaryClassId={temporaryClassId} />
+}
+function TemporaryClassDetailView({ temporaryClassId }: { temporaryClassId: string }) {
   const [searchParams, setSearchParams] = useSearchParams()
   const paymentId = searchParams.get('paymentId') ?? ''
   const navigate = useNavigate()
@@ -38,11 +43,6 @@ export function TemporaryClassDetailPage() {
   const enrollments = useQuery({
     queryKey: ['temporary-class', temporaryClassId, 'enrollments'],
     queryFn: () => listTemporaryClassEnrollments(temporaryClassId),
-  })
-  const roster = useQuery({
-    queryKey: ['temporary-class', temporaryClassId, 'attendance-summary', session.data?.id],
-    queryFn: () => getSessionRoster(session.data?.id ?? ''),
-    enabled: Boolean(session.data?.id),
   })
   const end = useMutation({
     mutationFn: () => endTemporaryClass(temporaryClassId),
@@ -65,7 +65,6 @@ export function TemporaryClassDetailPage() {
 
   const data = temporaryClass.data
   const isActive = data.status === 'active'
-  const signedCount = roster.data?.filter((item) => item.attendance_record_id).length ?? 0
   const paidCount = enrollments.data?.filter((item) => item.payment?.payment_status === 'paid').length ?? 0
   const enrollmentCount = enrollments.data?.length ?? 0
 
@@ -82,15 +81,10 @@ export function TemporaryClassDetailPage() {
           <div><dt>一次性收费</dt><dd>{formatMoney(data.fee_amount)} / 人</dd></div>
           <div><dt>当前报名</dt><dd>{enrollmentCount} 人</dd></div>
           <div><dt>收费进度</dt><dd>{paidCount} / {enrollmentCount} 已缴</dd></div>
-          <div><dt>点名进度</dt><dd>{signedCount} / {enrollmentCount}</dd></div>
       </dl>
 
-      <nav className="related-nav" aria-label="临时班相关资料">
-        <ContextLink backLabel="临时班" to={`/attendance/session/${session.data.id}`}>点名与签名</ContextLink>
-        <ContextLink backLabel="临时班" to="/fees/receipts">收据</ContextLink>
-      </nav>
-
-      <section className="content-section">
+      <ContextDataWorkspace label="临时班相关资料" defaultPanel="students" sections={[
+      { id: 'students', label: '学生与收费', render: () => <section className="content-section">
         {paymentId && <div className="scope-notice"><strong>收据对应的临时班缴费记录</strong><button className="button button-text" type="button" onClick={() => { const next = new URLSearchParams(searchParams); next.delete('paymentId'); setSearchParams(next, { replace: true }) }}>显示全部学生缴费记录</button></div>}
         <div className="section-heading-row">
           <h2>学生名单 {enrollmentCount} 人</h2>
@@ -100,21 +94,13 @@ export function TemporaryClassDetailPage() {
           {enrollments.data?.filter((enrollment) => !paymentId || enrollment.payment?.id === paymentId).map((enrollment) => <TemporaryPaymentRow enrollment={enrollment} allowActions allowAmountEdit={isActive} key={enrollment.id} />)}
           {paymentId && !enrollments.data?.some((enrollment) => enrollment.payment?.id === paymentId) && <EmptyBlock message="这笔缴费记录已不存在或不属于此临时班。" />}
         </div>
-        {isActive && <TemporaryClassRegistrationPanel classId={data.id} enrollments={enrollments.data ?? []} />}
-      </section>
-
-      <section className="content-section temporary-attendance-summary">
-        <h2>点名</h2>
-        <div>
-          <strong>{formatSessionTimeRange(session.data.current_start_at, session.data.current_end_at)}</strong>
-          <span>{sessionStatusLabels[session.data.status]} · 已签到 {signedCount} / {enrollmentCount}</span>
-        </div>
-        {roster.isError && <ErrorBlock message="签到摘要载入失败。" />}
-        <ContextLink backLabel="临时班" className="button button-primary" to={`/attendance/session/${session.data.id}`}>进入点名</ContextLink>
-      </section>
-
-      <details className="management-panel temporary-management-panel">
-        <summary>管理临时班</summary>
+      </section> },
+      { id: 'join', label: '加入学生', render: active => isActive ? <TemporaryClassRegistrationPanel classId={data.id} enrollments={enrollments.data ?? []} active={active} /> : <EmptyBlock message="此临时班已结束，不能加入学生。" /> },
+      { id: 'create', label: '新增学生并报名', render: active => isActive ? <TemporaryClassRegistrationPanel classId={data.id} enrollments={enrollments.data ?? []} mode="create" active={active} /> : <EmptyBlock message="此临时班已结束，不能新增报名。" /> },
+      { id: 'attendance', label: '点名', render: active => <TemporaryAttendanceSummary session={session.data!} enrollmentCount={enrollmentCount} active={active} /> },
+      { id: 'receipts', label: '收据', render: () => <ContextLink backLabel="临时班" className="button button-secondary" to="/fees/receipts">收据处理</ContextLink> },
+      { id: 'management', label: '临时班管理', render: () => <section className="temporary-management-panel">
+        <h2>临时班管理</h2>
         {isActive && <ContextLink backLabel="临时班" className="button button-secondary" to={`/temporary-classes/${data.id}/edit`}>编辑临时班</ContextLink>}
         {isActive && (
           <div className="danger-action-card temporary-end-zone">
@@ -129,8 +115,6 @@ export function TemporaryClassDetailPage() {
           </div>
         )}
         {!isActive && <p className="settings-note">此临时班已结束，报名、收费与签到历史保留为只读资料。</p>}
-      </details>
-
       <PermanentDeleteZone
         entityType="temporary_class"
         entityId={temporaryClassId}
@@ -142,9 +126,21 @@ export function TemporaryClassDetailPage() {
             queryClient.invalidateQueries({ queryKey: ['sessions'] }),
             queryClient.invalidateQueries({ queryKey: ['monthly-fees'] }),
           ])
-          navigate('/temporary-classes', { replace: true, state: { successMessage: `已永久删除临时班「${data.name}」及其关联资料。` } })
+          navigate('/temporary-classes', { replace: true, state: completedContextOperation({ successMessage: `已永久删除临时班「${data.name}」及其关联资料。` }) })
         }}
       />
+      </section> },
+      ]} />
     </section>
   )
+}
+
+function TemporaryAttendanceSummary({ session, enrollmentCount, active }: { session: NonNullable<Awaited<ReturnType<typeof getTemporaryClassSession>>>; enrollmentCount: number; active: boolean }) {
+  const roster = useQuery({ queryKey: ['temporary-class', session.temporary_class_id, 'attendance-summary', session.id], queryFn: () => getSessionRoster(session.id), enabled: active })
+  const signed = roster.data?.filter(item => item.attendance_record_id).length ?? 0
+  return <section className="content-section temporary-attendance-summary"><h2>点名</h2>
+    <div><strong>{formatSessionTimeRange(session.current_start_at, session.current_end_at)}</strong><span>{sessionStatusLabels[session.status]}{roster.isSuccess && ` · 已签到 ${signed} / ${enrollmentCount}`}</span></div>
+    {roster.isLoading && <LoadingBlock />}{roster.isError && <ErrorBlock message="签到摘要载入失败。" />}
+    <ContextLink backLabel="临时班" className="button button-primary" to={`/attendance/session/${session.id}`}>进入点名</ContextLink>
+  </section>
 }

@@ -13,7 +13,7 @@ import type { Student } from '../../../types/domain'
 
 vi.mock('../../attendance/api/attendanceService', () => ({ getSessionRoster: vi.fn() }))
 vi.mock('../../students/api/studentsService', () => ({ getStudent: vi.fn() }))
-vi.mock('../api/scheduleService', () => ({ listAttendanceSessions: vi.fn(), listAttendanceHistoryPage: vi.fn(), loadStudentAttendanceScope: vi.fn(), listStudentAttendanceHistoryPage: vi.fn() }))
+vi.mock('../api/scheduleService', () => ({ listAttendanceSessions: vi.fn(), listAttendanceHistoryPage: vi.fn(), loadStudentAttendanceScope: vi.fn(), listStudentAttendanceHistoryPage: vi.fn(), ensureRollingSessions: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('../components/AllDayStopPanel', () => ({ AllDayStopPanel: vi.fn(() => null) }))
 const sessions = ['a', 'b'].map((id) => ({ id: `session-${id}`, class_id: `class-${id}`, class: { name: `班级${id}` }, status: 'scheduled', current_start_at: '2026-09-29T06:00:00Z' })) as ClassSessionWithClass[]
 function Probe() { return <output data-testid="search">{useLocation().search}</output> }
@@ -70,6 +70,18 @@ it('does not load the all-day stop preview until its closed control is opened', 
   expect(AllDayStopPanel).not.toHaveBeenCalled()
   await userEvent.setup().click(screen.getByText('全日停课', { exact: true }))
   await waitFor(() => expect(AllDayStopPanel).toHaveBeenCalled())
+})
+it('retains scoped historical courses without another generation-enabled read on column return', async () => {
+  renderPage('/attendance?studentId=student-a&view=history')
+  const user = userEvent.setup()
+  await screen.findByRole('link', { name: /班级a/ })
+  expect(listStudentAttendanceHistoryPage).toHaveBeenCalledTimes(1)
+  expect(listStudentAttendanceHistoryPage).toHaveBeenCalledWith(null, expect.anything(), expect.anything(), '', false)
+  await user.click(screen.getByRole('button', { name: '全日停课' }))
+  await user.click(screen.getByRole('button', { name: '课程名单' }))
+  expect(screen.getByRole('link', { name: /班级a/ })).toBeVisible()
+  expect(listStudentAttendanceHistoryPage).toHaveBeenCalledTimes(1)
+  expect(screen.getByTestId('search')).toHaveTextContent('studentId=student-a')
 })
 it('loads an older student course directly without requesting rosters for 100 unrelated system courses', async () => {
   const unrelated = Array.from({ length: 100 }, (_, index) => ({ ...sessions[1], id: `unrelated-${index}` }))

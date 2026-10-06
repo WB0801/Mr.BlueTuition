@@ -40,6 +40,10 @@ function StudentDetailView({ studentId }: { studentId: string }) {
         {enrollments.isLoading && <LoadingBlock />}{enrollments.isError && <ErrorBlock message="报读资料载入失败。" />}
         {enrollments.isSuccess && <StudentEnrollmentRecords records={enrollments.data} studentId={studentId} />}
       </> },
+      { id: 'history', label: '历史报读', render: () => <>
+        {enrollments.isLoading && <LoadingBlock />}{enrollments.isError && <ErrorBlock message="报读资料载入失败。" />}
+        {enrollments.isSuccess && <StudentEnrollmentRecords records={enrollments.data} studentId={studentId} history />}
+      </> },
       { id: 'fees', label: '缴费记录', render: active => <FeeRecords scope={{ studentId }} active={active} /> },
       { id: 'attendance', label: '出席与课程', render: active => <ObjectCourseRecords scope={{ studentId }} active={active} /> },
       { id: 'grades', label: '考试与成绩', render: active => <StudentGradesSection studentId={studentId} embedded active={active} /> },

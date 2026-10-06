@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useRecordParams } from '../../../components/contextual/contextDataState'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { ContextDataWorkspace } from '../../../components/contextual/ContextDataWorkspace'
 import { ContextLink } from '../../../components/navigation/ContextLink'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { PageHeader } from '../../../components/shared/PageHeader'
@@ -40,12 +41,14 @@ function SignatureSuccessNotice({ sessionId }: { sessionId: string }) {
 
 export function SessionDetails({ sessionId, scope, prefix = '', active = true }: { sessionId: string; scope?: { studentId?: string; classId?: string }; prefix?: string; active?: boolean }) {
   const { get, set } = useRecordParams(prefix)
-  const [guestsOpened, setGuestsOpened] = useState(false)
+  const [params] = useSearchParams()
+  const sectionParam = prefix ? `${prefix}.${sessionId}.section` : 'section'
+  const managementActive = params.get(sectionParam) === 'management'
   const rosterFilter = get('roster', 'all')
   const queryClient = useQueryClient()
   const [error, setError] = useState('')
   const session = useQuery({ queryKey: ['session', sessionId], queryFn: () => getSession(sessionId), enabled: active })
-  const changes = useQuery({ queryKey: ['session', sessionId, 'changes'], queryFn: () => listSessionChanges(sessionId), enabled: active && (!scope?.classId || session.data?.class_id === scope.classId) })
+  const changes = useQuery({ queryKey: ['session', sessionId, 'changes'], queryFn: () => listSessionChanges(sessionId), enabled: active && managementActive && (!scope?.classId || session.data?.class_id === scope.classId) })
   const roster = useQuery({ queryKey: ['attendance', sessionId, 'roster'], queryFn: () => getSessionRoster(sessionId), enabled: active && (!scope?.classId || session.data?.class_id === scope.classId) })
   const stopMutation = useMutation({
     mutationFn: () => stopSession(sessionId),
@@ -110,7 +113,8 @@ export function SessionDetails({ sessionId, scope, prefix = '', active = true }:
         {data.temporary_class && <ContextLink backLabel="课程" to={`/temporary-classes/${data.temporary_class.id}`}>临时班详情</ContextLink>}
       </nav>}
 
-      <section className="content-section attendance-section">
+      <ContextDataWorkspace label="课程功能" defaultPanel="roster" panelParam={sectionParam} sections={[
+      { id: 'roster', label: '当前名单', render: () => <section className="content-section attendance-section">
         <div className="section-heading-row">
           <h2>学生点名</h2>
           <span className="attendance-progress">{signedCount} / {roster.data?.length ?? 0} 已签到</span>
@@ -125,17 +129,11 @@ export function SessionDetails({ sessionId, scope, prefix = '', active = true }:
         {roster.data && (visibleRoster.length === 0 && roster.data.length > 0
           ? <EmptyBlock message={rosterFilter === 'signed' ? '还没有学生签到。' : '所有学生均已签到。'} />
           : <AttendanceRoster session={data} entries={visibleRoster} />)}
-      </section>
-
-      {data.status === 'scheduled' && data.session_type !== 'temporary' && (
-        <details className="action-panel" onToggle={event => { if (event.currentTarget.open) setGuestsOpened(true) }}>
-          <summary>添加跨班补课学生</summary>
-          {guestsOpened && <CrossClassGuestPanel sessionId={data.id} />}
-        </details>
-      )}
-
-      <details className="management-panel">
-        <summary>课程管理与历史</summary>
+      </section> },
+      ...(data.status === 'scheduled' && data.session_type !== 'temporary' ? [{ id: 'guests', label: '添加跨班补课学生', render: (selected: boolean) => <><h2>添加跨班补课学生</h2><CrossClassGuestPanel sessionId={data.id} active={active && selected} /></> }] : []),
+      { id: 'management', label: '课程管理与历史', render: () => <section className="management-panel">
+        <h2>课程管理与历史</h2>
+        {changes.isLoading && <LoadingBlock />}
         {changes.isError && <ErrorBlock message="改期历史载入失败。" />}
         {(changes.data?.length ?? 0) > 0 && (
           <div className="schedule-change-list">
@@ -181,7 +179,8 @@ export function SessionDetails({ sessionId, scope, prefix = '', active = true }:
             {error && <p className="form-error" role="alert">{error}</p>}
           </div>
         )}
-      </details>
+      </section> },
+      ]} />
     </section>
   )
 }

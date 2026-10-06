@@ -29,8 +29,19 @@ it('restores a historical receipt month and expanded history after a real studen
   fireEvent.change(screen.getByLabelText('收费月份'), { target: { value: '2026-06' } })
   await user.click(await screen.findByRole('link', { name: /旧月学生/ }))
   await user.click(screen.getByRole('link', { name: '返回收据' }))
-  const history = screen.getByText('已处理收据', { exact: true }).closest('details')!
-  expect(history).toHaveAttribute('open')
+  const history = screen.getByRole('region', { name: '已处理收据' })
+  expect(screen.getByRole('button', { name: '已处理收据' })).toHaveAttribute('aria-pressed', 'true')
   expect(within(history).getByLabelText('收费月份')).toHaveValue('2026-06')
   expect(await within(history).findByRole('link', { name: /旧月学生/ })).toBeInTheDocument()
+})
+
+it('does not fetch completed receipts before selecting the upper history column', async () => {
+  vi.mocked(listReceiptQueue).mockClear()
+  vi.mocked(listReceiptQueue).mockResolvedValue([])
+  render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><MemoryRouter><ReceiptsPage /></MemoryRouter></QueryClientProvider>)
+  await screen.findByText('目前没有待开收据。')
+  expect(listReceiptQueue).not.toHaveBeenCalledWith('completed', expect.anything())
+  await userEvent.setup().click(screen.getByRole('button', { name: '已处理收据' }))
+  expect(await screen.findByLabelText('收费月份')).toBeVisible()
+  expect(listReceiptQueue).toHaveBeenCalledWith('completed', expect.anything())
 })

@@ -6,6 +6,7 @@ import { addCalendarDays, todayInMalaysia, weekdayLabels } from '../../../utils/
 import { changeClassSchedule, previewScheduleChange } from '../api/scheduleService'
 import { getScheduleChangeConfirmationMessage } from '../scheduleActions'
 import { preparePwaFormSave, usePwaUpdateGuard } from '../../settings/pwa/updateProtection'
+import { useContextDataBusy } from '../../../components/contextual/contextDataState'
 
 interface ScheduleChangeFormProps {
   classId: string
@@ -29,6 +30,7 @@ export function ScheduleChangeForm({ classId, currentRule }: ScheduleChangeFormP
   const [success, setSuccess] = useState('')
   const [isChecking, setIsChecking] = useState(false)
   usePwaUpdateGuard(isChecking, '课表检查或保存中，请完成后再更新。')
+  useContextDataBusy(isChecking)
   const mutation = useMutation({
     mutationFn: (input: ScheduleChangeInput) => changeClassSchedule(classId, currentRule.id, input),
     onSuccess: async () => {

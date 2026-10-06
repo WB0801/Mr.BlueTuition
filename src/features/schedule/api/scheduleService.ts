@@ -266,13 +266,16 @@ async function queryScheduledRange(from: string, to: string, classId = ''): Prom
   return (data ?? []) as unknown as ClassSessionWithClass[]
 }
 
-export async function listScheduledSessionsForDate(date: string): Promise<AllDayStopSession[]> {
+export async function ensureSessionsForDate(date: string) {
   const { error } = await requireSupabase().rpc('ensure_class_sessions', {
     p_from_date: date,
     p_to_date: date,
   })
   if (error) throw error
+}
 
+export async function listScheduledSessionsForDate(date: string, ensure = true): Promise<AllDayStopSession[]> {
+  if (ensure) await ensureSessionsForDate(date)
   const sessions = await queryScheduledRange(
     malaysiaDateTime(date, '00:00'),
     malaysiaDateTime(addCalendarDays(date, 1), '00:00'),

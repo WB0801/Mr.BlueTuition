@@ -3,6 +3,9 @@ import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { vi } from 'vitest'
 import { GradeEntryTable } from './GradeEntryTable'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ContextDataWorkspace } from '../../../components/contextual/ContextDataWorkspace'
+import { Link } from 'react-router-dom'
 
 const rows = [
   { student_id: 'student-1', student_name: '陈小明', school_class: '高一商仁', phone: null },
@@ -11,6 +14,39 @@ const rows = [
 ]
 
 describe('GradeEntryTable', () => {
+  it('keeps scores across columns, uses one leave confirmation and blocks switching during submission', async () => {
+    let resolveSave!: () => void
+    const onSave = vi.fn(() => new Promise<void>(resolve => { resolveSave = resolve }))
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const warn = vi.spyOn(console, 'warn')
+    const router = createMemoryRouter([{
+      path: '/quiz', element: <><Link to="/other">离开页面</Link><ContextDataWorkspace label="小测" defaultPanel="scores" sections={[
+        { id: 'scores', label: '成绩栏目', render: () => <GradeEntryTable rows={rows} initialScores={{}} maxScore={100} onSave={onSave} /> },
+        { id: 'management', label: '管理栏目', render: () => <p>管理内容</p> },
+      ]} /></>,
+    }, { path: '/other', element: <p>其他页面</p> }], { initialEntries: ['/quiz'] })
+    render(<QueryClientProvider client={new QueryClient()}><RouterProvider router={router} /></QueryClientProvider>)
+    const user = userEvent.setup()
+    fireEvent.change(screen.getAllByRole('spinbutton')[0], { target: { value: '65' } })
+    await user.click(screen.getByRole('button', { name: '管理栏目' }))
+    expect(confirm).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: '成绩栏目' }))
+    expect(screen.getAllByRole('spinbutton')[0]).toHaveValue(65)
+    await user.click(screen.getByRole('link', { name: '离开页面' }))
+    expect(confirm).toHaveBeenCalledTimes(1)
+    expect(router.state.location.pathname).toBe('/quiz')
+    await user.click(screen.getByRole('button', { name: '保存成绩' }))
+    expect(screen.getByRole('button', { name: '管理栏目' })).toBeDisabled()
+    fireEvent.change(screen.getAllByRole('spinbutton')[0], { target: { value: '70' } })
+    resolveSave()
+    await screen.findByText('成绩已保存。')
+    expect(screen.getByText('尚未保存')).toBeVisible()
+    await user.click(screen.getByRole('button', { name: '管理栏目' }))
+    await user.click(screen.getByRole('link', { name: '离开页面' }))
+    expect(confirm).toHaveBeenCalledTimes(2)
+    expect(router.state.location.pathname).toBe('/quiz')
+    expect(warn.mock.calls.flat().join(' ')).not.toContain('only supports one blocker')
+  })
   it('fills a pasted column, keeps zero, moves down with Enter and saves once', async () => {
     const onSave = vi.fn().mockResolvedValue(undefined)
     const router = createMemoryRouter([{

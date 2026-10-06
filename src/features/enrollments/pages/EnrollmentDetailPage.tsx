@@ -11,9 +11,13 @@ import { getEnrollment, transferEnrollment } from '../api/enrollmentsService'
 import { EndEnrollmentAction } from '../components/EndEnrollmentAction'
 import { EnrollmentFeesSection } from '../../fees/components/EnrollmentFeesSection'
 import { EnrollmentGradesSection } from '../../grades/components/EnrollmentGradesSection'
+import { ContextDataWorkspace } from '../../../components/contextual/ContextDataWorkspace'
+import { completedContextOperation } from '../../../components/contextual/contextDataState'
+import { useSearchParams } from 'react-router-dom'
 
 export function EnrollmentDetailPage() {
   const { studentId = '', enrollmentId = '' } = useParams()
+  const [params] = useSearchParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [newClassId, setNewClassId] = useState('')
@@ -23,12 +27,12 @@ export function EnrollmentDetailPage() {
     queryKey: ['enrollment', enrollmentId],
     queryFn: () => getEnrollment(enrollmentId),
   })
-  const classes = useQuery({ queryKey: ['classes', 'active'], queryFn: () => listClasses('active') })
+  const classes = useQuery({ queryKey: ['classes', 'active'], queryFn: () => listClasses('active'), enabled: params.get('panel') === 'management' })
   const transfer = useMutation({
     mutationFn: () => transferEnrollment(enrollmentId, newClassId, transferDate),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['enrollments'] })
-      navigate(`/students/${studentId}`, { replace: true })
+      navigate(`/students/${studentId}`, { replace: true, state: completedContextOperation() })
     },
     onError: (caughtError) => setError(getErrorMessage(caughtError, '转班失败，请重试。')),
   })
@@ -68,7 +72,10 @@ export function EnrollmentDetailPage() {
         <div><dt>状态</dt><dd>{data.status === 'active' ? '在读' : '已结束'}</dd></div>
       </dl>
 
-      {data.status === 'active' && (
+      <ContextDataWorkspace label="报读相关资料" defaultPanel="fees" sections={[
+      { id: 'fees', label: '学费', render: active => <EnrollmentFeesSection enrollment={data} active={active} /> },
+      { id: 'grades', label: '成绩', render: active => <EnrollmentGradesSection enrollment={data} active={active} /> },
+      { id: 'management', label: '报读管理', render: () => data.status === 'active' ? (
         <section className="content-section action-stack enrollment-actions-section">
           <h2>报读操作</h2>
           <div className="action-card danger-action-card">
@@ -77,7 +84,7 @@ export function EnrollmentDetailPage() {
             <EndEnrollmentAction
               enrollmentId={data.id}
               studentName={data.student?.name ?? '这位学生'}
-              onSuccess={() => navigate(`/students/${studentId}`)}
+              onSuccess={() => navigate(`/students/${studentId}`, { state: completedContextOperation() })}
             />
           </div>
           <details className="action-card transfer-action-card">
@@ -107,22 +114,8 @@ export function EnrollmentDetailPage() {
             )}
           </details>
         </section>
-      )}
-
-      <section className="content-section">
-        <h2>这段报读的资料</h2>
-        <div className="future-links" aria-label="报读资料">
-          <span>出席</span>
-          <button type="button" onClick={() => document.getElementById('enrollment-fees')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
-            学费
-          </button>
-          <button type="button" onClick={() => document.getElementById('enrollment-grades')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
-            成绩
-          </button>
-        </div>
-      </section>
-      <EnrollmentFeesSection enrollment={data} />
-      <EnrollmentGradesSection enrollment={data} />
+      ) : <EmptyBlock message="这段报读已结束，历史资料保留。" /> },
+      ]} />
     </section>
   )
 }

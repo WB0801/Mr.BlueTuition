@@ -5,14 +5,16 @@ import { getErrorMessage } from '../../../utils/errors'
 import { listSchoolExamHistoricalCandidates, saveSchoolExamScores } from '../api/gradesService'
 import { validateScoreValue } from '../gradeEntry'
 import { preparePwaFormSave, usePwaUpdateGuard } from '../../settings/pwa/updateProtection'
+import { useContextDataBusy } from '../../../components/contextual/contextDataState'
 
 interface HistoricalSchoolScorePanelProps {
   examId: string
   maxScore: number
   existingScores: Record<string, number>
+  active?: boolean
 }
 
-export function HistoricalSchoolScorePanel({ examId, maxScore, existingScores }: HistoricalSchoolScorePanelProps) {
+export function HistoricalSchoolScorePanel({ examId, maxScore, existingScores, active = true }: HistoricalSchoolScorePanelProps) {
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [selectedStudentId, setSelectedStudentId] = useState('')
@@ -21,10 +23,11 @@ export function HistoricalSchoolScorePanel({ examId, maxScore, existingScores }:
   const [success, setSuccess] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   usePwaUpdateGuard(isSaving, '成绩正在保存，请完成后再更新。')
+  useContextDataBusy(isSaving)
   const candidates = useQuery({
     queryKey: ['school-exam', examId, 'historical-candidates', search.trim()],
     queryFn: () => listSchoolExamHistoricalCandidates(examId, search),
-    enabled: search.trim().length > 0,
+    enabled: active && search.trim().length > 0,
   })
   const selectedStudent = candidates.data?.find((student) => student.student_id === selectedStudentId)
 
@@ -57,8 +60,8 @@ export function HistoricalSchoolScorePanel({ examId, maxScore, existingScores }:
   }
 
   return (
-    <details className="action-panel historical-score-panel">
-      <summary>补录插班前成绩</summary>
+    <section className="historical-score-panel">
+      <h2>补录插班前成绩</h2>
       <p className="muted compact-copy">搜索考试当天尚未加入、但曾经报读这个科目的学生。</p>
       <label className="search-field historical-score-search">
         <span className="sr-only">搜索学生姓名</span>
@@ -118,6 +121,6 @@ export function HistoricalSchoolScorePanel({ examId, maxScore, existingScores }:
       )}
       {error && <p className="form-error" role="alert">{error}</p>}
       {success && <p className="form-success" role="status">{success}</p>}
-    </details>
+    </section>
   )
 }

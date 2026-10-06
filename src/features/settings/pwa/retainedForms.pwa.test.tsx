@@ -103,8 +103,7 @@ it('schedule preview itself blocks updating even before the mutation starts', as
   expect(updateProtection.reason()).toBe('') // No edit was made; a failed check must release only the busy guard.
 })
 it('retained student form in temporary registration acknowledges success without clearing a later edit', async () => {
-  const client = setup(<TemporaryClassRegistrationPanel classId="temporary-a" enrollments={[]} />)
-  fireEvent.click(screen.getByText('新增学生并报名'))
+  const client = setup(<TemporaryClassRegistrationPanel classId="temporary-a" enrollments={[]} mode="create" />)
   const field = screen.getByLabelText('姓名'), saving = deferred()
   fireEvent.change(field, { target: { value: '隔离学生甲' } }); vi.mocked(createStudentForTemporaryClass).mockReturnValueOnce(saving.promise)
   fireEvent.submit(field.closest('form')!); await waitFor(() => expect(client.isMutating()).toBe(1))
@@ -117,8 +116,7 @@ it('retained student form in temporary registration acknowledges success without
   expect(field).toHaveValue('未保存学生丙'); expect(updateProtection.reason()).toContain('未保存')
 })
 it('retained student registration keeps failed input protected', async () => {
-  const client = setup(<TemporaryClassRegistrationPanel classId="temporary-a" enrollments={[]} />)
-  fireEvent.click(screen.getByText('新增学生并报名'))
+  const client = setup(<TemporaryClassRegistrationPanel classId="temporary-a" enrollments={[]} mode="create" />)
   const field = screen.getByLabelText('姓名'), saving = deferred()
   fireEvent.change(field, { target: { value: '隔离失败学生' } })
   vi.mocked(createStudentForTemporaryClass).mockReturnValueOnce(saving.promise)

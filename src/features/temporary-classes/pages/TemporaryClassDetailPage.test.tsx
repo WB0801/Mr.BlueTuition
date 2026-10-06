@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
 import { TemporaryClassDetailPage } from './TemporaryClassDetailPage'
 import {
   getTemporaryClass,
@@ -25,7 +26,7 @@ vi.mock('../components/TemporaryPaymentRow', () => ({
 }))
 
 describe('TemporaryClassDetailPage', () => {
-  it('shows core information and roster before attendance, with management actions later', async () => {
+  it('defaults to student payments and exposes attendance, registration and management above the content', async () => {
     vi.mocked(getTemporaryClass).mockResolvedValue({
       id: 'temp-1', owner_id: 'owner', subject_id: 'subject-1', name: '考前冲刺班',
       start_at: '2026-09-10T06:00:00Z', end_at: '2026-09-10T08:00:00Z', fee_amount: 50,
@@ -52,9 +53,17 @@ describe('TemporaryClassDetailPage', () => {
     expect(await screen.findByRole('heading', { name: '考前冲刺班' })).toBeInTheDocument()
     expect(screen.getByText('1 / 2 已缴')).toBeInTheDocument()
     const rosterHeading = screen.getByRole('heading', { name: '学生名单 2 人' })
+    expect(rosterHeading).toBeVisible()
+    expect(getSessionRoster).not.toHaveBeenCalled()
+    expect(screen.queryByRole('link', { name: '编辑临时班' })).not.toBeInTheDocument()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: '点名' }))
     const attendanceHeading = screen.getByRole('heading', { name: '点名' })
-    expect(rosterHeading.compareDocumentPosition(attendanceHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(attendanceHeading).toBeVisible()
+    expect(rosterHeading).not.toBeVisible()
+    await user.click(screen.getByRole('button', { name: '加入学生' }))
     expect(screen.getByText('加入学生面板')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '临时班管理' }))
     expect(screen.getByRole('link', { name: '编辑临时班' })).toHaveAttribute('href', '/temporary-classes/temp-1/edit')
     expect(screen.getByRole('button', { name: '结束此班' })).toHaveClass('button-danger')
   })

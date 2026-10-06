@@ -6,6 +6,7 @@ import { getErrorMessage } from '../../../utils/errors'
 import type { ScorePayload } from '../api/gradesService'
 import { calculateGradeStats, parseScoreColumnPaste, scoreValuesEqual, validateScoreValue } from '../gradeEntry'
 import { usePwaUpdateGuard } from '../../settings/pwa/updateProtection'
+import { useContextDataBusy, useContextDataUnsaved } from '../../../components/contextual/contextDataState'
 
 interface GradeEntryTableProps {
   rows: GradeEntryRow[]
@@ -44,20 +45,15 @@ export function GradeEntryTable({
   const inputRefs = useRef<Array<HTMLInputElement | null>>([])
   const isDirty = !scoreValuesEqual(values, savedValues)
   usePwaUpdateGuard(isDirty || isSaving || !!pastePlan, '请先保存或取消成绩编辑，再更新。')
-  const blocker = useBlocker(useCallback(() => isDirty, [isDirty]))
+  useContextDataBusy(isSaving)
+  const inWorkspace = useContextDataUnsaved(isDirty || !!pastePlan ? leaveMessage : '')
   const stats = calculateGradeStats(rows.map((row) => values[row.student_id] ?? ''), rows.length)
 
   useBeforeUnload(useCallback((event) => {
-    if (!isDirty) return
+    if (!isDirty && !isSaving && !pastePlan) return
     event.preventDefault()
     event.returnValue = leaveMessage
-  }, [isDirty]))
-
-  useEffect(() => {
-    if (blocker.state !== 'blocked') return
-    if (window.confirm(leaveMessage)) blocker.proceed()
-    else blocker.reset()
-  }, [blocker])
+  }, [isDirty, isSaving, pastePlan]))
 
   function focusRow(index: number) {
     const safeIndex = Math.max(0, Math.min(index, rows.length - 1))
@@ -144,6 +140,7 @@ export function GradeEntryTable({
 
   return (
     <section className="grade-entry-section">
+      {!inWorkspace && <GradeNavigationGuard dirty={isDirty || !!pastePlan} saving={isSaving} />}
       <div className="grade-stats" aria-label="成绩统计">
         <span>已录 <strong>{stats.recorded} / {stats.total}</strong></span>
         <span>平均 <strong>{formatStat(stats.average)}</strong></span>
@@ -235,6 +232,16 @@ export function GradeEntryTable({
       </div>
     </section>
   )
+}
+
+function GradeNavigationGuard({ dirty, saving }: { dirty: boolean; saving: boolean }) {
+  const blocker = useBlocker(() => dirty || saving)
+  useEffect(() => {
+    if (blocker.state !== 'blocked') return
+    if (!saving && window.confirm(leaveMessage)) blocker.proceed()
+    else blocker.reset()
+  }, [blocker, saving])
+  return null
 }
 
 function formatStat(value: number | null) {

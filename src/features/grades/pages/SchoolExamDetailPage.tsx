@@ -15,6 +15,8 @@ import { calculateGradeStats } from '../gradeEntry'
 import { HistoricalSchoolScorePanel } from '../components/HistoricalSchoolScorePanel'
 import { GradeFlowSteps } from '../components/GradeFlowSteps'
 import { PermanentDeleteZone } from '../../deletion/components/PermanentDeleteZone'
+import { ContextDataWorkspace } from '../../../components/contextual/ContextDataWorkspace'
+import { completedContextOperation } from '../../../components/contextual/contextDataState'
 
 export function SchoolExamDetailPage() {
   const { examId = '' } = useParams()
@@ -53,7 +55,8 @@ export function SchoolExamDetailPage() {
         <span>最低 <strong>{formatStat(stats.lowest)}</strong></span>
       </div>
 
-      <section className="content-section">
+      <ContextDataWorkspace label="学校考试功能" defaultPanel="entry" sections={[
+      { id: 'entry', label: '按班录入', render: () => <section className="content-section">
         <h2>按班录入</h2>
         {subjectClasses.length === 0 && <EmptyBlock message="这个科目目前没有常态班。" />}
         <div className="record-list">
@@ -71,24 +74,24 @@ export function SchoolExamDetailPage() {
             )
           })}
         </div>
-      </section>
-
-      <HistoricalSchoolScorePanel
+      </section> },
+      { id: 'historical', label: '补录插班前成绩', render: active => <HistoricalSchoolScorePanel
         examId={examId}
         maxScore={exam.data.max_score}
         existingScores={Object.fromEntries((scores.data ?? []).map((score) => [score.student_id, score.score]))}
-      />
-
-      <PermanentDeleteZone
+        active={active}
+      /> },
+      { id: 'management', label: '考试管理', render: () => <PermanentDeleteZone
         entityType="school_exam"
         entityId={examId}
         entityName={exam.data.name}
         entityLabel="考试"
         onDeleted={async () => {
           await queryClient.invalidateQueries({ queryKey: ['school-exams'] })
-          navigate('/grades/school', { replace: true, state: { successMessage: `已永久删除考试「${exam.data.name}」及其成绩。` } })
+          navigate('/grades/school', { replace: true, state: completedContextOperation({ successMessage: `已永久删除考试「${exam.data.name}」及其成绩。` }) })
         }}
-      />
+      /> },
+      ]} />
     </section>
   )
 }

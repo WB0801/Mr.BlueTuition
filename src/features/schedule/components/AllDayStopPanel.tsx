@@ -3,17 +3,26 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 import { getErrorMessage } from '../../../utils/errors'
 import { formatDate, formatTime, toMalaysiaTimeInput, todayInMalaysia } from '../../../utils/format'
-import { listScheduledSessionsForDate, stopSessionsForDate } from '../api/scheduleService'
+import { ensureSessionsForDate, listScheduledSessionsForDate, stopSessionsForDate } from '../api/scheduleService'
 import { getAllDayStopConfirmationMessage } from '../scheduleActions'
 
-export function AllDayStopPanel() {
+export function AllDayStopPanel({ active = true }: { active?: boolean }) {
   const queryClient = useQueryClient()
   const [date, setDate] = useState(todayInMalaysia)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const generation = useQuery({
+    queryKey: ['context-session-generation', 'stop-preview', date],
+    queryFn: async () => { await ensureSessionsForDate(date); return true },
+    enabled: active,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+  })
   const sessions = useQuery({
     queryKey: ['sessions', 'stop-preview', date],
-    queryFn: () => listScheduledSessionsForDate(date),
+    queryFn: () => listScheduledSessionsForDate(date, false),
+    enabled: active && generation.isSuccess && !generation.isFetching,
+    staleTime: 0,
   })
   const stopMutation = useMutation({
     mutationFn: () => stopSessionsForDate(date),
@@ -28,7 +37,7 @@ export function AllDayStopPanel() {
   async function handleStopAll() {
     const stoppableCount = sessions.data?.filter((session) => !session.has_valid_attendance).length ?? 0
     const protectedCount = sessions.data?.filter((session) => session.has_valid_attendance).length ?? 0
-    if (stoppableCount === 0) return
+    if (!active || !generation.isSuccess || generation.isFetching || sessions.isFetching || sessions.isError || stoppableCount === 0) return
     if (!window.confirm(getAllDayStopConfirmationMessage(formatDate(date), stoppableCount, protectedCount))) return
 
     setError('')
@@ -51,8 +60,10 @@ export function AllDayStopPanel() {
         />
       </label>
 
-      {sessions.isLoading && <LoadingBlock message="正在载入当天课程…" />}
+      {(generation.isLoading || sessions.isFetching) && <LoadingBlock message="正在载入当天课程…" />}
+      {generation.isError && <><ErrorBlock message="当天课程准备失败，请重试。" /><button type="button" className="button button-secondary" onClick={() => void generation.refetch()}>重试</button></>}
       {sessions.isError && <ErrorBlock message="当天课程载入失败，请重试。" />}
+      {sessions.isError && <button type="button" className="button button-secondary" onClick={() => void sessions.refetch()}>重试</button>}
       {!sessions.isLoading && !sessions.isError && sessions.data?.length === 0 && (
         <EmptyBlock message="当天没有需要停课的课程。" />
       )}
@@ -74,7 +85,7 @@ export function AllDayStopPanel() {
       <button
         className="button button-danger"
         type="button"
-        disabled={stopMutation.isPending || sessions.isLoading || !sessions.data?.some((session) => !session.has_valid_attendance)}
+        disabled={!active || stopMutation.isPending || !generation.isSuccess || generation.isFetching || sessions.isFetching || sessions.isError || !sessions.data?.some((session) => !session.has_valid_attendance)}
         onClick={handleStopAll}
       >
         {stopMutation.isPending

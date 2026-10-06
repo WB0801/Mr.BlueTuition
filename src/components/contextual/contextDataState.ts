@@ -2,7 +2,19 @@ import { createContext, useContext, useEffect, useId, useLayoutEffect, useRef } 
 import { useLocation, useSearchParams } from 'react-router-dom'
 import { usePwaUpdateGuard } from '../../features/settings/pwa/updateProtection'
 
-export const ContextDataState = createContext<{ locked: boolean; setBusy: (id: string, busy: boolean) => void } | null>(null)
+export const ContextDataState = createContext<{ locked: boolean; setBusy: (id: string, busy: boolean) => void; setUnsaved?: (id: string, message: string) => void } | null>(null)
+
+// Preserve hidden drafts, but let the outer workspace own the single router blocker.
+export function useContextDataUnsaved(message: string) {
+  const context = useContext(ContextDataState)
+  const id = useId()
+  const setUnsaved = context?.setUnsaved
+  useEffect(() => {
+    setUnsaved?.(id, message)
+    return () => setUnsaved?.(id, '')
+  }, [id, message, setUnsaved])
+  return Boolean(context)
+}
 
 // A one-use, in-memory permit for navigation from an already successful action.
 // It is not serialized into the URL or accepted from restored browser state.
@@ -30,7 +42,7 @@ export function useContextDataBusy(busy: boolean) {
 
 export function useContextDataLocked() { return useContext(ContextDataState)?.locked ?? false }
 
-export function useRecordParams(prefix: string) {
+export function useRecordParams(prefix: string, regionId = prefix) {
   const [params, setParams] = useSearchParams()
   const location = useLocation()
   const locked = useContextDataLocked()
@@ -44,7 +56,7 @@ export function useRecordParams(prefix: string) {
     previousDetail.current = detail
     const frame = requestAnimationFrame(() => {
       if (saved !== null) window.scrollTo({ top: Number(saved) || 0, behavior: 'instant' })
-      const panel = document.getElementById(`data-panel-${prefix}`)
+      const panel = document.getElementById(`data-panel-${regionId}`)
       if (!panel || panel.hidden || previous === detail) return
       const target = detail
         ? [...panel.querySelectorAll<HTMLButtonElement>('.context-back-link')].find(button => !button.closest('[hidden]'))
@@ -52,7 +64,7 @@ export function useRecordParams(prefix: string) {
       target?.focus({ preventScroll: true })
     })
     return () => cancelAnimationFrame(frame)
-  }, [scrollKey, detail, prefix])
+  }, [scrollKey, detail, regionId])
   const set = (key: string, value: string, push = false) => {
     if (locked) return
     if (key === 'record') sessionStorage.setItem(scrollKey, String(window.scrollY))

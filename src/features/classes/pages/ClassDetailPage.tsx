@@ -65,7 +65,12 @@ function ClassDetailView({ classId }: { classId: string }) {
         {enrollments.isLoading && <LoadingBlock />}{enrollments.isError && <ErrorBlock message="学生名单载入失败。" />}
         {enrollments.isSuccess && current.length === 0 && <EmptyBlock message="目前没有在读学生。" />}
         <div className="compact-data-list">{current.map(item => item.student && <ContextLink backLabel="班级" className="compact-data-row compact-data-link" to={`/students/${item.student.id}`} key={item.id}><StudentIdentity student={item.student} /><Icon className="record-chevron" name="chevron-right" size={20} /></ContextLink>)}</div>
-        {history.length > 0 && <details className="history-panel"><summary>历史报读（{history.length}）</summary><div className="compact-data-list">{history.map(item => item.student && <ContextLink backLabel="班级" className="compact-data-row compact-data-link" to={`/students/${item.student.id}/enrollments/${item.id}`} key={item.id}><span className="record-main"><StudentIdentity student={item.student} /><span className="record-meta">{formatDate(item.join_date)} – {formatDate(item.end_date)}</span></span><Icon className="record-chevron" name="chevron-right" size={20} /></ContextLink>)}</div></details>}
+      </> },
+      { id: 'history', label: '历史报读', render: () => <>
+        <h2>历史报读 <span className="section-count">{history.length}</span></h2>
+        {enrollments.isLoading && <LoadingBlock />}{enrollments.isError && <ErrorBlock message="历史报读载入失败。" />}
+        {enrollments.isSuccess && history.length === 0 && <EmptyBlock message="还没有历史报读。" />}
+        <div className="compact-data-list">{history.map(item => item.student && <ContextLink backLabel="班级" className="compact-data-row compact-data-link" to={`/students/${item.student.id}/enrollments/${item.id}`} key={item.id}><span className="record-main"><StudentIdentity student={item.student} /><span className="record-meta">{formatDate(item.join_date)} – {formatDate(item.end_date)}</span></span><Icon className="record-chevron" name="chevron-right" size={20} /></ContextLink>)}</div>
       </> },
       { id: 'courses', label: '课程', render: active => <ObjectCourseRecords scope={{ classId }} tuitionClass={data} prefix="courses" active={active} /> },
       { id: 'attendance', label: '点名', render: active => <ObjectCourseRecords scope={{ classId }} active={active} /> },

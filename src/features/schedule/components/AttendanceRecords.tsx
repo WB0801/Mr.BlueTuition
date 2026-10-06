@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react'
+import { Fragment } from 'react'
 import { useRecordParams } from '../../../components/contextual/contextDataState'
 import { useInfiniteQuery, useQueries, useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
@@ -9,6 +9,7 @@ import { listAttendanceHistoryPage, listAttendanceSessions, listStudentAttendanc
 import { formatDate, formatFeeMonth, toMalaysiaDateInput, todayInMalaysia } from '../../../utils/format'
 import { getStudent } from '../../students/api/studentsService'
 import { AllDayStopPanel } from './AllDayStopPanel'
+import { ContextDataWorkspace } from '../../../components/contextual/ContextDataWorkspace'
 import { SessionCard } from './SessionCard'
 import { useScopedSessionGeneration } from './useScopedSessionGeneration'
 
@@ -25,22 +26,34 @@ interface AttendanceRecordsProps {
   onSelect?: (sessionId: string) => void
 }
 export function AttendanceRecords({ scope, prefix = '', active = true, onSelect }: AttendanceRecordsProps) {
+  if (prefix) return <AttendanceRecordList scope={scope} prefix={prefix} active={active} onSelect={onSelect} />
+  return <AttendanceWorkspace scope={scope} active={active} onSelect={onSelect} />
+}
+function AttendanceWorkspace({ scope, active = true, onSelect }: AttendanceRecordsProps) {
+  const [params] = useSearchParams()
+  const studentId = scope?.studentId ?? params.get('studentId') ?? ''
+  const student = useQuery({ queryKey: ['student', studentId], queryFn: () => getStudent(studentId), enabled: Boolean(studentId) })
+  return <section><PageHeader title={studentId ? student.data?.name ?? '出席记录' : '点名'} /><ContextDataWorkspace label="点名功能" defaultPanel="records" sections={[
+    { id: 'records', label: '课程名单', render: selected => <AttendanceRecordList scope={scope} active={active && selected} onSelect={onSelect} hideHeader /> },
+    { id: 'management', label: '全日停课', render: selected => <><h2>全日停课</h2><AllDayStopPanel active={active && selected} /></> },
+  ]} /></section>
+}
+function AttendanceRecordList({ scope, prefix = '', active = true, onSelect, hideHeader = false }: AttendanceRecordsProps & { hideHeader?: boolean }) {
   const { get, set } = useRecordParams(prefix)
   const embedded = Boolean(prefix)
-  const generation = useScopedSessionGeneration(embedded && active)
-  const ready = active && (!embedded || (generation.isSuccess && !generation.isFetching))
+  const generation = useScopedSessionGeneration(active)
+  const ready = active && generation.isSuccess && !generation.isFetching
   const referenceDate = todayInMalaysia()
-  const [stopPreviewOpen, setStopPreviewOpen] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
   const requestedView = get('view', scope?.studentId ? 'history' : 'today')
   const classId = scope?.classId ?? searchParams.get('classId') ?? ''
   const studentId = scope?.studentId ?? searchParams.get('studentId') ?? ''
-  const student = useQuery({ queryKey: ['student', studentId], queryFn: () => getStudent(studentId), enabled: !embedded && Boolean(studentId) })
+  const student = useQuery({ queryKey: ['student', studentId], queryFn: () => getStudent(studentId), enabled: !embedded && !hideHeader && Boolean(studentId) })
   const view: AttendanceView = embedded && studentId ? 'history' : requestedView === 'week' || requestedView === 'history' ? requestedView : 'today'
   const selectView = (next: AttendanceView) => set('view', next === 'today' ? '' : next)
   const sessions = useQuery({
     queryKey: ['sessions', 'attendance', view, classId, referenceDate],
-    queryFn: () => embedded ? listAttendanceSessions(view, classId, false) : classId ? listAttendanceSessions(view, classId) : listAttendanceSessions(view),
+    queryFn: () => listAttendanceSessions(view, classId, false),
     enabled: ready && view !== 'history',
     staleTime: embedded ? Infinity : 0,
   })
@@ -54,8 +67,8 @@ export function AttendanceRecords({ scope, prefix = '', active = true, onSelect 
   const history = useInfiniteQuery({
     queryKey: ['sessions', 'attendance', 'paged-history', classId, studentId, referenceDate],
     queryFn: ({ pageParam }) => studentId
-      ? listStudentAttendanceHistoryPage(pageParam, studentScope.data!, referenceDate, classId, !embedded)
-      : listAttendanceHistoryPage(pageParam, classId, referenceDate, !embedded),
+      ? listStudentAttendanceHistoryPage(pageParam, studentScope.data!, referenceDate, classId, false)
+      : listAttendanceHistoryPage(pageParam, classId, referenceDate, false),
     initialPageParam: null as AttendanceHistoryCursor | null,
     getNextPageParam: (page) => page.nextCursor ?? undefined,
     enabled: ready && view === 'history' && (!studentId || (studentScope.isSuccess && !studentScope.isFetching)),
@@ -90,7 +103,7 @@ export function AttendanceRecords({ scope, prefix = '', active = true, onSelect 
 
   return (
     <section className="attendance-page">
-      {!embedded && <PageHeader title={studentId ? student.data?.name ?? '出席记录' : '点名'} />}
+      {!embedded && !hideHeader && <PageHeader title={studentId ? student.data?.name ?? '出席记录' : '点名'} />}
       {embedded && <h2>{studentId ? '出席与课程' : '点名'}</h2>}
       {!embedded && studentId && student.data && <h2 className="attendance-subtitle">出席记录</h2>}
       {!embedded && studentId && student.isLoading && <LoadingBlock message="正在读取学生姓名…" />}
@@ -110,8 +123,8 @@ export function AttendanceRecords({ scope, prefix = '', active = true, onSelect 
       </div>}
       {view === 'history' && <p className="field-hint attendance-range">{earliest && `已加载至：${formatDate(toMalaysiaDateInput(earliest))} · `}仅显示已加载记录</p>}
 
-      {generation.isLoading && embedded && <LoadingBlock />}
-      {generation.isError && embedded && <><ErrorBlock message="课程准备失败。" /><button type="button" className="button button-secondary" onClick={() => void generation.refetch()}>重试</button></>}
+      {generation.isLoading && <LoadingBlock />}
+      {generation.isError && <><ErrorBlock message="课程准备失败。" /><button type="button" className="button button-secondary" onClick={() => void generation.refetch()}>重试</button></>}
 
       {(activeQuery.isLoading || (view === 'history' && studentId && studentScope.isLoading)) && <LoadingBlock />}
       {view === 'history' && studentId && studentScope.isError && <><ErrorBlock message="学生报读及补课范围载入失败，无法确认课程，请重试。" /><button type="button" className="button button-secondary" onClick={() => void studentScope.refetch()}>重试</button></>}
@@ -148,10 +161,6 @@ export function AttendanceRecords({ scope, prefix = '', active = true, onSelect 
           })}
         </div>
       )}
-      {!embedded && <details className="action-panel all-day-stop-panel" onToggle={(event) => setStopPreviewOpen(event.currentTarget.open)}>
-        <summary>全日停课</summary>
-        {stopPreviewOpen && <AllDayStopPanel />}
-      </details>}
       {view === 'history' && history.data && <div className="history-load-more">
         {history.hasNextPage ? <button className="button button-secondary" type="button" disabled={history.isFetchingNextPage} onClick={() => void history.fetchNextPage()}>{history.isFetchingNextPage ? '正在读取更早课程…' : '继续查看更早课程'}</button> : <p className="field-hint">没有更早的课程</p>}
         {history.isFetchNextPageError && <p role="alert" className="form-error">更早课程读取失败，已加载资料保留，请重试。</p>}

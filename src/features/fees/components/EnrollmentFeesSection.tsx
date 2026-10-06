@@ -5,7 +5,7 @@ import { ensureMonthlyFees, listMonthlyFees } from '../api/feesService'
 import { MonthlyFeeCard } from './MonthlyFeeCard'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
 
-export function EnrollmentFeesSection({ enrollment }: { enrollment: EnrollmentDetails }) {
+export function EnrollmentFeesSection({ enrollment, active = true }: { enrollment: EnrollmentDetails; active?: boolean }) {
   const currentMonth = currentMonthInMalaysia()
   const firstMonth = `${enrollment.join_date.slice(0, 7)}-01`
   const finalEnrollmentMonth = enrollment.end_date ? `${enrollment.end_date.slice(0, 7)}-01` : currentMonth
@@ -14,12 +14,13 @@ export function EnrollmentFeesSection({ enrollment }: { enrollment: EnrollmentDe
   const ensure = useQuery({
     queryKey: ['monthly-fees', 'ensure', enrollment.id, firstMonth, lastMonth],
     queryFn: () => ensureMonthlyFees(firstMonth, lastMonth),
-    enabled: shouldEnsure,
+    enabled: active && shouldEnsure,
+    staleTime: Infinity,
   })
   const fees = useQuery({
     queryKey: ['monthly-fees', 'enrollment', enrollment.id],
     queryFn: () => listMonthlyFees({ enrollmentId: enrollment.id }),
-    enabled: !shouldEnsure || ensure.isSuccess,
+    enabled: active && (!shouldEnsure || ensure.isSuccess),
   })
   const feesByYear = (fees.data ?? []).reduce<Record<string, typeof fees.data>>((groups, fee) => {
     const year = fee.fee_month.slice(0, 4)
