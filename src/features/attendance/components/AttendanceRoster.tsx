@@ -1,4 +1,5 @@
 import { ContextLink } from '../../../components/navigation/ContextLink'
+import { SignaturePreviewButton } from './SignaturePreviewButton'
 import type { ClassSessionWithClass, SessionRosterEntry } from '../../../types/domain'
 import { formatDateTime, toMalaysiaDateInput, todayInMalaysia } from '../../../utils/format'
 
@@ -38,13 +39,6 @@ export function AttendanceRoster({ session, entries }: AttendanceRosterProps) {
                 {participationLabels[entry.participation_type] && (
                   <span className="session-type-label">{participationLabels[entry.participation_type]}</span>
                 )}
-                {hasAttendance ? (
-                  <span className="attendance-label attendance-present">
-                    {entry.signing_type === 'backfill' ? '已补签' : '已签到'}
-                  </span>
-                ) : (
-                  <span className="attendance-label attendance-absent">{isFuture ? '待点名' : '未签到'}</span>
-                )}
               </div>
               {!hasAttendance && entry.made_up_at && (
                 <small className="makeup-complete-note">已于 {formatDateTime(entry.made_up_at)} 补课</small>
@@ -56,13 +50,16 @@ export function AttendanceRoster({ session, entries }: AttendanceRosterProps) {
                 <small className="offline-signature-note">离线签名 · 同步于 {formatDateTime(entry.synced_at)}</small>
               )}
             </div>
+            <div className="attendance-student-actions">
+            <span className={`attendance-label ${hasAttendance ? 'attendance-present' : isFuture ? 'attendance-pending' : 'attendance-absent'}`}>{hasAttendance ? entry.signing_type === 'backfill' ? '已补签' : '已签到' : isFuture ? '待点名' : '未签到'}</span>
+            <SignaturePreviewButton session={session} entry={entry} />
             {hasAttendance ? (
               <ContextLink
                 backLabel="课程"
                 className="button button-secondary button-small"
                 to={`/attendance/session/${session.id}/record/${entry.attendance_record_id}`}
               >
-                查看签名
+                签到记录
               </ContextLink>
             ) : isFuture ? (
               <span className="future-attendance-note">尚未到课程日期</span>
@@ -75,6 +72,7 @@ export function AttendanceRoster({ session, entries }: AttendanceRosterProps) {
                 {sessionDate < todayInMalaysia() ? '补签' : '签名签到'}
               </ContextLink>
             )}
+            </div>
           </article>
         )
       })}

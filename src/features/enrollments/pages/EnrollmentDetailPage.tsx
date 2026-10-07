@@ -75,7 +75,7 @@ export function EnrollmentDetailPage() {
       <ContextDataWorkspace label="报读相关资料" defaultPanel="fees" sections={[
       { id: 'fees', label: '学费', render: active => <EnrollmentFeesSection enrollment={data} active={active} /> },
       { id: 'grades', label: '成绩', render: active => <EnrollmentGradesSection enrollment={data} active={active} /> },
-      { id: 'management', label: '报读管理', render: () => data.status === 'active' ? (
+      { id: 'management', label: '报读管理', kind: 'action', render: () => data.status === 'active' ? (
         <section className="content-section action-stack enrollment-actions-section">
           <h2>报读操作</h2>
           <div className="action-card danger-action-card">

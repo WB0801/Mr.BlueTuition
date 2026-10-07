@@ -35,7 +35,7 @@ function AttendanceWorkspace({ scope, active = true, onSelect }: AttendanceRecor
   const student = useQuery({ queryKey: ['student', studentId], queryFn: () => getStudent(studentId), enabled: Boolean(studentId) })
   return <section><PageHeader title={studentId ? student.data?.name ?? '出席记录' : '点名'} /><ContextDataWorkspace label="点名功能" defaultPanel="records" sections={[
     { id: 'records', label: '课程名单', render: selected => <AttendanceRecordList scope={scope} active={active && selected} onSelect={onSelect} hideHeader /> },
-    { id: 'management', label: '全日停课', render: selected => <><h2>全日停课</h2><AllDayStopPanel active={active && selected} /></> },
+    { id: 'management', kind: 'action' as const, label: '全日停课', render: selected => <><h2>全日停课</h2><AllDayStopPanel active={active && selected} /></> },
   ]} /></section>
 }
 function AttendanceRecordList({ scope, prefix = '', active = true, onSelect, hideHeader = false }: AttendanceRecordsProps & { hideHeader?: boolean }) {

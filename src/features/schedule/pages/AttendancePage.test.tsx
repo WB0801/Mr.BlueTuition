@@ -141,7 +141,12 @@ it('shows the scoped student attendance instead of the whole-course count on pas
     made_up_session_id: id === 'session-madeup' ? 'session-makeup' : null,
   }] as SessionRosterEntry[])
   renderPage('/attendance?studentId=student-a&view=history')
-  const card = async (name: string) => within(await screen.findByRole('link', { name: new RegExp('班级-' + name) }))
+  const card = (name: string) => waitFor(() => {
+    const link = screen.getByRole('link', { name: new RegExp('班级-' + name) })
+    const row = within(link.closest('article') ?? link)
+    expect(row.queryByText('正在核对出席…')).not.toBeInTheDocument()
+    return row
+  })
   expect(await (await card('signed')).findByText('已签到')).toBeInTheDocument()
   expect(await (await card('backfill')).findByText('已补签')).toBeInTheDocument()
   expect(await (await card('absent')).findByText('缺席')).toBeInTheDocument()

@@ -69,7 +69,8 @@ describe('AttendanceRoster', () => {
     expect(screen.getByText('跨班补课')).toBeInTheDocument()
     expect(screen.getByText('已补签')).toBeInTheDocument()
     expect(screen.getByText(/离线签名/)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: '查看签名' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '查看签名：陈小明' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '签到记录' })).toHaveAttribute('href', '/attendance/session/session-1/record/attendance-1')
   })
 
   it('does not expose attendance actions for a stopped Session', () => {

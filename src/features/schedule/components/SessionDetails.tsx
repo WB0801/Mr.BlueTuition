@@ -130,8 +130,8 @@ export function SessionDetails({ sessionId, scope, prefix = '', active = true }:
           ? <EmptyBlock message={rosterFilter === 'signed' ? '还没有学生签到。' : '所有学生均已签到。'} />
           : <AttendanceRoster session={data} entries={visibleRoster} />)}
       </section> },
-      ...(data.status === 'scheduled' && data.session_type !== 'temporary' ? [{ id: 'guests', label: '添加跨班补课学生', render: (selected: boolean) => <><h2>添加跨班补课学生</h2><CrossClassGuestPanel sessionId={data.id} active={active && selected} /></> }] : []),
-      { id: 'management', label: '课程管理与历史', render: () => <section className="management-panel">
+      ...(data.status === 'scheduled' && data.session_type !== 'temporary' ? [{ id: 'guests', kind: 'action' as const, label: '添加跨班补课学生', render: (selected: boolean) => <><h2>添加跨班补课学生</h2><CrossClassGuestPanel sessionId={data.id} active={active && selected} /></> }] : []),
+      { id: 'management', kind: 'action' as const, label: '课程管理与历史', render: () => <section className="management-panel">
         <h2>课程管理与历史</h2>
         {changes.isLoading && <LoadingBlock />}
         {changes.isError && <ErrorBlock message="改期历史载入失败。" />}

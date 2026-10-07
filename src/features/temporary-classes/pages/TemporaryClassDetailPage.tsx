@@ -95,11 +95,11 @@ function TemporaryClassDetailView({ temporaryClassId }: { temporaryClassId: stri
           {paymentId && !enrollments.data?.some((enrollment) => enrollment.payment?.id === paymentId) && <EmptyBlock message="这笔缴费记录已不存在或不属于此临时班。" />}
         </div>
       </section> },
-      { id: 'join', label: '加入学生', render: active => isActive ? <TemporaryClassRegistrationPanel classId={data.id} enrollments={enrollments.data ?? []} active={active} /> : <EmptyBlock message="此临时班已结束，不能加入学生。" /> },
-      { id: 'create', label: '新增学生并报名', render: active => isActive ? <TemporaryClassRegistrationPanel classId={data.id} enrollments={enrollments.data ?? []} mode="create" active={active} /> : <EmptyBlock message="此临时班已结束，不能新增报名。" /> },
+      { id: 'join', kind: 'action' as const, label: '加入学生', render: active => isActive ? <TemporaryClassRegistrationPanel classId={data.id} enrollments={enrollments.data ?? []} active={active} /> : <EmptyBlock message="此临时班已结束，不能加入学生。" /> },
+      { id: 'create', kind: 'action' as const, label: '新增学生并报名', render: active => isActive ? <TemporaryClassRegistrationPanel classId={data.id} enrollments={enrollments.data ?? []} mode="create" active={active} /> : <EmptyBlock message="此临时班已结束，不能新增报名。" /> },
       { id: 'attendance', label: '点名', render: active => <TemporaryAttendanceSummary session={session.data!} enrollmentCount={enrollmentCount} active={active} /> },
       { id: 'receipts', label: '收据', render: () => <ContextLink backLabel="临时班" className="button button-secondary" to="/fees/receipts">收据处理</ContextLink> },
-      { id: 'management', label: '临时班管理', render: () => <section className="temporary-management-panel">
+      { id: 'management', kind: 'action' as const, label: '临时班管理', render: () => <section className="temporary-management-panel">
         <h2>临时班管理</h2>
         {isActive && <ContextLink backLabel="临时班" className="button button-secondary" to={`/temporary-classes/${data.id}/edit`}>编辑临时班</ContextLink>}
         {isActive && (

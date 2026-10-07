@@ -3,7 +3,7 @@ import { useIsMutating } from '@tanstack/react-query'
 import { UNSAFE_DataRouterContext, useBlocker, useLocation, useSearchParams } from 'react-router-dom'
 import { consumeCompletedContextOperation, ContextDataState, useContextDataBusy, useContextDataUnsaved } from './contextDataState'
 
-interface DataSection { id: string; label: string; render: (active: boolean) => ReactNode }
+interface DataSection { id: string; label: string; kind?: 'action'; render: (active: boolean) => ReactNode }
 
 export function ContextDataWorkspace({ label, defaultPanel, sections, panelParam = 'panel' }: { label: string; defaultPanel: string; sections: DataSection[]; panelParam?: string }) {
   const [params, setParams] = useSearchParams()
@@ -49,7 +49,12 @@ export function ContextDataWorkspace({ label, defaultPanel, sections, panelParam
       if (locked && (event.target as HTMLElement).closest('a, summary')) { event.preventDefault(); event.stopPropagation() }
     }}>
       <nav className="context-data-tabs" aria-label={label}>
-        {sections.map(section => <button type="button" key={section.id} aria-pressed={panel === section.id} aria-controls={`data-panel-${panelParam === 'panel' ? '' : `${panelParam}-`}${section.id}`} disabled={locked} onClick={() => select(section.id)}>{section.label}</button>)}
+        {(['action', 'view'] as const).map(kind => {
+          const entries = sections.filter(section => kind === 'action' ? section.kind === 'action' : !section.kind)
+          return entries.length > 0 && <div className={`context-data-${kind === 'action' ? 'actions' : 'views'}`} key={kind}>
+            {entries.map(section => <button type="button" key={section.id} aria-pressed={panel === section.id} aria-controls={`data-panel-${panelParam === 'panel' ? '' : `${panelParam}-`}${section.id}`} disabled={locked} onClick={() => select(section.id)}>{section.label}</button>)}
+          </div>
+        })}
       </nav>
       {locked && <p className="field-hint" role="status">请完成当前操作后再切换。</p>}
       <div ref={content} className="context-data-content">

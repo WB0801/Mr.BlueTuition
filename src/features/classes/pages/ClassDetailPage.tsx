@@ -76,8 +76,8 @@ function ClassDetailView({ classId }: { classId: string }) {
       { id: 'attendance', label: '点名', render: active => <ObjectCourseRecords scope={{ classId }} active={active} /> },
       { id: 'fees', label: '学费', render: active => <FeeRecords scope={{ classId }} active={active} /> },
       { id: 'grades', label: '小测与成绩', render: active => <ClassQuizRecords classId={classId} active={active} /> },
-      { id: 'join', label: '加入学生', render: () => <><h2>加入学生</h2>{data.status === 'active' ? <AddStudentToClass classId={classId} enrolledStudentIds={current.map(item => item.student_id)} /> : <EmptyBlock message="班级已结束，不能加入学生。" />}</> },
-      { id: 'management', label: '班级管理', render: () => <>
+      { id: 'join', kind: 'action' as const, label: '加入学生', render: () => <><h2>加入学生</h2>{data.status === 'active' ? <AddStudentToClass classId={classId} enrolledStudentIds={current.map(item => item.student_id)} /> : <EmptyBlock message="班级已结束，不能加入学生。" />}</> },
+      { id: 'management', kind: 'action' as const, label: '班级管理', render: () => <>
         <h2>班级管理</h2><p className="record-meta">开班日期：{formatDate(data.start_date)}</p>
         <div className="management-links"><ContextLink backLabel="班级" className="button button-secondary" to={`/classes/${classId}/edit`}>编辑班级资料</ContextLink></div>
         <ClassFixedScheduleSection tuitionClass={data} /><ClassScheduleHistory tuitionClass={data} />

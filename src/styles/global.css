@@ -7,8 +7,8 @@
 }
 
 * { box-sizing: border-box; }
-html { min-width: 320px; background: var(--color-bg); }
-body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--color-bg); line-height: var(--line-height-body); }
+html { min-width: 0; background: var(--color-bg); }
+body { margin: 0; min-width: 0; min-height: 100vh; background: var(--color-bg); line-height: var(--line-height-body); }
 button, input, select, textarea { font: inherit; }
 fieldset { min-width: 0; }
 button, a { -webkit-tap-highlight-color: transparent; }
@@ -897,7 +897,7 @@ a.record-card:hover { border-color: color-mix(in srgb, var(--color-navy) 34%, va
   font-size: 0.76rem;
   font-weight: 700;
 }
-.fee-status-unpaid { color: var(--color-danger); background: var(--color-danger-bg); }
+.fee-status-unpaid { color: var(--color-warning); background: var(--color-warning-bg); }
 .fee-status-paid { color: var(--color-success); background: var(--color-success-bg); }
 .fee-status-waived { color: #596273; background: var(--color-surface-soft); }
 .fee-actions { max-width: 250px; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
@@ -1869,3 +1869,85 @@ button.session-card { width: 100%; color: inherit; font: inherit; text-align: le
   .fee-reminder-actions > .button { flex: 1 1 160px; }
 }
 @media (prefers-reduced-motion: reduce) { .fee-reminder-dialog[open] { animation: none; } }
+
+/* Shared signature-design refinements; keep existing brand, data and motion. */
+:root { --font-size-xs: .875rem; --font-size-sm: .9375rem; --font-size-card-title: 1.0625rem; --font-size-section-title: 1.25rem; }
+.page-container { padding-top: 24px; }
+.page-header { margin-bottom: 24px; align-items: center; }
+.page-actions, .form-actions, .inline-actions { flex-wrap: wrap; }
+.button, .ui-input, .field input, .field select { min-height: 48px; }
+.button { font-size: 1.0625rem; }
+.button-small, .button-text, .button-ghost { min-height: 44px; font-size: var(--font-size-sm); }
+.segmented-control button, .fees-nav a, .related-nav a, .reward-tabs button, .grade-mobile-nav button,
+.compact-button, .select-all-control, .checkbox-row, .choice-group label, .score-input-wrap input { min-height: 44px; }
+.fee-more-menu > summary { min-height: 44px; width: 44px; }
+.header-search .ui-search-input .ui-input, .grade-search-filter .ui-input { min-height: 48px; }
+.field, .record-meta, .student-identity > span, .field-hint { font-size: var(--font-size-sm); }
+.student-identity strong, .record-main > strong, .session-course strong { font-size: var(--font-size-card-title); }
+.student-profile-card, .class-overview, .session-overview { margin-bottom: 16px; }
+.record-card, .compact-data-row { padding-block: 14px; }
+.context-data-tabs { display: flex; flex-direction: column; gap: 12px; margin: 16px 0 24px; }
+.context-data-views { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 4px; padding: 4px; background: var(--color-surface-soft); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+.context-data-tabs .context-data-views button { background: transparent; border-color: transparent; border-radius: 6px; font-size: 1rem; min-height: 48px; padding: 8px; }
+.context-data-tabs .context-data-views button[aria-pressed="true"] { color: var(--color-navy); background: white; border-color: var(--color-border-strong); }
+.context-data-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.context-data-tabs .context-data-actions button { min-height: 44px; padding: 8px 14px; background: white; font-size: var(--font-size-sm); }
+.context-data-tabs .context-data-actions button[aria-pressed="true"] { color: var(--color-navy); background: var(--color-primary-soft); border-color: var(--color-navy); }
+.context-data-content .context-data-tabs { margin: 12px 0 20px; }
+.context-data-content > [role="region"] > .content-section:first-child { margin-top: 0; }
+.context-data-content .context-data-views { background: transparent; border: 0; border-bottom: 1px solid var(--color-border); padding: 0; border-radius: 0; }
+.context-data-content .context-data-views button { min-height: 44px; font-size: var(--font-size-sm); border-radius: 0; }
+.context-data-content .context-data-views button[aria-pressed="true"] { border: 0; border-bottom: 2px solid var(--color-navy); background: var(--color-surface-soft); }
+.context-home-actions { min-height: 216px; grid-template-rows: repeat(2, minmax(100px, 1fr)); }
+.context-home-actions > .daily-attendance-action { padding: 24px; }
+.context-home-actions > .daily-attendance-action strong { font-size: 1.5rem; }
+.context-home-actions > .daily-receipt-action { padding: 20px; }
+.home-student-search { margin-top: 20px; }
+.session-labels:empty { display: none; }
+.session-preview-row { display: grid; grid-template-columns: minmax(0, 1fr) 132px; gap: 16px; align-items: center; border-bottom: 1px solid var(--color-border); }
+.session-preview-row .record-card.session-preview-course { border: 0; grid-template-columns: 48px minmax(0, 1fr) 14px; padding-block: 16px; }
+.session-preview-actions { display: grid; justify-items: end; gap: 8px; padding-block: 12px; }
+.signature-preview-trigger { white-space: normal; max-width: 100%; }
+.attendance-student-card { align-items: center; }
+.attendance-student-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; max-width: 48%; }
+.attendance-student-actions .button { min-height: 44px; }
+.attendance-label, .session-card .attendance-label, .session-status, .session-type-label { font-size: var(--font-size-xs); line-height: 1.4; }
+.signed-time, .offline-signature-note, .makeup-complete-note, .attendance-student-main > span:not(.attendance-label) { font-size: var(--font-size-sm); }
+.attendance-made-up { color: var(--color-info); background: var(--color-info-bg); }
+.signature-preview-dialog { width: min(660px, calc(100% - 32px)); max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; padding: 24px; border: 1px solid var(--color-border-strong); border-radius: var(--radius-lg); background: white; color: var(--color-text-primary); box-shadow: var(--shadow-overlay); }
+.signature-preview-dialog::backdrop { background: rgb(16 39 67 / 32%); }
+.signature-preview-dialog[open] { animation: reminder-enter 160ms ease-out; }
+.signature-preview-dialog header { align-items: center; margin-bottom: 12px; }
+.signature-preview-dialog h2 { margin: 0; font-size: var(--font-size-section-title); }
+.signature-preview-name { display: block; font-size: var(--font-size-card-title); overflow-wrap: anywhere; }
+.signature-preview-details { display: grid; gap: 12px; margin: 16px 0; }
+.signature-preview-details > div { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 12px; }
+.signature-preview-details dt { color: var(--color-text-secondary); }
+.signature-preview-details dd { margin: 0; overflow-wrap: anywhere; }
+.signature-preview-image { display: grid; place-items: center; border: 1px solid var(--color-border); border-radius: var(--radius-sm); min-height: 120px; background: white; overflow: hidden; }
+.signature-preview-image img { display: block; width: auto; max-width: 100%; height: auto; max-height: 48dvh; object-fit: contain; }
+.signature-preview-error { color: var(--color-danger); }
+@media (max-width: 700px) {
+  .page-container { padding-top: 16px; }
+  .page-header { margin-bottom: 20px; }
+  .context-data-views { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .context-data-tabs .context-data-views button { font-size: 1rem; padding-inline: 6px; }
+  .context-data-actions { justify-content: flex-start; }
+  .context-data-tabs .context-data-actions button { flex: 1 1 auto; }
+  .context-data-content .context-data-views button { font-size: var(--font-size-sm); }
+  .record-card.session-card { grid-template-columns: 32px minmax(0, 1fr) 100px 12px; }
+  .session-preview-row { grid-template-columns: minmax(0, 1fr) 104px; gap: 8px; }
+  .session-preview-row .record-card.session-preview-course { grid-template-columns: 32px minmax(0, 1fr) 10px; gap: 8px; }
+  .session-preview-actions .button { padding-inline: 8px; }
+  .attendance-student-card { flex-direction: row; align-items: flex-start; gap: 12px; padding: 16px 8px; }
+  .attendance-student-main { flex: 1; }
+  .attendance-student-actions { max-width: 112px; flex: 0 0 112px; display: grid; justify-items: end; }
+  .attendance-student-actions .button { width: auto; max-width: 100%; padding-inline: 8px; }
+  .signature-preview-dialog { padding: 16px; }
+  .signature-preview-details > div { grid-template-columns: 70px minmax(0, 1fr); gap: 8px; }
+  .context-home-actions { min-height: 0; grid-template-rows: auto auto; }
+  .context-home-actions > .daily-attendance-action { min-height: 108px; padding: 20px; }
+  .context-home-actions > .daily-receipt-action { min-height: 88px; padding: 12px; }
+}
+@media (max-width: 360px) { .context-data-views { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (prefers-reduced-motion: reduce) { .signature-preview-dialog[open] { animation: none; } }

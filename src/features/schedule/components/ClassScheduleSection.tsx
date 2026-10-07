@@ -66,7 +66,7 @@ export function ClassScheduleSection({ tuitionClass, active = true, prefix = '',
           ? <EmptyBlock message="目前没有历史课程。" />
           : <div className="compact-data-list">{history.map((session) => <SessionCard session={session} key={session.id} onSelect={onSelect} />)}</div>)}
       </section> },
-      ...(!prefix ? [{ id: 'management', label: '课表管理', render: () => <section>
+      ...(!prefix ? [{ id: 'management', kind: 'action' as const, label: '课表管理', render: () => <section>
         <ClassFixedScheduleSection tuitionClass={tuitionClass} />
         <ClassScheduleHistory tuitionClass={tuitionClass} />
       </section> }] : []),

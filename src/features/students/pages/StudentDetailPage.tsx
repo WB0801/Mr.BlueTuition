@@ -48,8 +48,8 @@ function StudentDetailView({ studentId }: { studentId: string }) {
       { id: 'attendance', label: '出席与课程', render: active => <ObjectCourseRecords scope={{ studentId }} active={active} /> },
       { id: 'grades', label: '考试与成绩', render: active => <StudentGradesSection studentId={studentId} embedded active={active} /> },
       { id: 'temporary', label: '临时班参与', render: active => <StudentTemporaryClassesSection studentId={studentId} active={active} /> },
-      { id: 'join', label: '加入班级／重新报读', render: active => <StudentJoinClass studentId={studentId} excludedClassIds={current.map(item => item.class_id)} active={active} /> },
-      { id: 'management', label: '学生管理', render: () => <>
+      { id: 'join', kind: 'action' as const, label: '加入班级／重新报读', render: active => <StudentJoinClass studentId={studentId} excludedClassIds={current.map(item => item.class_id)} active={active} /> },
+      { id: 'management', kind: 'action' as const, label: '学生管理', render: () => <>
         <h2>学生管理</h2><div className="management-links"><ContextLink backLabel="学生" className="button button-secondary" to={`/students/${studentId}/edit`}>编辑学生</ContextLink></div>
         <PermanentDeleteZone entityType="student" entityId={studentId} entityName={data.name} entityLabel="学生" onDeleted={() => navigate('/students', { replace: true, state: completedContextOperation({ successMessage: `已永久删除学生「${data.name}」及其关联资料。` }) })} />
       </> },

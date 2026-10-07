@@ -18,6 +18,24 @@ function setup(path = '/students/a') {
     { id: 'fees', label: '缴费记录', render: () => <><Draft /><Busy /></> },
   ]} /><Probe /></MemoryRouter></QueryClientProvider>)
 }
+it('visually separates actions while preserving their original panel URL and retained draft', async () => {
+  render(<QueryClientProvider client={new QueryClient()}><MemoryRouter initialEntries={['/students/a?fees.month=2026-09']}>
+    <ContextDataWorkspace label="学生功能" defaultPanel="records" sections={[
+      { id: 'records', label: '查看记录', render: () => <p>名单</p> },
+      { id: 'join', label: '加入班级', kind: 'action', render: () => <Draft /> },
+    ]} /><Probe />
+  </MemoryRouter></QueryClientProvider>)
+  const user = userEvent.setup()
+  const join = screen.getByRole('button', { name: '加入班级' })
+  expect(join.closest('.context-data-actions')).not.toBeNull()
+  expect(screen.getByRole('button', { name: '查看记录' }).closest('.context-data-views')).not.toBeNull()
+  await user.click(join); await user.type(screen.getByLabelText('草稿'), '保留草稿')
+  await user.click(screen.getByRole('button', { name: '查看记录' }))
+  expect(screen.getByLabelText('草稿')).not.toBeVisible()
+  await user.click(join)
+  expect(screen.getByLabelText('草稿')).toHaveValue('保留草稿')
+  expect(screen.getByTestId('url')).toHaveTextContent('fees.month=2026-09&panel=join')
+})
 it('lazy-loads a section and preserves its draft when switching away and back without leaving the object', async () => {
   setup(); const user = userEvent.setup()
   expect(screen.queryByLabelText('草稿')).not.toBeInTheDocument()

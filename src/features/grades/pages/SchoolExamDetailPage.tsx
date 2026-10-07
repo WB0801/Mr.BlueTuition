@@ -81,7 +81,7 @@ export function SchoolExamDetailPage() {
         existingScores={Object.fromEntries((scores.data ?? []).map((score) => [score.student_id, score.score]))}
         active={active}
       /> },
-      { id: 'management', label: '考试管理', render: () => <PermanentDeleteZone
+      { id: 'management', label: '考试管理', kind: 'action', render: () => <PermanentDeleteZone
         entityType="school_exam"
         entityId={examId}
         entityName={exam.data.name}

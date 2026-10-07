@@ -66,7 +66,7 @@ export function TuitionQuizDetailPage() {
         scores={scores.data ?? []}
         active={active}
       /> },
-      { id: 'management', label: '小测管理', render: () => <PermanentDeleteZone
+      { id: 'management', label: '小测管理', kind: 'action', render: () => <PermanentDeleteZone
         entityType="tuition_quiz"
         entityId={quizId}
         entityName={quiz.data.name}
