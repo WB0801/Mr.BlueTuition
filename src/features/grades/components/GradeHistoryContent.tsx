@@ -3,6 +3,7 @@ import { EmptyBlock } from '../../../components/feedback/QueryState'
 import type { SchoolExamScore, TuitionQuizScore } from '../../../types/domain'
 import { formatDate } from '../../../utils/format'
 import type { ReactNode } from 'react'
+import { formatQuizScore } from '../quizScoreDisplay'
 
 interface GradeHistoryContentProps {
   schoolScores: SchoolExamScore[]
@@ -70,7 +71,7 @@ export function GradeHistoryContent({
                   <small>{formatDate(score.quiz.quiz_date)}{showContext && score.quiz.class ? ` · ${score.quiz.class.name}` : ''}</small>
                   {score.quiz.name}
                 </span>
-                <strong>{score.score} / {score.quiz.max_score}</strong>
+                <strong className="quiz-score-display">{formatQuizScore(score.score, score.quiz.max_score)}</strong>
                 <span className="chevron" aria-hidden="true">›</span>
               </GradeRecordRow>
             ))}

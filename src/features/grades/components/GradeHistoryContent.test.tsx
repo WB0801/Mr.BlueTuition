@@ -31,6 +31,17 @@ const quizScores = [{
 }] as TuitionQuizScore[]
 
 describe('GradeHistoryContent', () => {
+  it('does not turn a missing quiz score or invalid maximum into zero percent', () => {
+    const malformed = [
+      { ...quizScores[0], id: 'blank', score: null, quiz: { ...quizScores[0].quiz, name: '空白小考' } },
+      { ...quizScores[0], id: 'invalid', score: 1, quiz: { ...quizScores[0].quiz, name: '无效满分', max_score: 0 } },
+    ] as unknown as TuitionQuizScore[]
+    render(<MemoryRouter><GradeHistoryContent schoolScores={schoolScores} quizScores={malformed} /></MemoryRouter>)
+    expect(screen.getByText('— / 20')).toBeVisible()
+    expect(screen.getByText('1 / 0')).toBeVisible()
+    expect(screen.queryByText(/%/)).not.toBeInTheDocument()
+    expect(screen.getByText('72 / 100')).toBeVisible()
+  })
   it('shows the latest exam by exam date and displays student-wide context', () => {
     render(<MemoryRouter initialEntries={['/students/student-1']}><GradeHistoryContent schoolScores={schoolScores} quizScores={quizScores} showContext /></MemoryRouter>)
 
@@ -40,7 +51,7 @@ describe('GradeHistoryContent', () => {
     expect(schoolLinks[0]).toHaveAttribute('href', '/grades/school/exam-new')
     expect(schoolLinks[0]).toHaveTextContent('会计学')
     expect(screen.getByRole('link', { name: /Depreciation/ })).toHaveTextContent('高一会计学（1）')
-    expect(screen.getByText('16 / 20')).toBeInTheDocument()
+    expect(screen.getByText('16 / 20 · 80%')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Depreciation/ })).toHaveAttribute('href', '/grades/quizzes/quiz-1')
   })
 

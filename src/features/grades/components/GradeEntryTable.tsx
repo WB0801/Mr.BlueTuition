@@ -7,6 +7,7 @@ import type { ScorePayload } from '../api/gradesService'
 import { calculateGradeStats, parseScoreColumnPaste, scoreValuesEqual, validateScoreValue } from '../gradeEntry'
 import { usePwaUpdateGuard } from '../../settings/pwa/updateProtection'
 import { useContextDataBusy, useContextDataUnsaved } from '../../../components/contextual/contextDataState'
+import { formatQuizPercentage } from '../quizScoreDisplay'
 
 interface GradeEntryTableProps {
   rows: GradeEntryRow[]
@@ -15,6 +16,7 @@ interface GradeEntryTableProps {
   onSave: (scores: ScorePayload[]) => Promise<unknown>
   onSaved?: () => void
   studentBackLabel?: string
+  scoreKind?: 'quiz'
 }
 
 interface PastePlan {
@@ -31,6 +33,7 @@ export function GradeEntryTable({
   onSave,
   onSaved,
   studentBackLabel = '成绩',
+  scoreKind,
 }: GradeEntryTableProps) {
   const initialValues = useMemo(() => Object.fromEntries(
     rows.map((row) => [row.student_id, initialScores[row.student_id]?.toString() ?? '']),
@@ -182,6 +185,7 @@ export function GradeEntryTable({
             {rows.map((row, index) => {
               const value = values[row.student_id] ?? ''
               const validationError = validateScoreValue(value, maxScore)
+              const percentage = scoreKind === 'quiz' ? formatQuizPercentage(value, maxScore) : null
               return (
                 <tr className={activeIndex === index ? 'is-active' : ''} key={row.student_id}>
                   <td data-label="学生">
@@ -209,7 +213,7 @@ export function GradeEntryTable({
                         onKeyDown={(event) => handleKeyDown(event, index)}
                         onPaste={(event) => handlePaste(event, index)}
                       />
-                      <span>/ {maxScore}</span>
+                      <span className={scoreKind === 'quiz' ? 'quiz-score-suffix' : undefined}>/ {maxScore}{percentage !== null ? ` · ${percentage}` : ''}</span>
                     </label>
                   </td>
                   <td data-label="状态" className={validationError ? 'score-row-error' : value.trim() === '' ? 'score-row-empty' : 'score-row-recorded'}>

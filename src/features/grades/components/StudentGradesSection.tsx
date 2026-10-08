@@ -8,6 +8,7 @@ import { useRecordParams } from '../../../components/contextual/contextDataState
 import { RecordDetailFrame } from '../../../components/contextual/RecordDetailFrame'
 import { ContextLink } from '../../../components/navigation/ContextLink'
 import { formatDate } from '../../../utils/format'
+import { formatQuizScore } from '../quizScoreDisplay'
 
 export function StudentGradesSection({ studentId, embedded = false, active = true }: { studentId: string; embedded?: boolean; active?: boolean }) {
   const { get, set } = useRecordParams('grades')
@@ -68,7 +69,7 @@ export function StudentGradesSection({ studentId, embedded = false, active = tru
         {(schoolScores.isLoading || quizScores.isLoading) && <LoadingBlock />}
         {(schoolScores.isError || quizScores.isError) && <ErrorBlock message="成绩资料载入失败。" />}
         {schoolScores.isSuccess && quizScores.isSuccess && !score && <ErrorBlock message="此学生范围内找不到这笔成绩。" />}
-        {score && entity && <><dl className="details-card"><div><dt>日期</dt><dd>{formatDate(selectedSchool?.exam?.exam_date ?? selectedQuiz?.quiz?.quiz_date)}</dd></div><div><dt>成绩</dt><dd>{score.score} / {entity.max_score}</dd></div></dl>
+        {score && entity && <><dl className="details-card"><div><dt>日期</dt><dd>{formatDate(selectedSchool?.exam?.exam_date ?? selectedQuiz?.quiz?.quiz_date)}</dd></div><div><dt>成绩</dt><dd>{selectedQuiz ? formatQuizScore(score.score, entity.max_score) : `${score.score} / ${entity.max_score}`}</dd></div></dl>
           <ContextLink className="button button-secondary" backLabel="学生" to={selectedSchool ? `/grades/school/${entity.id}` : `/grades/quizzes/${entity.id}`}>成绩录入与管理</ContextLink>
         </>}
       </RecordDetailFrame>}

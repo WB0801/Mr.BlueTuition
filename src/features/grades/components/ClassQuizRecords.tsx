@@ -9,6 +9,7 @@ import { listTuitionQuizOverviews, listTuitionQuizRoster, listTuitionQuizScores 
 import { ScoreProgress } from './ScoreProgress'
 import { StudentIdentity } from '../../students/components/StudentIdentity'
 import type { TuitionQuiz } from '../../../types/domain'
+import { formatQuizScore } from '../quizScoreDisplay'
 
 export function ClassQuizRecords({ classId, active }: { classId: string; active: boolean }) {
   const { get, set } = useRecordParams('grades')
@@ -38,7 +39,10 @@ function ClassQuizDetails({ quiz, active }: { quiz: TuitionQuiz; active: boolean
     {(roster.isLoading || scores.isLoading) && <LoadingBlock />}
     {(roster.isError || scores.isError) && <ErrorBlock message="小测成绩载入失败。" />}
     {roster.isSuccess && scores.isSuccess && roster.data.length === 0 && <EmptyBlock message="小测日期当天没有有效报读学生。" />}
-    {roster.isSuccess && scores.isSuccess && <div className="record-list">{roster.data.map(entry => <div className="compact-data-row" key={entry.student_id}><ContextLink backLabel="班级" className="identity-link" to={`/students/${entry.student_id}`}><StudentIdentity student={{ name: entry.student_name, school_class: entry.school_class, phone: entry.phone }} /></ContextLink><strong>{scores.data.find(score => score.student_id === entry.student_id)?.score ?? '未录入'}{scores.data.some(score => score.student_id === entry.student_id) && ` / ${quiz.max_score}`}</strong></div>)}</div>}
+    {roster.isSuccess && scores.isSuccess && <div className="record-list">{roster.data.map(entry => {
+      const score = scores.data.find(score => score.student_id === entry.student_id)
+      return <div className="compact-data-row" key={entry.student_id}><ContextLink backLabel="班级" className="identity-link" to={`/students/${entry.student_id}`}><StudentIdentity student={{ name: entry.student_name, school_class: entry.school_class, phone: entry.phone }} /></ContextLink><strong className="quiz-score-display">{score?.score != null ? formatQuizScore(score.score, quiz.max_score) : '未录入'}</strong></div>
+    })}</div>}
     <ContextLink backLabel="班级" className="button button-secondary" to={`/grades/quizzes/${quiz.id}`}>录入成绩与奖励管理</ContextLink>
   </>
 }

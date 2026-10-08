@@ -14,6 +14,26 @@ vi.mock('../api/gradesService', () => ({
 }))
 
 describe('StudentGradesSection', () => {
+  it('keeps quiz percentages and list context in-place without additional score reads', async () => {
+    vi.mocked(listStudentSchoolExamScores).mockResolvedValue([])
+    vi.mocked(listStudentTuitionQuizScores).mockResolvedValue([
+      { id: 'fraction', score: 1, quiz: { id: 'q1', name: '长中文三分小考', quiz_date: '2026-10-01', max_score: 3 } },
+      { id: 'zero', score: 0, quiz: { id: 'q2', name: '零分小考', quiz_date: '2026-10-02', max_score: 20 } },
+    ] as never)
+    const router = createMemoryRouter([{ path: '/students/:studentId', element: <StudentGradesSection studentId="student-1" embedded /> }], { initialEntries: ['/students/student-1?panel=grades&grades.tab=quiz&fees.month=2026-09'] })
+    render(<QueryClientProvider client={new QueryClient()}><RouterProvider router={router} /></QueryClientProvider>)
+    const user = userEvent.setup()
+    expect(await screen.findByText('1 / 3 · 33.3%')).toBeVisible()
+    expect(screen.getByText('0 / 20 · 0%')).toBeVisible()
+    const reads = vi.mocked(listStudentTuitionQuizScores).mock.calls.length
+    await user.click(screen.getByRole('button', { name: /长中文三分小考/ }))
+    const detail = screen.getByRole('heading', { name: '长中文三分小考' }).closest('section')!
+    expect(within(detail).getByText('1 / 3 · 33.3%')).toBeVisible()
+    expect(router.state.location.search).toContain('fees.month=2026-09')
+    await user.click(screen.getByRole('button', { name: '← 返回成绩列表' }))
+    expect(screen.getByRole('button', { name: /长中文三分小考/ })).toBeVisible()
+    expect(vi.mocked(listStudentTuitionQuizScores).mock.calls.length).toBe(reads)
+  })
   it('does not describe a rejected grade query as an empty grade history', async () => {
     vi.mocked(listStudentSchoolExamScores).mockRejectedValue(new Error('offline'))
     vi.mocked(listStudentTuitionQuizScores).mockResolvedValue([])

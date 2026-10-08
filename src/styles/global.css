@@ -1034,6 +1034,9 @@ label.receipt-row { cursor: pointer; }
   font-weight: 700;
 }
 .score-input-wrap span:last-child { color: var(--muted); font-size: 0.82rem; white-space: nowrap; }
+.score-input-wrap span.quiz-score-suffix { white-space: normal; overflow-wrap: anywhere; }
+.quiz-score-display { min-width: 0; overflow-wrap: anywhere; }
+.simple-grade-row strong.quiz-score-display { max-width: 10rem; white-space: normal; }
 .grade-save-bar {
   position: sticky;
   bottom: 10px;

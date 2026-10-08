@@ -49,6 +49,7 @@ export function TuitionQuizDetailPage() {
           rows={roster.data ?? []}
           initialScores={initialScores}
           maxScore={quiz.data.max_score}
+          scoreKind="quiz"
           studentBackLabel="小测"
           onSaved={() => setFlowStep(3)}
           onSave={async (payload) => {

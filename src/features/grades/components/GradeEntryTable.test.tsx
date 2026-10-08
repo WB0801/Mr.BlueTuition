@@ -14,6 +14,40 @@ const rows = [
 ]
 
 describe('GradeEntryTable', () => {
+  it('shows quiz input percentages without changing raw save payload, Enter or unsaved semantics', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined)
+    const router = createMemoryRouter([{ path: '/', element: <GradeEntryTable rows={rows} initialScores={{}} maxScore={20} scoreKind="quiz" onSave={onSave} /> }])
+    render(<RouterProvider router={router} />)
+    const inputs = screen.getAllByRole('spinbutton')
+    expect(screen.queryByText(/%/)).not.toBeInTheDocument()
+    fireEvent.paste(inputs[0], { clipboardData: { getData: () => '14\n0' } })
+    fireEvent.click(screen.getByRole('button', { name: '确认贴入' }))
+    expect(screen.getByText('/ 20 · 70%')).toBeVisible()
+    expect(screen.getByText('/ 20 · 0%')).toBeVisible()
+    expect(screen.getByText('尚未保存')).toBeVisible()
+    expect(screen.getAllByText('已输入')).toHaveLength(2)
+    expect(screen.queryByText('成绩已保存。')).not.toBeInTheDocument()
+    inputs[0].focus()
+    fireEvent.keyDown(inputs[0], { key: 'Enter' })
+    expect(inputs[1]).toHaveFocus()
+    fireEvent.change(inputs[0], { target: { value: '21' } })
+    expect(screen.queryByText('/ 20 · 105%')).not.toBeInTheDocument()
+    expect(inputs[0]).toHaveAttribute('aria-invalid', 'true')
+    fireEvent.change(inputs[0], { target: { value: '14' } })
+    fireEvent.click(screen.getByRole('button', { name: '保存成绩' }))
+    await waitFor(() => expect(onSave).toHaveBeenCalledExactlyOnceWith([
+      { student_id: 'student-1', enrollment_id: undefined, score: 14 },
+      { student_id: 'student-2', enrollment_id: undefined, score: 0 },
+      { student_id: 'student-3', enrollment_id: undefined, score: null },
+    ]))
+    expect(await screen.findByText('成绩已保存。')).toBeVisible()
+  })
+
+  it('does not add percentages to school exam entry', () => {
+    const router = createMemoryRouter([{ path: '/', element: <GradeEntryTable rows={rows} initialScores={{ 'student-1': 14 }} maxScore={20} onSave={vi.fn()} /> }])
+    render(<RouterProvider router={router} />)
+    expect(screen.queryByText(/%/)).not.toBeInTheDocument()
+  })
   it('keeps scores across columns, uses one leave confirmation and blocks switching during submission', async () => {
     let resolveSave!: () => void
     const onSave = vi.fn(() => new Promise<void>(resolve => { resolveSave = resolve }))

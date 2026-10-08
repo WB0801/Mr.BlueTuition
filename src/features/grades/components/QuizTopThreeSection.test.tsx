@@ -42,6 +42,18 @@ function renderSection() {
 }
 
 describe('QuizTopThreeSection', () => {
+  it('adds percentages only to current candidates, not historical ranking differences', async () => {
+    vi.mocked(previewTuitionQuizTopThree).mockResolvedValue(preview({
+      needs_reconfirmation: true,
+      differences: { added: [], removed: [{ student_id: 'old', student_name: '旧学生', rank: 3, score: 70 }], changed: [] },
+    }))
+    renderSection()
+    expect(await screen.findByText('100 / 100 · 100%')).toBeVisible()
+    expect(screen.getByText('90 / 100 · 90%')).toBeVisible()
+    expect(await screen.findByText('移除：旧学生（原第3名，70分）')).toBeVisible()
+    expect(confirmTuitionQuizTopThree).not.toHaveBeenCalled()
+    expect(previewTuitionQuizTopThree).toHaveBeenCalledExactlyOnceWith('quiz-1')
+  })
   beforeEach(() => {
     vi.mocked(previewTuitionQuizTopThree).mockResolvedValue(preview())
     vi.mocked(confirmTuitionQuizTopThree).mockResolvedValue(preview({ confirmed: true, missing_students: [] }))

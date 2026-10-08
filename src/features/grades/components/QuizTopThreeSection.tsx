@@ -7,6 +7,7 @@ import type { TuitionQuiz, TuitionQuizRosterEntry, TuitionQuizScore } from '../.
 import { getErrorMessage } from '../../../utils/errors'
 import { confirmTuitionQuizTopThree, previewTuitionQuizTopThree } from '../api/gradesService'
 import { calculateQuizTopThree } from '../quizRanking'
+import { formatQuizScore } from '../quizScoreDisplay'
 
 interface QuizTopThreeSectionProps {
   quiz: TuitionQuiz
@@ -94,7 +95,7 @@ export function QuizTopThreeSection({ quiz, roster, scores, active = true }: Qui
             <div className="quiz-ranking-row" role="listitem" key={candidate.student_id}>
               <span className="quiz-rank-number">第 {candidate.rank} 名</span>
               <ContextLink backLabel="小测" className="identity-link" to={`/students/${candidate.student_id}`}>{candidate.student_name}</ContextLink>
-              <strong>{candidate.score} 分</strong>
+              <strong className="quiz-score-display">{formatQuizScore(candidate.score, quiz.max_score)}</strong>
               {data?.confirmed && !needsReconfirmation
                 ? <span>累计 {candidate.unredeemed_after % 3 || 3}/3{candidate.unredeemed_after >= 3 ? ' · 本次后待奖励' : ''}</span>
                 : <span>确认后才计入累计</span>}
