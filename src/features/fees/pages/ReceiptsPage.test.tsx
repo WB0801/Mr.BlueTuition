@@ -3,7 +3,8 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { ReceiptsPage } from './ReceiptsPage'
-import { listReceiptQueue } from '../api/feesService'
+import { listReceiptQueue, listMonthlyFees } from '../api/feesService'
+import { listTemporaryFeeRecords } from '../api/temporaryFeesService'
 import type { ReceiptQueueItem } from '../../../types/domain'
 import { ContextBackLink } from '../../../components/navigation/ContextBackLink'
 vi.mock('../api/feesService', () => ({
@@ -11,6 +12,7 @@ vi.mock('../api/feesService', () => ({
   listMonthlyFees: vi.fn(), completeReceipts: vi.fn(), restoreReceipt: vi.fn(),
   getReceiptPaymentTarget: vi.fn().mockResolvedValue('/fees?studentId=student-a&month=2026-08&status=paid&feeId=fee-a'),
 }))
+vi.mock('../api/temporaryFeesService', () => ({ listTemporaryFeeRecords: vi.fn(async () => []) }))
 it('links the receipt identity and exact original payment without toggling the checkbox', async () => {
   render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><MemoryRouter initialEntries={['/fees/receipts']}><ReceiptsPage /></MemoryRouter></QueryClientProvider>)
   expect(await screen.findByRole('link', { name: /蓝炜滨.*高一甲/ })).toHaveAttribute('href', '/students/student-a')
@@ -44,4 +46,29 @@ it('does not fetch completed receipts before selecting the upper history column'
   await userEvent.setup().click(screen.getByRole('button', { name: '已处理收据' }))
   expect(await screen.findByLabelText('收费月份')).toBeVisible()
   expect(listReceiptQueue).toHaveBeenCalledWith('completed', expect.anything())
+})
+
+it.each(['monthly', 'temporary'])('preserves the %s class identity passed from unified fees to receipts', async kind => {
+  const items = [
+    { receipt_key: 'monthly_fee:m', source_type: 'monthly_fee', source_id: 'm', student_name: '常态学生', student_id: 's', source_name: '同名班', amount: 70, receipt_period: '2026-10-01', paid_at: '2026-10-01T00:00:00Z' },
+    { receipt_key: 'temporary_class_payment:t', source_type: 'temporary_class_payment', source_id: 't', student_name: '临时学生', student_id: 's', source_name: '同名班', amount: 30, receipt_period: '2026-10-01', paid_at: '2026-10-01T00:00:00Z' },
+  ] as ReceiptQueueItem[]
+  vi.mocked(listReceiptQueue).mockResolvedValue(items)
+  vi.mocked(listMonthlyFees).mockResolvedValue([{ id: 'm' }] as never)
+  vi.mocked(listTemporaryFeeRecords).mockResolvedValue([{ payment: { id: 't' } }] as never)
+  render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><MemoryRouter initialEntries={[`/fees/receipts?classId=${kind}:same`]}><ReceiptsPage /></MemoryRouter></QueryClientProvider>)
+  expect(await screen.findByRole('link', { name: kind === 'monthly' ? /常态学生/ : /临时学生/ })).toBeVisible()
+  expect(screen.queryByRole('link', { name: kind === 'monthly' ? /临时学生/ : /常态学生/ })).not.toBeInTheDocument()
+  if (kind === 'monthly') expect(listMonthlyFees).toHaveBeenLastCalledWith({ classId: 'same', paymentStatus: 'paid', complete: true })
+  else expect(listTemporaryFeeRecords).toHaveBeenLastCalledWith({ classId: 'same', month: 'all' }, expect.any(AbortSignal))
+})
+it('reports and retries failed class scope in the visible completed-receipts panel', async () => {
+  vi.mocked(listReceiptQueue).mockResolvedValue([{ receipt_key: 'temporary_class_payment:t', source_type: 'temporary_class_payment', source_id: 't', student_id: 's', student_name: '历史临时学生', source_name: '同名班', amount: 30, receipt_period: '2026-10-01', paid_at: '2026-10-01T00:00:00Z' }] as ReceiptQueueItem[])
+  vi.mocked(listTemporaryFeeRecords).mockRejectedValueOnce(new Error('isolated failure')).mockResolvedValue([{ payment: { id: 't' } }] as never)
+  render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><MemoryRouter initialEntries={['/fees/receipts?classId=temporary:same&completed=1']}><ReceiptsPage /></MemoryRouter></QueryClientProvider>)
+  const region = screen.getByRole('region', { name: '已处理收据' })
+  expect(await within(region).findByRole('alert')).toHaveTextContent('班级范围载入失败')
+  expect(within(region).queryByText('目前没有已处理收据。')).not.toBeInTheDocument()
+  await userEvent.setup().click(within(region).getByRole('button', { name: '重试班级范围' }))
+  expect(await within(region).findByRole('link', { name: /历史临时学生/ })).toBeVisible()
 })

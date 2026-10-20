@@ -21,6 +21,7 @@ export function installContextDataInvalidation(client: QueryClient) {
       refetchType: 'none',
       predicate: query => {
         const [family, section] = query.queryKey
+        if (['student', 'students', 'temporary-class', 'temporary-classes'].includes(String(root)) && ['temporary-fees', 'temporary-fee-classes'].includes(String(family))) return true
         if (studentChange || classChange) {
           // These reads embed identity metadata. Do not invalidate either fee
           // generator (including the legacy enrollment ensure key) for an edit.

@@ -45,6 +45,8 @@ async function editor() {
 }
 it('updates one existing payment, refreshes the student snapshot and never invalidates fee generation', async () => {
   const client = setup(), input = await editor()
+  client.setQueryData(['temporary-fees', 'list', 'all'], [{ payment: { ...records[0].payment }, enrollment: records[0], class: { id: 'temp-a' } }])
+  client.setQueryData(['temporary-classes', 'active'], ['old count'])
   expect(input).toHaveValue(40); fireEvent.change(input, { target: { value: '30.25' } }); fireEvent.submit(input.closest('form')!)
   await waitFor(() => expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument())
   const articles = screen.getAllByRole('article')
@@ -52,6 +54,8 @@ it('updates one existing payment, refreshes the student snapshot and never inval
   expect(within(articles[1]).getByText('RM40')).toBeInTheDocument()
   expect(service.updateTemporaryClassPaymentAmount).toHaveBeenCalledWith('pay-a', 'temp-a', 30.25)
   expect(client.getQueryState(['temporary-classes', 'student', 'a'])?.isInvalidated).toBe(true)
+  expect(client.getQueryData<Array<{ payment: { id: string; amount: number } }>>(['temporary-fees', 'list', 'all'])?.[0].payment).toMatchObject({ id: 'pay-a', amount: 30.25 })
+  expect(client.getQueryState(['temporary-classes', 'active'])?.isInvalidated).toBe(true)
   expect(client.getQueryState(['monthly-fees-generation', '2026-10-01'])?.isInvalidated).toBe(false)
   expect(updateProtection.reason()).toBe('')
 })
@@ -61,6 +65,33 @@ it('cancel preserves the payment and restores focus without a write', async () =
   expect(service.updateTemporaryClassPaymentAmount).not.toHaveBeenCalled()
   expect(screen.getAllByText('RM40')).toHaveLength(2); expect(updateProtection.reason()).toBe('')
   expect(screen.getAllByRole('button', { name: '修改金额' })[0]).toHaveFocus()
+})
+it('disables both mounted entries for the same original payment during one confirmation', async () => {
+  const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
+  let finish!: () => void
+  vi.mocked(service.markTemporaryClassPaymentPaid).mockImplementationOnce(() => new Promise(resolve => {
+    finish = () => resolve({ ...records[0].payment!, payment_status: 'paid', receipt_status: 'pending', paid_at: '2026-10-20T00:00:00Z' })
+  }))
+  render(<QueryClientProvider client={client}><MemoryRouter>
+    <TemporaryPaymentRow enrollment={records[0]} allowActions />
+    <TemporaryPaymentRow enrollment={records[0]} allowActions />
+  </MemoryRouter></QueryClientProvider>)
+  const [first, second] = screen.getAllByRole('button', { name: '确认已缴' })
+  fireEvent.click(first)
+  await waitFor(() => { expect(first).toBeDisabled(); expect(second).toBeDisabled() })
+  fireEvent.click(first); fireEvent.click(second)
+  expect(service.markTemporaryClassPaymentPaid).toHaveBeenCalledExactlyOnceWith('pay-a')
+  await act(async () => finish())
+})
+it('does not undo a completed receipt payment when its original confirmation is cancelled', async () => {
+  records[0].payment = { ...records[0].payment!, payment_status: 'paid', receipt_status: 'completed', paid_at: '2026-10-20T00:00:00Z' }
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+  try {
+    setup(); fireEvent.click(await screen.findByRole('button', { name: '撤销缴费' }))
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining('收据状态也会一并重置'))
+    expect(service.undoTemporaryClassPayment).not.toHaveBeenCalled()
+    expect(records[0].payment.receipt_status).toBe('completed')
+  } finally { confirm.mockRestore() }
 })
 it.each(['', '-1', '30.001', '1e2', '100000000'])('rejects invalid input %s before a write', async value => {
   setup(); const input = await editor(); fireEvent.change(input, { target: { value } }); fireEvent.submit(input.closest('form')!)

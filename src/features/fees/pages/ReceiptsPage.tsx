@@ -17,12 +17,15 @@ import {
 import { FeesShell } from '../components/FeesShell'
 import { usePwaUpdateGuard } from '../../settings/pwa/updateProtection'
 import { ContextDataWorkspace } from '../../../components/contextual/ContextDataWorkspace'
+import { parseFeeClassScope } from '../unifiedFeePresentation'
+import { listTemporaryFeeRecords } from '../api/temporaryFeesService'
 
 export function ReceiptsPage() {
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const studentId = searchParams.get('studentId') ?? ''
   const classId = searchParams.get('classId') ?? ''
+  const classScope = parseFeeClassScope(classId)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   usePwaUpdateGuard(selected.size > 0, '请先处理或取消收据选择，再更新。')
   const [error, setError] = useState('')
@@ -36,9 +39,18 @@ export function ReceiptsPage() {
     enabled: historyOpen,
   })
 
-  const classFees = useQuery({ queryKey: ['monthly-fees', 'receipt-scope', classId], queryFn: () => listMonthlyFees({ classId, paymentStatus: 'paid' }), enabled: Boolean(classId) })
+  const monthlyClassId = classScope.kind === 'monthly' ? classScope.id : ''
+  const temporaryClassId = classScope.kind === 'temporary' ? classScope.id : ''
+  const classFees = useQuery({ queryKey: ['monthly-fees', 'receipt-scope', monthlyClassId], queryFn: () => listMonthlyFees({ classId: monthlyClassId, paymentStatus: 'paid', complete: true }), enabled: Boolean(monthlyClassId) })
+  const temporaryClassFees = useQuery({ queryKey: ['temporary-fees', 'receipt-scope', temporaryClassId], queryFn: ({ signal }) => listTemporaryFeeRecords({ classId: temporaryClassId, month: 'all' }, signal), enabled: Boolean(temporaryClassId) })
+  const scopeRead = temporaryClassId ? temporaryClassFees : classFees
+  const scopeLoading = Boolean(classId) && scopeRead.isLoading
+  const scopeError = classScope.kind === 'invalid' || (Boolean(classId) && scopeRead.isError)
+  const scopeReady = !classId || (classScope.kind !== 'invalid' && scopeRead.isSuccess)
   const inScope = (receipt: NonNullable<typeof pending.data>[number]) => (!studentId || receipt.student_id === studentId)
-    && (!classId || (classFees.data ?? []).some((fee) => receipt.receipt_key === `monthly_fee:${fee.id}`))
+    && (!classId || (classScope.kind === 'temporary'
+      ? (temporaryClassFees.data ?? []).some(fee => receipt.receipt_key === `temporary_class_payment:${fee.payment.id}`)
+      : classScope.kind === 'monthly' && (classFees.data ?? []).some(fee => receipt.receipt_key === `monthly_fee:${fee.id}`)))
   const visiblePending = (pending.data ?? []).filter(inScope)
   const visibleCompleted = (completed.data ?? []).filter(inScope)
   const groupedPending = groupByMonth(visiblePending)
@@ -49,6 +61,7 @@ export function ReceiptsPage() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['monthly-fees'] }),
       queryClient.invalidateQueries({ queryKey: ['temporary-class'] }),
+      queryClient.invalidateQueries({ queryKey: ['temporary-fees'] }),
       queryClient.invalidateQueries({ queryKey: ['receipt-queue'] }),
       queryClient.invalidateQueries({ queryKey: ['pending-receipts'] }),
       queryClient.invalidateQueries({ queryKey: ['pending-receipt-count'] }),
@@ -81,7 +94,7 @@ export function ReceiptsPage() {
       { id: '0', label: '待处理收据', render: () => <>
       <div className="section-heading-row receipts-heading">
         <div>
-          <h2>{pending.isError || (classId && classFees.isError) ? '待处理收据载入失败' : pending.isLoading || (classId && classFees.isLoading) ? '正在读取待处理收据…' : `待处理收据 ${visiblePending.length} 张`}</h2>
+          <h2>{pending.isError || scopeError ? '待处理收据载入失败' : pending.isLoading || scopeLoading ? '正在读取待处理收据…' : `待处理收据 ${visiblePending.length} 张`}</h2>
         </div>
         {visiblePending.length > 0 && (
           <label className="select-all-control">
@@ -91,10 +104,10 @@ export function ReceiptsPage() {
         )}
       </div>
 
-      {(pending.isLoading || (classId && classFees.isLoading)) && <LoadingBlock />}
+      {(pending.isLoading || scopeLoading) && <LoadingBlock />}
       {pending.isError && <ErrorBlock message="待开收据载入失败。" />}
-      {classId && classFees.isError && <ErrorBlock message="班级范围载入失败，请重试。" />}
-      {pending.isSuccess && (!classId || classFees.isSuccess) && visiblePending.length === 0 && <EmptyBlock message="目前没有待开收据。" />}
+      {scopeError && <><ErrorBlock message="班级范围载入失败，请重试。" /><button type="button" className="button button-secondary" onClick={() => void scopeRead.refetch()}>重试班级范围</button></>}
+      {pending.isSuccess && scopeReady && visiblePending.length === 0 && <EmptyBlock message="目前没有待开收据。" />}
 
       <div className="receipt-groups">
         {groupedPending.map(([month, receipts]) => (
@@ -135,8 +148,10 @@ export function ReceiptsPage() {
           <span>收费月份</span>
           <input type="month" value={completedMonth} onChange={(event) => { const next = new URLSearchParams(searchParams); next.set('completedMonth', event.target.value); setSearchParams(next, { replace: true }) }} />
         </label>
-        {completed.isLoading && <LoadingBlock />}
+        {(completed.isLoading || scopeLoading) && <LoadingBlock />}
         {completed.isError && <ErrorBlock message="已处理收据载入失败。" />}
+        {scopeError && <><ErrorBlock message="班级范围载入失败，请重试。" /><button type="button" className="button button-secondary" onClick={() => void scopeRead.refetch()}>重试班级范围</button></>}
+        {completed.isSuccess && scopeReady && visibleCompleted.length === 0 && <EmptyBlock message="目前没有已处理收据。" />}
         <div className="receipt-list">
           {visibleCompleted.map((receipt) => (
             <div className="receipt-row completed-receipt-row" key={receipt.receipt_key}>

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useIsMutating, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { TemporaryClassEnrollment } from '../../../types/domain'
 import { formatMalaysiaDateTime, formatMoney } from '../../../utils/format'
 import { getErrorMessage } from '../../../utils/errors'
@@ -10,8 +10,9 @@ import { markTemporaryClassPaymentPaid, undoTemporaryClassPayment, updateTempora
 import { parseTemporaryPaymentAmount, temporaryPaymentAmountError } from '../paymentAmount'
 import { preparePwaFormSave } from '../../settings/pwa/updateProtection'
 import { useContextDataBusy } from '../../../components/contextual/contextDataState'
+import { refreshTemporaryPayment } from '../temporaryPaymentCache'
 
-export function TemporaryPaymentRow({ enrollment, allowActions, allowAmountEdit = false }: { enrollment: TemporaryClassEnrollment; allowActions: boolean; allowAmountEdit?: boolean }) {
+export function TemporaryPaymentRow({ enrollment, allowActions, allowAmountEdit = false, backLabel = '临时班', onBusyChange }: { enrollment: TemporaryClassEnrollment; allowActions: boolean; allowAmountEdit?: boolean; backLabel?: string; onBusyChange?: (id: string, busy: boolean) => void }) {
   const queryClient = useQueryClient()
   const [error, setError] = useState('')
   const [editing, setEditing] = useState(false)
@@ -19,36 +20,40 @@ export function TemporaryPaymentRow({ enrollment, allowActions, allowAmountEdit 
   const amountRef = useRef(amount)
   const editButton = useRef<HTMLButtonElement>(null)
   const wasEditing = useRef(false)
-  useContextDataBusy(editing)
   useEffect(() => {
-    if (!editing && wasEditing.current) editButton.current?.focus()
+    if (!editing && wasEditing.current) editButton.current?.focus({ preventScroll: true })
     wasEditing.current = editing
   }, [editing])
   const payment = enrollment.payment
-  const refresh = async () => {
+  const refresh = async (updated?: NonNullable<TemporaryClassEnrollment['payment']>) => {
     setError('')
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['temporary-class', enrollment.temporary_class_id, 'enrollments'] }),
-      queryClient.invalidateQueries({ queryKey: ['temporary-classes', 'student', enrollment.student_id] }),
-      queryClient.invalidateQueries({ queryKey: ['pending-receipts'] }),
-      queryClient.invalidateQueries({ queryKey: ['pending-receipt-count'] }),
-      queryClient.invalidateQueries({ queryKey: ['receipt-queue'] }),
-    ])
+    await refreshTemporaryPayment(queryClient, enrollment, updated)
   }
+  const mutationKey = ['temporary-payment', payment?.id]
+  const pendingForPayment = useIsMutating({ mutationKey }) > 0
   const paid = useMutation({
+    mutationKey,
     mutationFn: () => markTemporaryClassPaymentPaid(payment?.id ?? ''),
-    onSuccess: refresh,
+    onSuccess: updated => refresh(updated),
     onError: (caughtError) => setError(getErrorMessage(caughtError, '确认缴费失败。')),
   })
   const undo = useMutation({
+    mutationKey,
     mutationFn: () => undoTemporaryClassPayment(payment?.id ?? ''),
-    onSuccess: refresh,
+    onSuccess: updated => refresh(updated),
     onError: (caughtError) => setError(getErrorMessage(caughtError, '撤销缴费失败。')),
   })
   const changeAmount = useMutation({
+    mutationKey,
     mutationFn: (value: number) => updateTemporaryClassPaymentAmount(payment?.id ?? '', enrollment.temporary_class_id, value),
   })
-  const busy = paid.isPending || undo.isPending || changeAmount.isPending
+  const busy = paid.isPending || undo.isPending || changeAmount.isPending || pendingForPayment
+  useContextDataBusy(editing || busy)
+  const paymentId = payment?.id ?? enrollment.id
+  useEffect(() => {
+    onBusyChange?.(paymentId, editing || busy)
+    return () => onBusyChange?.(paymentId, false)
+  }, [paymentId, editing, busy, onBusyChange])
   const canEdit = allowActions && allowAmountEdit && payment?.payment_status === 'unpaid'
 
   async function saveAmount(event: FormEvent<HTMLFormElement>) {
@@ -62,20 +67,14 @@ export function TemporaryPaymentRow({ enrollment, allowActions, allowAmountEdit 
     setError('')
     try {
       const updated = await changeAmount.mutateAsync(value)
-      queryClient.setQueryData<TemporaryClassEnrollment[]>(['temporary-class', enrollment.temporary_class_id, 'enrollments'], current =>
-        current?.map(item => item.payment?.id === updated.id ? { ...item, payment: updated } : item),
-      )
       acknowledgeSave()
       // A later edit must stay visible and protected, not be lost on success.
       if (amountRef.current === submittedText) setEditing(false)
-      await refresh()
+      await refresh(updated)
     } catch (caughtError) {
       const message = temporaryPaymentAmountError(caughtError)
       if (message.includes('刷新')) {
-        await Promise.allSettled([
-          queryClient.invalidateQueries({ queryKey: ['temporary-class', enrollment.temporary_class_id] }),
-          queryClient.invalidateQueries({ queryKey: ['temporary-classes', 'student', enrollment.student_id] }),
-        ])
+        await Promise.allSettled([refreshTemporaryPayment(queryClient, enrollment)])
       }
       setError(message)
     }
@@ -86,7 +85,7 @@ export function TemporaryPaymentRow({ enrollment, allowActions, allowAmountEdit 
 
   return (
     <article className="temporary-enrollment-row">
-      <ContextLink backLabel="临时班" className="identity-link" to={`/students/${enrollment.student.id}`}>
+      <ContextLink backLabel={backLabel} className="identity-link" to={`/students/${enrollment.student.id}`}>
         <StudentIdentity student={enrollment.student} />
       </ContextLink>
       <div className="temporary-payment-summary">
@@ -120,7 +119,7 @@ export function TemporaryPaymentRow({ enrollment, allowActions, allowAmountEdit 
       )}
       {editing && <form className="fee-amount-form" onSubmit={saveAmount}>
         <label className="field"><span>应缴金额</span>
-          <input type="number" inputMode="decimal" min="0" max="99999999.99" step="0.01" required autoFocus value={amount} onChange={event => {
+          <input type="number" inputMode="decimal" min="0" max="99999999.99" step="0.01" required autoFocus disabled={!canEdit} value={amount} onChange={event => {
             setAmount(event.target.value); amountRef.current = event.target.value
           }} />
         </label>
@@ -130,6 +129,7 @@ export function TemporaryPaymentRow({ enrollment, allowActions, allowAmountEdit 
         </div>
       </form>}
       {error && <p className="form-error" role="alert">{error}</p>}
+      {editing && payment.payment_status === 'paid' && !error && <p className="form-error" role="alert">这笔费用已缴，不能修改金额。请取消编辑后核对。</p>}
     </article>
   )
 }

@@ -22,9 +22,10 @@ interface MonthlyFeeCardProps {
   readonly?: boolean
   backLabel?: string
   showReminder?: boolean
+  showSource?: boolean
 }
 
-export function MonthlyFeeCard({ fee, showClass = true, showStudent = true, readonly = false, backLabel = '学费', showReminder = false }: MonthlyFeeCardProps) {
+export function MonthlyFeeCard({ fee, showClass = true, showStudent = true, readonly = false, backLabel = '学费', showReminder = false, showSource = false }: MonthlyFeeCardProps) {
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState(false)
   const [amount, setAmount] = useState(String(fee.actual_amount))
@@ -36,6 +37,7 @@ export function MonthlyFeeCard({ fee, showClass = true, showStudent = true, read
       queryClient.invalidateQueries({ queryKey: ['monthly-fees'] }),
       queryClient.invalidateQueries({ queryKey: ['pending-receipts'] }),
       queryClient.invalidateQueries({ queryKey: ['pending-receipt-count'] }),
+      queryClient.invalidateQueries({ queryKey: ['receipt-queue'] }),
     ])
   }
 
@@ -75,7 +77,7 @@ export function MonthlyFeeCard({ fee, showClass = true, showStudent = true, read
   }
 
   return (
-    <article className="fee-card">
+    <article className="fee-card" data-fee-key={`monthly_fee:${fee.id}`}>
       <div className="fee-card-main">
         {showStudent && fee.student && (
           <ContextLink backLabel={backLabel} className="fee-entity-link" to={`/students/${fee.student.id}`}>
@@ -83,8 +85,8 @@ export function MonthlyFeeCard({ fee, showClass = true, showStudent = true, read
           </ContextLink>
         )}
         {showClass && (fee.enrollment?.class
-          ? <ContextLink backLabel={backLabel} className="record-meta fee-entity-link" to={`/classes/${fee.enrollment.class.id}`}>{fee.enrollment.class.name}</ContextLink>
-          : <span className="record-meta">班级资料不可用</span>)}
+          ? <ContextLink backLabel={backLabel} className="record-meta fee-entity-link" to={`/classes/${fee.enrollment.class.id}`}>{showSource && <span className="unified-fee-source">常态班 · </span>}{fee.enrollment.class.name}</ContextLink>
+          : <span className="record-meta">{showSource && '常态班 · '}班级资料不可用</span>)}
         <div className="fee-amount-row">
           <span className="fee-period">{formatFeeMonth(fee.fee_month)}</span>
           <strong>{fee.actual_amount === fee.normal_amount ? formatMoney(fee.actual_amount) : `本月 ${formatMoney(fee.actual_amount)}`}</strong>

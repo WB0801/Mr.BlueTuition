@@ -1,5 +1,6 @@
 import { requireSupabase } from '../../../lib/requireSupabase'
 import type { EnsureMonthlyFeesResult, MonthlyFee, MonthlyFeeDetails, ReceiptQueueItem, Student } from '../../../types/domain'
+import { readAllPages } from '../../../utils/readAllPages'
 
 const feeSelection = `
   *,
@@ -26,6 +27,7 @@ export interface FeeFilters {
   enrollmentId?: string
   range?: readonly [number, number]
   signal?: AbortSignal
+  complete?: boolean
 }
 
 export async function ensureMonthlyFees(fromMonth: string, toMonth = fromMonth): Promise<EnsureMonthlyFeesResult> {
@@ -40,6 +42,7 @@ export async function ensureMonthlyFees(fromMonth: string, toMonth = fromMonth):
 }
 
 export async function listMonthlyFees(filters: FeeFilters = {}): Promise<MonthlyFeeDetails[]> {
+  if (filters.complete) return readAllPages((from, to) => listMonthlyFees({ ...filters, complete: false, range: [from, to] }), filters.signal)
   if (filters.studentIds?.length === 0) return []
   let query = requireSupabase()
     .from('monthly_fees')

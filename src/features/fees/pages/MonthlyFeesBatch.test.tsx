@@ -7,6 +7,7 @@ import { loadBatchReminderCandidates } from '../api/batchFeeReminderService'
 import { ensureMonthlyFees, markMonthlyFeePaid } from '../api/feesService'
 
 vi.mock('../../classes/api/classesService', () => ({ listClasses: vi.fn(async () => [{ id: 'c', name: '模拟会计 A' }]) }))
+vi.mock('../api/temporaryFeesService', () => ({ listTemporaryFeeRecords: vi.fn(async () => []), listTemporaryFeeClasses: vi.fn(async () => []) }))
 vi.mock('../api/batchFeeReminderService', () => ({ loadBatchReminderCandidates: vi.fn(async () => []) }))
 vi.mock('../api/feesService', () => ({ ensureMonthlyFees: vi.fn(async () => ({ created_count: 0 })), listMonthlyFees: vi.fn(async () => []), markMonthlyFeePaid: vi.fn() }))
 function Probe() { return <output data-testid="url">{useLocation().search}</output> }

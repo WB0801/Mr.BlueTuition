@@ -65,3 +65,11 @@ it('cancels a delayed identity read so it cannot restore an old name after editi
   expect(client.getQueryState(key)?.isInvalidated).toBe(true)
   expect(client.getQueryData(key)).not.toEqual(['old name'])
 })
+it.each(['students', 'temporary-class'])('refreshes unified temporary fee identity after %s changes without generation', async root => {
+  const { client } = setup(), fee = ['temporary-fees', 'list', '2026-10', '', ''], options = ['temporary-fee-classes']
+  client.setQueryData(fee, ['old name']); client.setQueryData(options, ['old class name'])
+  await client.invalidateQueries({ queryKey: [root] })
+  expect(client.getQueryState(fee)?.isInvalidated).toBe(true); expect(client.getQueryState(options)?.isInvalidated).toBe(true)
+  expect(client.getQueryState(['monthly-fees-generation','2026-10-01'])?.isInvalidated).toBe(false)
+  expect(client.getQueryState(['context-session-generation','2026-10-01'])?.isInvalidated).toBe(false)
+})

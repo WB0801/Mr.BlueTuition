@@ -8,6 +8,7 @@ import { ensureMonthlyFees, listMonthlyFees, markMonthlyFeePaid } from '../api/f
 import { MonthlyFeesPage } from './MonthlyFeesPage'
 
 vi.mock('../../classes/api/classesService', () => ({ listClasses: vi.fn() }))
+vi.mock('../api/temporaryFeesService', () => ({ listTemporaryFeeRecords: vi.fn(async () => []), listTemporaryFeeClasses: vi.fn(async () => []) }))
 vi.mock('../api/feesService', () => ({
   ensureMonthlyFees: vi.fn(),
   listMonthlyFees: vi.fn(),
@@ -94,8 +95,8 @@ describe('MonthlyFeesPage workflow', () => {
     const user = userEvent.setup()
     renderPage('/fees?month=2026-08')
     await screen.findByText('陈小明')
-    await user.selectOptions(screen.getByRole('combobox', { name: '班级' }), 'class-a')
-    await waitFor(() => expect(screen.getByTestId('location-search')).toHaveTextContent('classId=class-a'))
+    await user.selectOptions(screen.getByRole('combobox', { name: '班级' }), 'monthly:class-a')
+    await waitFor(() => expect(screen.getByTestId('location-search')).toHaveTextContent('classId=monthly%3Aclass-a'))
     await user.click(within(screen.getByLabelText('缴费状态')).getByRole('button', { name: /已缴/ }))
     await waitFor(() => expect(screen.getByTestId('location-search')).toHaveTextContent('status=paid'))
     const pending = screen.getByRole('heading', { name: /待开收据/ }).parentElement!
@@ -122,7 +123,7 @@ describe('MonthlyFeesPage workflow', () => {
     feeRows = [september, august]
     renderPage('/fees?studentId=student-new&month=all&status=all')
     await screen.findByText('蓝炜滨的缴费记录')
-    expect(listMonthlyFees).toHaveBeenCalledWith({ feeMonth: undefined, classId: undefined, studentId: 'student-new' })
+    expect(listMonthlyFees).toHaveBeenCalledWith(expect.objectContaining({ feeMonth: undefined, classId: undefined, studentId: 'student-new', complete: true }))
     expect(screen.getAllByText('蓝炜滨')).toHaveLength(2)
     const unpaidCard = screen.getByRole('button', { name: '确认已缴' }).closest('article')!
     expect(unpaidCard).toHaveTextContent('2026年8月')
