@@ -48,6 +48,7 @@ describe('ClassDetailPage hierarchy and connected navigation', () => {
     const students = await screen.findByRole('heading', { name: /当前学生/ })
     const management = screen.getByRole('button', { name: '班级管理' })
     expect(students).toBeVisible()
+    expect(screen.getByRole('link', { name: '导出资料' })).toHaveAttribute('href','/settings/export?classId=class-1')
     expect(screen.getByRole('button', { name: '学生名单' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: '课程' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '学费' })).toBeInTheDocument()

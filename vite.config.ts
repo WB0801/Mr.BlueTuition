@@ -44,7 +44,9 @@ export default defineConfig({
       workbox: {
         clientsClaim: true,
         skipWaiting: false,
-        globIgnores: ['**/version.json'],
+        // Export-only library: do not fetch ~930KB for every PWA installation.
+        // It is dynamically loaded on the user's explicit export action.
+        globIgnores: ['**/version.json', '**/exceljs.min-*.js'],
         cleanupOutdatedCaches: true,
         navigateFallback: 'index.html',
       },

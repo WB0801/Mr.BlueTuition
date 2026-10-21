@@ -1960,3 +1960,14 @@ button.session-card { width: 100%; color: inherit; font: inherit; text-align: le
 }
 @media (max-width: 360px) { .context-data-views { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (prefers-reduced-motion: reduce) { .signature-preview-dialog[open] { animation: none; } }
+/* On-demand data export shares existing controls and touch targets. */
+.export-controls { max-width: 58rem; display: grid; gap: 1.25rem; }
+.export-controls fieldset { min-width: 0; margin: 0; padding: 1rem; border: 1px solid var(--color-border); border-radius: var(--radius-md, 12px); }
+.export-controls legend { font-weight: 700; padding: 0 .35rem; }
+.export-controls h2 { font-size: 1.05rem; margin: 1rem 0 .5rem; }
+.export-choice-row, .export-detail-list { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; }
+.export-class-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,20rem),1fr)); gap: .25rem 1rem; margin-bottom: .75rem; }
+.export-check { display: flex; align-items: center; gap: .65rem; min-height: 44px; overflow-wrap: anywhere; min-width: 0; }
+.export-check input { width: 20px; height: 20px; flex: 0 0 20px; margin: 0; accent-color: var(--brand, #102743); }
+.export-check span { min-width: 0; }
+.export-status { overflow-wrap: anywhere; }

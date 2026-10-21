@@ -20,6 +20,11 @@ export function SettingsPage() {
         </section>
         <section className="settings-menu-group" aria-labelledby="settings-data-heading">
           <h2 id="settings-data-heading">资料管理</h2>
+          <ContextLink backLabel="设置" className="settings-menu-item" to="/settings/export">
+            <span className="settings-menu-icon"><Icon name="classes" size={21} /></span>
+            <span><strong>导出资料</strong></span>
+            <Icon name="chevron-right" size={19} />
+          </ContextLink>
           <ContextLink backLabel="设置" className="settings-menu-item" to="/settings/backup">
             <span className="settings-menu-icon"><Icon name="classes" size={21} /></span>
             <span><strong>完整资料备份</strong></span>

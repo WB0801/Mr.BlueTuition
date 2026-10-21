@@ -18,7 +18,7 @@ const internalRoutePatterns = [
   /^\/fees(?:\/unpaid|\/receipts|\/history)?$/,
   /^\/grades(?:\/school(?:\/new|\/[A-Za-z0-9_-]+(?:\/classes\/[A-Za-z0-9_-]+)?)?|\/quizzes(?:\/new|\/[A-Za-z0-9_-]+)?|\/rewards)?$/,
   /^\/temporary-classes(?:\/new|\/[A-Za-z0-9_-]+(?:\/edit)?)?$/,
-  /^\/settings(?:\/(?:backup|app|activity))?$/,
+  /^\/settings(?:\/(?:backup|app|activity|export))?$/,
 ]
 
 export function isSafeInternalRoute(to: unknown): to is string {
@@ -96,7 +96,7 @@ export function getDefaultBackTarget(pathname: string): ContextBackTarget | null
   if (pathname === '/temporary-classes/new' || /^\/temporary-classes\/[A-Za-z0-9_-]+$/.test(pathname)) {
     return { to: '/temporary-classes', label: '临时班' }
   }
-  if (/^\/settings\/(backup|app|activity)$/.test(pathname)) return { to: '/settings', label: '设置' }
+  if (/^\/settings\/(backup|app|activity|export)$/.test(pathname)) return { to: '/settings', label: '设置' }
   return { to: '/', label: '首页' }
 }
 

@@ -27,7 +27,7 @@ describe('Phase 8 PWA configuration', () => {
     expect(viteConfig).toContain('cleanupOutdatedCaches: true')
     expect(provider).toContain('5 * 60 * 1000')
     expect(viteConfig).toContain('injectRegister: null')
-    expect(viteConfig).toContain("globIgnores: ['**/version.json']")
+    expect(viteConfig).toMatch(/globIgnores:\s*\[[^\]]*['"]\*\*\/version\.json['"]/)
     expect(controller).toContain("updateViaCache: 'none'")
     expect(provider).toContain("window.addEventListener('offline', offline)")
     expect(provider).toContain("window.addEventListener('online', online)")
