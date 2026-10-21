@@ -1,10 +1,12 @@
 import type { ExportData } from './exportRules'
+import { completeExportFilterNames, type ExportWorksheetFilter } from './xlsxFilterCompatibility'
 
 export async function createExportWorkbook(data: ExportData, signal?: AbortSignal): Promise<Uint8Array> {
   signal?.throwIfAborted()
   const { default: ExcelJS } = await import('exceljs')
   signal?.throwIfAborted()
   const book = new ExcelJS.Workbook()
+  const filters:ExportWorksheetFilter[]=[]
   book.creator='蓝老师补习班'
   book.subject=data.range
   book.description=`范围：${data.range}\n明细：${data.dateScope}\n导出时间（马来西亚）：${data.exportedAt}\n出席按实际课程日期；成绩按考试日期；月费按相交收费月份；临时班费用按上课日期。仅已存可核实记录。`
@@ -18,6 +20,7 @@ export async function createExportWorkbook(data: ExportData, signal?: AbortSigna
       ws.addRow(sheet.rows[index])
     }
     ws.autoFilter={from:{row:1,column:1},to:{row:sheet.rows.length+1,column:sheet.headers.length}}
+    filters.push({name:ws.name,ref:`A1:${ws.getCell(sheet.rows.length+1,sheet.headers.length).address}`})
     ws.getCell('A1').note=`${book.description}\n${sheet.name}：${sheet.rows.length}笔`
     ws.headerFooter={oddFooter:`&L${sheet.rows.length}笔&C${data.exportedAt}（马来西亚）&R第&P页`}
     ws.eachRow((row,rowNumber)=> {
@@ -42,7 +45,7 @@ export async function createExportWorkbook(data: ExportData, signal?: AbortSigna
   signal?.throwIfAborted()
   const bytes=await book.xlsx.writeBuffer()
   signal?.throwIfAborted()
-  return new Uint8Array(bytes)
+  return completeExportFilterNames(new Uint8Array(bytes),filters,signal)
 }
 
 export function downloadExportWorkbook(bytes: Uint8Array, fileName: string) {
