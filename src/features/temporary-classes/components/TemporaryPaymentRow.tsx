@@ -11,11 +11,13 @@ import { parseTemporaryPaymentAmount, temporaryPaymentAmountError } from '../pay
 import { preparePwaFormSave } from '../../settings/pwa/updateProtection'
 import { useContextDataBusy } from '../../../components/contextual/contextDataState'
 import { refreshTemporaryPayment } from '../temporaryPaymentCache'
+import { TemporaryCancellationButton } from './TemporaryCancellationButton'
 
-export function TemporaryPaymentRow({ enrollment, allowActions, allowAmountEdit = false, backLabel = '临时班', onBusyChange }: { enrollment: TemporaryClassEnrollment; allowActions: boolean; allowAmountEdit?: boolean; backLabel?: string; onBusyChange?: (id: string, busy: boolean) => void }) {
+export function TemporaryPaymentRow({ enrollment, allowActions, allowAmountEdit = false, backLabel = '临时班', onBusyChange, classNameForCancellation, allowCancellation = true, onCancelled }: { enrollment: TemporaryClassEnrollment; allowActions: boolean; allowAmountEdit?: boolean; backLabel?: string; onBusyChange?: (id: string, busy: boolean) => void; classNameForCancellation?: string; allowCancellation?: boolean; onCancelled?: () => void }) {
   const queryClient = useQueryClient()
   const [error, setError] = useState('')
   const [editing, setEditing] = useState(false)
+  const [cancellationOpen, setCancellationOpen] = useState(false)
   const [amount, setAmount] = useState('')
   const amountRef = useRef(amount)
   const editButton = useRef<HTMLButtonElement>(null)
@@ -47,14 +49,16 @@ export function TemporaryPaymentRow({ enrollment, allowActions, allowAmountEdit 
     mutationKey,
     mutationFn: (value: number) => updateTemporaryClassPaymentAmount(payment?.id ?? '', enrollment.temporary_class_id, value),
   })
-  const busy = paid.isPending || undo.isPending || changeAmount.isPending || pendingForPayment
+  const busy = paid.isPending || undo.isPending || changeAmount.isPending || pendingForPayment || cancellationOpen
   useContextDataBusy(editing || busy)
   const paymentId = payment?.id ?? enrollment.id
   useEffect(() => {
     onBusyChange?.(paymentId, editing || busy)
     return () => onBusyChange?.(paymentId, false)
   }, [paymentId, editing, busy, onBusyChange])
-  const canEdit = allowActions && allowAmountEdit && payment?.payment_status === 'unpaid'
+  const cancelled = enrollment.status === 'cancelled'
+  const canAct = allowActions && !cancelled
+  const canEdit = canAct && allowAmountEdit && payment?.payment_status === 'unpaid'
 
   async function saveAmount(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -81,7 +85,7 @@ export function TemporaryPaymentRow({ enrollment, allowActions, allowAmountEdit 
   }
 
   if (!enrollment.student || !payment) return null
-  const receiptLabel = payment.receipt_status === 'pending' ? '收据待处理' : payment.receipt_status === 'completed' ? '收据已处理' : ''
+  const receiptLabel = payment.receipt_status === 'pending' ? cancelled ? '原收据待处理（已移出队列）' : '收据待处理' : payment.receipt_status === 'completed' ? cancelled ? '原收据已处理' : '收据已处理' : ''
 
   return (
     <article className="temporary-enrollment-row">
@@ -91,12 +95,14 @@ export function TemporaryPaymentRow({ enrollment, allowActions, allowAmountEdit 
       <div className="temporary-payment-summary">
         <strong>{formatMoney(payment.amount)}</strong>
         <span className="temporary-payment-state">
-          <Badge tone={payment.payment_status === 'paid' ? 'success' : 'warning'}>{payment.payment_status === 'paid' ? '已缴' : '未缴'}</Badge>
+          <Badge tone={cancelled ? 'neutral' : payment.payment_status === 'paid' ? 'success' : 'warning'}>{cancelled ? payment.refunded_at ? '已退费' : '已取消' : payment.payment_status === 'paid' ? '已缴' : '未缴'}</Badge>
           {receiptLabel && <small>{receiptLabel}</small>}
         </span>
-        {payment.paid_at && <small>缴费时间：{formatMalaysiaDateTime(payment.paid_at)}</small>}
+        {payment.paid_at && <small>{cancelled ? '原缴费时间' : '缴费时间'}：{formatMalaysiaDateTime(payment.paid_at)}</small>}
+        {enrollment.cancelled_at && <small>取消时间：{formatMalaysiaDateTime(enrollment.cancelled_at)}</small>}
+        {payment.refunded_at && <small>已记录外部全额退费：{formatMoney(payment.refunded_amount ?? payment.amount)} · {formatMalaysiaDateTime(payment.refunded_at)}</small>}
       </div>
-      {allowActions && payment.payment_status === 'unpaid' && !editing && (
+      {canAct && payment.payment_status === 'unpaid' && !editing && (
         <div className="inline-actions">
         <button className="button button-primary button-small" type="button" disabled={busy} onClick={() => paid.mutate()}>
           {paid.isPending ? '处理中…' : '确认已缴'}
@@ -107,7 +113,7 @@ export function TemporaryPaymentRow({ enrollment, allowActions, allowAmountEdit 
         }}>修改金额</button>}
         </div>
       )}
-      {allowActions && payment.payment_status === 'paid' && (
+      {canAct && payment.payment_status === 'paid' && (
         <button className="button button-secondary button-small" type="button" disabled={busy || editing} onClick={() => {
           const warning = payment.receipt_status === 'completed'
             ? '此笔费用已标记收据处理完成，撤销缴费后收据状态也会一并重置。确定继续吗？'
@@ -117,6 +123,7 @@ export function TemporaryPaymentRow({ enrollment, allowActions, allowAmountEdit 
           撤销缴费
         </button>
       )}
+      {((canAct && allowCancellation) || cancellationOpen) && classNameForCancellation && <TemporaryCancellationButton enrollment={enrollment} className={classNameForCancellation} disabled={busy || editing || !canAct || !allowCancellation} onOpenChange={setCancellationOpen} onCancelled={onCancelled} />}
       {editing && <form className="fee-amount-form" onSubmit={saveAmount}>
         <label className="field"><span>应缴金额</span>
           <input type="number" inputMode="decimal" min="0" max="99999999.99" step="0.01" required autoFocus disabled={!canEdit} value={amount} onChange={event => {
@@ -130,6 +137,7 @@ export function TemporaryPaymentRow({ enrollment, allowActions, allowAmountEdit 
       </form>}
       {error && <p className="form-error" role="alert">{error}</p>}
       {editing && payment.payment_status === 'paid' && !error && <p className="form-error" role="alert">这笔费用已缴，不能修改金额。请取消编辑后核对。</p>}
+      {editing && cancelled && <p className="form-error" role="alert">报名已取消，不能修改原费用。草稿已保留，请取消编辑后核对取消记录。</p>}
     </article>
   )
 }

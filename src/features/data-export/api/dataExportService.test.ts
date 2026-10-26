@@ -32,6 +32,18 @@ beforeEach(() => {
   }
 })
 describe('read-only export scope and completeness', () => {
+  it('cancelled registrations do not become attendance/absence; historical fee export preserves original payment and refund separately', async () => {
+    db.rows.temporary_classes=[{...base,id:'t',name:'虚构取消班',subject_id:'math',status:'active',start_at:'2026-10-01T06:00:00Z',end_at:'2026-10-01T08:00:00Z'}]
+    db.rows.temporary_class_enrollments=[{...base,id:'cancelled',temporary_class_id:'t',student_id:'s1',status:'cancelled',joined_at:'2026-10-01',cancelled_at:'2026-10-02T01:00:00Z'}]
+    db.rows.temporary_class_payments=[{...base,id:'original',temporary_class_enrollment_id:'cancelled',amount:30.25,payment_status:'paid',paid_at:'2026-10-01T00:00:00Z',receipt_status:'completed',refunded_amount:30.25,refunded_at:'2026-10-02T01:00:00Z'}]
+    db.rows.class_sessions=[{...base,id:'ts',class_id:null,temporary_class_id:'t',session_type:'temporary',status:'scheduled',current_start_at:'2026-10-01T06:00:00Z',current_end_at:'2026-10-01T08:00:00Z'}]
+    const current=await prepareDataExport(owner,{...options,classKeys:['temporary:t']},()=>{},undefined,now)
+    expect(current.sheets[0].rows).toHaveLength(0)
+    const history=await prepareDataExport(owner,{...options,history:true,classKeys:['temporary:t'],details:['fees','attendance']},()=>{},undefined,now)
+    const fee=history.sheets.find(s=>s.name==='学费记录')!
+    expect(fee.rows[0]).toEqual(['临时班','虚构取消班','同名学生','2026-10-01',30.25,'已缴','2026/10/1 08:00','已处理','已取消','2026/10/2 09:00',30.25,'2026/10/2 09:00'])
+    expect(history.sheets.find(s=>s.name==='出席记录')!.rows).toHaveLength(0)
+  })
   it('default roster has exactly four columns, full capped pages and no optional reads, storage or RPC', async () => {
     const result = await prepareDataExport(owner,options,()=>{},undefined,now)
     expect(result.sheets.map(s=>s.name)).toEqual(['学生名单'])
@@ -80,7 +92,7 @@ describe('read-only export scope and completeness', () => {
     db.rows.monthly_fees=[{...base,id:'m',student_id:'s1',enrollment_id:'e1',fee_month:'2026-11-01',actual_amount:0,payment_status:'waived',paid_at:null,receipt_status:'not_applicable'}]
     const result=await prepareDataExport(owner,{...options,history:true,classKeys:['regular:c1','temporary:c1'],details:['fees'],start:'2026-11-01',end:'2026-11-01'},()=>{},undefined,now)
     expect(result.sheets[0].rows).toHaveLength(3)
-    expect(result.sheets[1].rows).toEqual([['常态班','同名班','同名学生','2026-11',0,'免缴',null,'不适用'],['临时班','同名班','同名学生','2026-11-01',25.5,'已缴','2027/1/1 00:00','已处理']])
+    expect(result.sheets[1].rows).toEqual([['常态班','同名班','同名学生','2026-11',0,'免缴',null,'不适用',null,null,null,null],['临时班','同名班','同名学生','2026-11-01',25.5,'已缴','2027/1/1 00:00','已处理','已结束',null,null,null]])
   })
   it('reads more than 1000 rows and batches UUIDs without truncation or duplicate roster identities',async()=>{
     db.cap=137

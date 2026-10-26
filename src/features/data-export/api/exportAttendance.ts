@@ -39,7 +39,7 @@ export async function buildAttendanceSheet(scope: ExportScope, read: ExportReade
     const klass=required(regular??temporary,'课程班级')
     const roster=new Map<string,MakeupLink|null>()
     if (session.session_type==='temporary') {
-      for (const e of scope.temporaryEnrollments) if (e.temporary_class_id===session.temporary_class_id) roster.set(e.student_id,null)
+      for (const e of scope.temporaryEnrollments) if (e.temporary_class_id===session.temporary_class_id && e.status!=='cancelled') roster.set(e.student_id,null)
     } else {
       for (const e of scope.enrollments) if (e.class_id===session.class_id&&atEnrollmentDate(e,date)) roster.set(e.student_id,null)
       for (const l of links.values()) {

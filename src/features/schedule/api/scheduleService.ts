@@ -43,12 +43,12 @@ export interface StudentAttendanceScope {
 export async function loadStudentAttendanceScope(studentId: string): Promise<StudentAttendanceScope> {
   const [enrollments, temporary, makeup] = await Promise.all([
     readStudentParticipationRows<{ class_id: string; join_date: string; end_date: string | null }>('enrollments', 'id,class_id,join_date,end_date', studentId),
-    readStudentParticipationRows<{ temporary_class_id: string }>('temporary_class_enrollments', 'id,temporary_class_id', studentId),
+    readStudentParticipationRows<{ temporary_class_id: string; status: string }>('temporary_class_enrollments', 'id,temporary_class_id,status', studentId),
     readStudentParticipationRows<{ target_session_id: string }>('makeup_links', 'id,target_session_id', studentId),
   ])
   return {
     enrollments: enrollments.map((item) => ({ classId: item.class_id, joinDate: item.join_date, endDate: item.end_date })),
-    temporaryClassIds: [...new Set(temporary.map((item) => item.temporary_class_id))],
+    temporaryClassIds: [...new Set(temporary.filter(item => item.status !== 'cancelled').map((item) => item.temporary_class_id))],
     makeupSessionIds: [...new Set(makeup.map((item) => item.target_session_id))],
   }
 }

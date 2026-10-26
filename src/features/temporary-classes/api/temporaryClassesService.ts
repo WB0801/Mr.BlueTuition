@@ -26,12 +26,12 @@ export interface StudentTemporaryParticipation extends TemporaryClassEnrollment 
 export async function listTemporaryClasses(status: TemporaryClassStatus): Promise<TemporaryClassListItem[]> {
   const { data, error } = await requireSupabase()
     .from('temporary_classes')
-    .select(`${temporaryClassSelection}, registrations:temporary_class_enrollments(id, payment:temporary_class_payments(payment_status))`)
+    .select(`${temporaryClassSelection}, registrations:temporary_class_enrollments(id,status, payment:temporary_class_payments(payment_status))`)
     .eq('status', status)
     .order('start_at', { ascending: status === 'active' })
   if (error) throw error
   return (data ?? []).map((row) => {
-    const registrations = Array.isArray(row.registrations) ? row.registrations : []
+    const registrations = Array.isArray(row.registrations) ? row.registrations.filter((item: Record<string, unknown>) => item.status !== 'cancelled') : []
     const paidCount = registrations.filter((registration: Record<string, unknown>) => {
       const rawPayment = (Array.isArray(registration.payment) ? registration.payment[0] : registration.payment) as Record<string, unknown> | undefined
       return rawPayment?.payment_status === 'paid'
@@ -108,7 +108,7 @@ export async function listStudentTemporaryClasses(studentId: string): Promise<St
     return {
       ...enrollment,
       session: session as StudentTemporaryParticipation['session'],
-      attended: session ? attendedSessionIds.has(session.id) : false,
+      attended: enrollment.status !== 'cancelled' && !!session && attendedSessionIds.has(session.id),
     }
   })
 }
@@ -168,6 +168,18 @@ export async function undoTemporaryClassPayment(paymentId: string) {
   return callPaymentRpc('undo_temporary_class_payment', paymentId)
 }
 
+/** Expected amount detects a stale confirmation; the server derives the refund. */
+export async function cancelTemporaryClassEnrollment(enrollment: TemporaryClassEnrollment, refundConfirmed: boolean, requestId: string): Promise<TemporaryClassEnrollment> {
+  if (!enrollment.payment || !requestId) throw new Error('报名与付款关联不完整，请刷新后重试。')
+  const { data, error } = await requireSupabase().rpc('cancel_temporary_class_enrollment', {
+    p_enrollment_id: enrollment.id, p_payment_id: enrollment.payment.id,
+    p_expected_status: enrollment.payment.payment_status, p_expected_amount: enrollment.payment.amount,
+    p_refund_confirmed: refundConfirmed, p_client_request_id: requestId,
+  })
+  if (error) throw error
+  return mapTemporaryClassEnrollment(data)
+}
+
 export async function endTemporaryClass(classId: string): Promise<TemporaryClass> {
   const { data, error } = await requireSupabase().rpc('end_temporary_class', {
     p_temporary_class_id: classId,
@@ -209,5 +221,5 @@ function mapTemporaryClassEnrollment(row: Record<string, unknown>): TemporaryCla
 
 function mapPayment(value: unknown): TemporaryClassPayment {
   const row = value as Record<string, unknown>
-  return { ...row, amount: Number(row.amount) } as TemporaryClassPayment
+  return { ...row, amount: Number(row.amount), refunded_amount: row.refunded_amount == null ? null : Number(row.refunded_amount) } as TemporaryClassPayment
 }

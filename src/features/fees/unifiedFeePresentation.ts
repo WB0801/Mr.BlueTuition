@@ -23,6 +23,7 @@ export function selectUnifiedFees(rows: UnifiedFeeRecord[], options: { month: st
   const keyword = options.search.trim().toLocaleLowerCase(), seen = new Set<string>()
   const bounds = options.month === 'all' ? null : malaysiaFeeMonthBounds(options.month)
   return rows.filter(item => {
+    if (item.source === 'temporary_class_payment' && item.record.enrollment.status === 'cancelled') return false
     const identity = unifiedFeeKey(item)
     if (seen.has(identity)) return false
     seen.add(identity)

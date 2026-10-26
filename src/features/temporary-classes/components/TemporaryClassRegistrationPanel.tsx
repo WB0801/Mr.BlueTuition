@@ -33,7 +33,7 @@ export function TemporaryClassRegistrationPanel({
     queryFn: () => listStudents(),
     enabled: active && mode === 'join',
   })
-  const enrolledIds = useMemo(() => enrollments.map((item) => item.student_id), [enrollments])
+  const enrolledIds = useMemo(() => enrollments.filter(item => item.status !== 'cancelled').map((item) => item.student_id), [enrollments])
   const candidates = useMemo(
     () => filterEligibleStudents(students.data ?? [], enrolledIds, deferredSearch),
     [deferredSearch, enrolledIds, students.data],

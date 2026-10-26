@@ -100,7 +100,7 @@ export async function listReceiptQueue(
   if (receiptPeriod) query = query.eq('receipt_period', receiptPeriod)
   const { data, error } = await query
   if (error) throw error
-  return (data ?? []).map((item) => ({ ...item, amount: Number(item.amount) })) as ReceiptQueueItem[]
+  return (data ?? []).map((item) => ({ ...item, amount: Number(item.amount), refunded_amount: item.refunded_amount == null ? null : Number(item.refunded_amount) })) as ReceiptQueueItem[]
 }
 
 export async function completeReceipts(receiptKeys: string[]): Promise<number> {
@@ -117,13 +117,13 @@ export async function getReceiptPaymentTarget(receipt: ReceiptQueueItem): Promis
     return `/fees?${params}`
   }
   const { data, error } = await requireSupabase().from('temporary_class_payments')
-    .select('id,enrollment:temporary_class_enrollments!temporary_class_payments_enrollment_owner_fk(student_id,temporary_class_id)')
+    .select('id,enrollment:temporary_class_enrollments!temporary_class_payments_enrollment_owner_fk(student_id,temporary_class_id,status)')
     .eq('id', receipt.source_id).single()
   if (error) throw error
   const raw = data?.enrollment
-  const enrollment = (Array.isArray(raw) ? raw[0] : raw) as { student_id: string; temporary_class_id: string } | null
+  const enrollment = (Array.isArray(raw) ? raw[0] : raw) as { student_id: string; temporary_class_id: string; status: string } | null
   if (!enrollment?.temporary_class_id || enrollment.student_id !== receipt.student_id) throw new Error('无法确认这笔收据的原缴费记录。')
-  return `/temporary-classes/${encodeURIComponent(enrollment.temporary_class_id)}?paymentId=${encodeURIComponent(receipt.source_id)}`
+  return `/temporary-classes/${encodeURIComponent(enrollment.temporary_class_id)}?paymentId=${encodeURIComponent(receipt.source_id)}${enrollment.status === 'cancelled' ? '&panel=cancelled' : ''}`
 }
 
 export async function restoreReceipt(receiptKey: string): Promise<boolean> {

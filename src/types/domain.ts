@@ -431,7 +431,7 @@ export interface GradeEntryRow {
 }
 
 export type TemporaryClassStatus = 'active' | 'ended'
-export type TemporaryClassEnrollmentStatus = 'active' | 'ended'
+export type TemporaryClassEnrollmentStatus = 'active' | 'ended' | 'cancelled'
 export type TemporaryPaymentStatus = 'unpaid' | 'paid'
 export type TemporaryReceiptStatus = 'not_applicable' | 'pending' | 'completed'
 
@@ -460,6 +460,8 @@ export interface TemporaryClassPayment {
   receipt_completed_at: string | null
   created_at: string
   updated_at: string
+  refunded_amount?: number | null
+  refunded_at?: string | null
 }
 
 export interface TemporaryClassEnrollment {
@@ -470,6 +472,8 @@ export interface TemporaryClassEnrollment {
   joined_at: string
   status: TemporaryClassEnrollmentStatus
   created_at: string
+  cancelled_at?: string | null
+  cancel_request_id?: string | null
   student?: Pick<Student, 'id' | 'name' | 'school_class' | 'phone'> | null
   payment?: TemporaryClassPayment | null
   temporary_class?: TemporaryClass | null
@@ -500,4 +504,7 @@ export interface ReceiptQueueItem {
   paid_at: string
   receipt_completed_at: string | null
   receipt_period: string
+  cancelled_at?: string | null
+  refunded_amount?: number | null
+  refunded_at?: string | null
 }

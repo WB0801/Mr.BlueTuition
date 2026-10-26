@@ -20,12 +20,12 @@ export function StudentTemporaryClassesSection({ studentId, active = true }: { s
       {!participations.isLoading && participations.data?.length === 0 && <EmptyBlock message="还没有参加过临时班。" />}
       <div className="record-list">
         {participations.data?.map((item) => item.temporary_class && (
-          <ContextLink backLabel="学生" className="record-card student-temporary-class-card" to={`/temporary-classes/${item.temporary_class.id}`} key={item.id}>
+          <ContextLink backLabel="学生" className="record-card student-temporary-class-card" to={`/temporary-classes/${item.temporary_class.id}?paymentId=${encodeURIComponent(item.payment?.id ?? '')}${item.status === 'cancelled' ? '&panel=cancelled' : ''}`} key={item.id}>
             <span className="record-main">
               <strong>{item.temporary_class.name}</strong>
               <span>{formatSessionTimeRange(item.temporary_class.start_at, item.temporary_class.end_at)}</span>
               <small>
-                {formatMoney(item.payment?.amount ?? item.temporary_class.fee_amount)} · {item.payment?.payment_status === 'paid' ? '已缴' : '未缴'} · {attendanceLabel(item)}
+                {formatMoney(item.payment?.amount ?? item.temporary_class.fee_amount)} · {item.status === 'cancelled' ? item.payment?.refunded_at ? '已退费 · 报名已取消' : '报名已取消，不再追缴' : `${item.payment?.payment_status === 'paid' ? '已缴' : '未缴'} · ${attendanceLabel(item)}`}
               </small>
             </span>
             <span className={`status-badge status-${item.temporary_class.status}`}>{item.temporary_class.status === 'active' ? '进行中' : '已结束'}</span>

@@ -7,7 +7,7 @@ export const exportColumns = {
   classes: 'id,name,subject_id,status,start_date,end_date',
   temporary_classes: 'id,name,subject_id,status,start_at,end_at',
   enrollments: 'id,student_id,class_id,status,join_date,end_date',
-  temporary_class_enrollments: 'id,temporary_class_id,student_id,status,joined_at',
+  temporary_class_enrollments: 'id,temporary_class_id,student_id,status,joined_at,cancelled_at',
   students: 'id,name,school_class,phone',
   subjects: 'id,name',
   class_sessions: 'id,class_id,temporary_class_id,session_type,current_start_at,current_end_at,status',
@@ -18,7 +18,7 @@ export const exportColumns = {
   school_exams: 'id,subject_id,name,exam_date,max_score',
   school_exam_scores: 'id,exam_id,student_id,score',
   monthly_fees: 'id,student_id,enrollment_id,fee_month,actual_amount,payment_status,paid_at,receipt_status',
-  temporary_class_payments: 'id,temporary_class_enrollment_id,amount,payment_status,paid_at,receipt_status',
+  temporary_class_payments: 'id,temporary_class_enrollment_id,amount,payment_status,paid_at,receipt_status,refunded_amount,refunded_at',
 } as const
 export type ExportTable = keyof typeof exportColumns
 const tableLabels: Record<ExportTable,string>={classes:'常态班',temporary_classes:'临时班',enrollments:'报读',temporary_class_enrollments:'临时班报名',students:'学生',subjects:'科目',class_sessions:'已存课程',attendance_records:'出席记录',makeup_links:'补课关联',tuition_quizzes:'小考',tuition_quiz_scores:'小考成绩',school_exams:'学校考试',school_exam_scores:'学校考试成绩',monthly_fees:'常态班学费',temporary_class_payments:'临时班费用'}

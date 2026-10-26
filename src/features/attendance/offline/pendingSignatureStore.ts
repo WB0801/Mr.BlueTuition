@@ -11,6 +11,7 @@ export interface PendingSignature {
   signature: Blob
   capturedAt: string
   wasOffline: boolean
+  temporaryEnrollmentId?: string
 }
 
 export async function savePendingSignature(item: PendingSignature): Promise<void> {

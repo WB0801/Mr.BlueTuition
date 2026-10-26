@@ -87,7 +87,7 @@ export function MonthlyFeesPage({ view }: MonthlyFeesPageProps) {
     queryKey: ['temporary-fees', 'editing', record.payment.id, record.class.id, record.enrollment.student_id],
     queryFn: async ({ signal }: { signal: AbortSignal }) => {
       const latest = await getTemporaryFeeRecord(record.payment.id, record.class.id, record.enrollment.student_id, signal)
-      if (!signal.aborted) patchTemporaryFeeLists(queryClient, latest.payment)
+      if (!signal.aborted) patchTemporaryFeeLists(queryClient, latest.payment, latest.enrollment)
       return latest
     },
     initialData: record,

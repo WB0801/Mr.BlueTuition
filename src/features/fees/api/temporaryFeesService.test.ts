@@ -8,7 +8,7 @@ beforeEach(() => {
   api.from.mockImplementation((table: string) => {
     const request: Record<string, unknown> = { table }; api.requests.push(request)
     const q: Record<string, unknown> = {}
-    for (const method of ['select', 'order', 'eq', 'or', 'abortSignal']) q[method] = (...args: unknown[]) => { request[method] = [...((request[method] as unknown[][]) ?? []), args]; return q }
+    for (const method of ['select', 'order', 'eq', 'neq', 'or', 'abortSignal']) q[method] = (...args: unknown[]) => { request[method] = [...((request[method] as unknown[][]) ?? []), args]; return q }
     q.range = (from: number, to: number) => { request.range = [from, to]; return Promise.resolve({ data: from === failAt ? null : data.slice(from, Math.min(to + 1, from + 137)), error: from === failAt ? new Error('isolated failure') : null }) }
     q.single = () => Promise.resolve({ data: data.find(r => ((request.eq as string[][]) ?? []).some(([field, value]) => field === 'id' && value === r.id)), error: null })
     return q
@@ -46,4 +46,10 @@ it('rechecks only the retained original ID, class and student without any month 
 it('does not broaden an incomplete retained identity into a list read', async () => {
   await expect(getTemporaryFeeRecord('', 't', 's')).rejects.toThrow()
   expect(api.from).not.toHaveBeenCalled(); expect(api.rpc).not.toHaveBeenCalled()
+})
+it('excludes cancelled debt but preserves ended history and exact cancelled payment verification', async () => {
+  data = [row('ended'), { ...row('cancelled'), enrollment: { ...row('cancelled').enrollment, status: 'cancelled' } }]
+  expect((await listTemporaryFeeRecords({ month: 'all' })).map(r => r.payment.id)).toEqual(['ended'])
+  expect(api.requests[0].neq).toEqual([['enrollment.status', 'cancelled']])
+  expect((await getTemporaryFeeRecord('cancelled','t','s')).enrollment.status).toBe('cancelled')
 })

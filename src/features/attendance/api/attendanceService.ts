@@ -17,6 +17,15 @@ export async function getSessionRoster(sessionId: string): Promise<SessionRoster
   return (data ?? []) as SessionRosterEntry[]
 }
 
+/** Bind new temporary ink to one specific registration; never use for recovery. */
+export async function getTemporarySignatureEnrollmentId(classId: string, studentId: string): Promise<string> {
+  const { data, error } = await requireSupabase().from('temporary_class_enrollments').select('id')
+    .eq('temporary_class_id', classId).eq('student_id', studentId).neq('status', 'cancelled').single()
+  if (error) throw error
+  if (!data?.id) throw new Error('找不到有效的临时班报名，请返回名单核对。')
+  return data.id
+}
+
 export async function searchCrossClassCandidates(
   sessionId: string,
   search: string,
@@ -148,6 +157,7 @@ export async function recordAttendance(
   clientRequestId: string,
   capturedAt: string,
   useDeviceCapturedAt: boolean,
+  temporaryEnrollmentId?: string,
 ): Promise<AttendanceRecord> {
   const { data, error } = await requireSupabase().rpc('record_attendance', {
     p_session_id: sessionId,
@@ -156,6 +166,7 @@ export async function recordAttendance(
     p_client_request_id: clientRequestId,
     p_captured_at: capturedAt,
     p_use_device_captured_at: useDeviceCapturedAt,
+    ...(temporaryEnrollmentId ? { p_temporary_class_enrollment_id: temporaryEnrollmentId } : {}),
   })
   if (error) throw error
   return data as AttendanceRecord

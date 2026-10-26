@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ContextLink } from '../../../components/navigation/ContextLink'
@@ -32,6 +32,12 @@ function TemporaryClassDetailView({ temporaryClassId }: { temporaryClassId: stri
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [busyRows, setBusyRows] = useState<Set<string>>(() => new Set())
+  const rowBusy = useCallback((id: string, busy: boolean) => setBusyRows(current => {
+    if (current.has(id) === busy) return current
+    const next = new Set(current); if (busy) next.add(id); else next.delete(id); return next
+  }), [])
   const temporaryClass = useQuery({
     queryKey: ['temporary-class', temporaryClassId],
     queryFn: () => getTemporaryClass(temporaryClassId),
@@ -59,14 +65,18 @@ function TemporaryClassDetailView({ temporaryClassId }: { temporaryClassId: stri
   })
 
   if (temporaryClass.isLoading || session.isLoading || enrollments.isLoading) return <LoadingBlock />
-  if (temporaryClass.isError || !temporaryClass.data) return <ErrorBlock message="找不到这个临时班。" />
-  if (session.isError || !session.data) return <ErrorBlock message="临时班课程载入失败。" />
-  if (enrollments.isError) return <ErrorBlock message="报名名单载入失败。" />
+  if (!temporaryClass.data) return <ErrorBlock message="找不到这个临时班。" />
+  if (!session.data) return <ErrorBlock message="临时班课程载入失败。" />
+  if (enrollments.isError && !enrollments.data) return <ErrorBlock message="报名名单载入失败。" />
 
   const data = temporaryClass.data
   const isActive = data.status === 'active'
-  const paidCount = enrollments.data?.filter((item) => item.payment?.payment_status === 'paid').length ?? 0
-  const enrollmentCount = enrollments.data?.length ?? 0
+  const readError = temporaryClass.isError || session.isError || enrollments.isError
+  const current = (enrollments.data ?? []).filter(item => item.status !== 'cancelled')
+  const cancelled = (enrollments.data ?? []).filter(item => item.status === 'cancelled')
+  const paidCount = current.filter((item) => item.payment?.payment_status === 'paid').length
+  const enrollmentCount = current.length
+  const linkedCancelled = cancelled.some(item => item.payment?.id === paymentId)
 
   return (
     <section>
@@ -83,17 +93,24 @@ function TemporaryClassDetailView({ temporaryClassId }: { temporaryClassId: stri
           <div><dt>收费进度</dt><dd>{paidCount} / {enrollmentCount} 已缴</dd></div>
       </dl>
 
-      <ContextDataWorkspace label="临时班相关资料" defaultPanel="students" sections={[
+      {notice && <p className="success-message" role="status">{notice}</p>}
+      {readError && <div><ErrorBlock message="资料刷新失败，已载入记录及当前操作保留。请重试后核对最新状态。" /><button type="button" className="button button-secondary" onClick={() => { void temporaryClass.refetch(); void session.refetch(); void enrollments.refetch() }}>重试临时班资料</button></div>}
+      <ContextDataWorkspace label="临时班相关资料" defaultPanel={linkedCancelled ? 'cancelled' : 'students'} sections={[
       { id: 'students', label: '学生与收费', render: () => <section className="content-section">
         {paymentId && <div className="scope-notice"><strong>收据对应的临时班缴费记录</strong><button className="button button-text" type="button" onClick={() => { const next = new URLSearchParams(searchParams); next.delete('paymentId'); setSearchParams(next, { replace: true }) }}>显示全部学生缴费记录</button></div>}
         <div className="section-heading-row">
-          <h2>学生名单 {enrollmentCount} 人</h2>
+          <h2 tabIndex={-1} data-temporary-roster-heading>学生名单 {enrollmentCount} 人</h2>
         </div>
-        {!enrollments.data?.length && <EmptyBlock message="目前还没有学生报名。" />}
+        {!current.length && <EmptyBlock message="目前没有有效报名。" />}
         <div className="temporary-enrollment-list compact-data-list">
-          {enrollments.data?.filter((enrollment) => !paymentId || enrollment.payment?.id === paymentId).map((enrollment) => <TemporaryPaymentRow enrollment={enrollment} allowActions allowAmountEdit={isActive} key={enrollment.id} />)}
+          {enrollments.data?.filter(enrollment => (enrollment.status !== 'cancelled' || busyRows.has(enrollment.payment?.id ?? enrollment.id)) && (!paymentId || enrollment.payment?.id === paymentId)).map((enrollment) => <TemporaryPaymentRow enrollment={enrollment} allowActions={!readError} allowAmountEdit={isActive} key={enrollment.id} onBusyChange={rowBusy} classNameForCancellation={data.name} allowCancellation={isActive && !readError} onCancelled={() => setNotice('报名已取消，原记录可在「取消记录」查看。')} />)}
           {paymentId && !enrollments.data?.some((enrollment) => enrollment.payment?.id === paymentId) && <EmptyBlock message="这笔缴费记录已不存在或不属于此临时班。" />}
         </div>
+      </section> },
+      { id: 'cancelled', label: `取消记录（${cancelled.length}）`, render: () => <section className="content-section"><h2 tabIndex={-1} data-temporary-roster-heading>取消记录</h2>
+        {cancelled.length === 0 && <EmptyBlock message="没有取消记录。" />}
+        {cancelled.filter(item => !paymentId || item.payment?.id === paymentId).map(item => <TemporaryPaymentRow key={item.id} enrollment={item} allowActions={false} />)}
+        {paymentId && <button type="button" className="button button-text" onClick={() => { const next = new URLSearchParams(searchParams); next.delete('paymentId'); setSearchParams(next, { replace: true }) }}>显示全部取消记录</button>}
       </section> },
       { id: 'join', kind: 'action' as const, label: '加入学生', render: active => isActive ? <TemporaryClassRegistrationPanel classId={data.id} enrollments={enrollments.data ?? []} active={active} /> : <EmptyBlock message="此临时班已结束，不能加入学生。" /> },
       { id: 'create', kind: 'action' as const, label: '新增学生并报名', render: active => isActive ? <TemporaryClassRegistrationPanel classId={data.id} enrollments={enrollments.data ?? []} mode="create" active={active} /> : <EmptyBlock message="此临时班已结束，不能新增报名。" /> },

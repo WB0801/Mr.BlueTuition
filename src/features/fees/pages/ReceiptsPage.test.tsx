@@ -22,6 +22,14 @@ it('links the receipt identity and exact original payment without toggling the c
   await userEvent.setup().click(screen.getByRole('link', { name: '查看缴费记录' }))
   expect(checkbox).not.toBeChecked()
 })
+it('completed refunded receipts retain history and payment linkage without restore action', async () => {
+  vi.mocked(listReceiptQueue).mockResolvedValue([{ receipt_key:'temporary_class_payment:refunded',source_type:'temporary_class_payment',source_id:'refunded',student_id:'s',student_name:'虚构已退费',source_name:'虚构临时班',amount:30.25,receipt_period:'2026-10-01',paid_at:'2026-10-01T00:00:00Z',receipt_completed_at:'2026-10-01T01:00:00Z',cancelled_at:'2026-10-02T00:00:00Z',refunded_amount:30.25,refunded_at:'2026-10-02T00:00:00Z' }] as ReceiptQueueItem[])
+  render(<QueryClientProvider client={new QueryClient()}><MemoryRouter initialEntries={['/fees/receipts?completed=1']}><ReceiptsPage /></MemoryRouter></QueryClientProvider>)
+  const region=screen.getByRole('region',{name:'已处理收据'})
+  expect(await within(region).findByText(/已退费 RM30.25/)).toBeVisible()
+  expect(within(region).queryByRole('button',{name:'恢复为待处理'})).toBeNull()
+  expect(await within(region).findByRole('link',{name:'查看缴费记录'})).toBeVisible()
+})
 it('restores a historical receipt month and expanded history after a real student round trip', async () => {
   const row = { receipt_key: 'monthly_fee:old-fee', source_id: 'old-fee', source_type: 'monthly_fee', student_id: 'student-a', student_name: '旧月学生', school_class: '高一甲', phone: null, source_name: '会计 A', amount: 120, receipt_period: '2026-06-01', paid_at: '2026-06-01T08:00:00Z', receipt_completed_at: '2026-06-02T08:00:00Z' } as ReceiptQueueItem
   vi.mocked(listReceiptQueue).mockImplementation(async (status, month) => status === 'completed' && month === '2026-06-01' ? [row] : [])
@@ -60,7 +68,7 @@ it.each(['monthly', 'temporary'])('preserves the %s class identity passed from u
   expect(await screen.findByRole('link', { name: kind === 'monthly' ? /常态学生/ : /临时学生/ })).toBeVisible()
   expect(screen.queryByRole('link', { name: kind === 'monthly' ? /临时学生/ : /常态学生/ })).not.toBeInTheDocument()
   if (kind === 'monthly') expect(listMonthlyFees).toHaveBeenLastCalledWith({ classId: 'same', paymentStatus: 'paid', complete: true })
-  else expect(listTemporaryFeeRecords).toHaveBeenLastCalledWith({ classId: 'same', month: 'all' }, expect.any(AbortSignal))
+  else expect(listTemporaryFeeRecords).toHaveBeenLastCalledWith({ classId: 'same', month: 'all', includeCancelled: true }, expect.any(AbortSignal))
 })
 it('reports and retries failed class scope in the visible completed-receipts panel', async () => {
   vi.mocked(listReceiptQueue).mockResolvedValue([{ receipt_key: 'temporary_class_payment:t', source_type: 'temporary_class_payment', source_id: 't', student_id: 's', student_name: '历史临时学生', source_name: '同名班', amount: 30, receipt_period: '2026-10-01', paid_at: '2026-10-01T00:00:00Z' }] as ReceiptQueueItem[])

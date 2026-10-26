@@ -10,6 +10,17 @@ function emptyTables(): BackupTableData {
 }
 
 describe('Phase 8 complete backup archive', () => {
+  it('retains cancellation and refund facts as extra JSON and CSV fields without format changes', async () => {
+    const tables=emptyTables()
+    tables.temporary_class_enrollments.push({id:'old',status:'cancelled',cancelled_at:'2026-10-24T00:00:00Z',cancel_request_id:'request'})
+    tables.temporary_class_payments.push({id:'payment',temporary_class_enrollment_id:'old',amount:30.25,payment_status:'paid',paid_at:'2026-10-01T00:00:00Z',refunded_amount:30.25,refunded_at:'2026-10-24T00:00:00Z',receipt_status:'completed'})
+    const archive=await buildBackupArchive({ownerId,exportedAt:new Date('2026-10-24T00:00:00Z'),tables,signatures:[]})
+    const parsed=await readBackupArchiveData(archive.bytes)
+    expect(parsed.tables.temporary_class_enrollments).toEqual(tables.temporary_class_enrollments)
+    expect(parsed.tables.temporary_class_payments).toEqual(tables.temporary_class_payments)
+    const zip=await JSZip.loadAsync(archive.bytes)
+    expect(await zip.file(`${archive.rootName}/csv/temporary_class_payments.csv`)!.async('string')).toContain('refunded_amount')
+  })
   it('creates readable JSON, CSV, manifest, README and matched signatures', async () => {
     const tables = emptyTables()
     tables.students.push({ id: 'student', owner_id: ownerId, name: '陈,小明', school_class: null, phone: null })

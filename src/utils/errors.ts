@@ -6,6 +6,10 @@ interface DatabaseErrorLike {
 export function getErrorMessage(error: unknown, fallback = '操作失败，请稍后重试。') {
   const databaseError = error as DatabaseErrorLike
 
+  if (databaseError?.message?.includes('Temporary enrollment cancelled')) {
+    return '此临时班报名已取消，不能再操作原付款。请刷新核对取消记录。'
+  }
+
   if (databaseError?.code === '23505') {
     return '这笔资料已经存在，请检查后重试。'
   }

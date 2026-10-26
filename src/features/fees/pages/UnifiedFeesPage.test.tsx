@@ -197,3 +197,23 @@ it('does not resurrect the stale unpaid row on cancel when only the exact-paymen
     expect(fees.ensureMonthlyFees).not.toHaveBeenCalled()
   } finally { focusManager.setFocused(undefined) }
 })
+it('a cancelled enrollment retains its original editor, amount and PWA protection until explicit cancel, without resurrecting debt', async () => {
+  const client = setup('/fees?month=2026-10&classId=temporary:same', 30_000), user = userEvent.setup(), protection = createFormProtection(document)
+  try {
+    await user.click(await screen.findByRole('button', { name: '修改金额' }))
+    const input = screen.getByRole('spinbutton', { name: '应缴金额' })
+    fireEvent.change(input, { target: { value: '25.50' } })
+    await waitFor(() => expect(client.isFetching()).toBe(0))
+    tempRows[0].enrollment.status = 'cancelled'
+    tempRows[0].enrollment.cancelled_at = '2026-11-01T00:00:00Z'
+    await act(async () => { focusManager.setFocused(false); focusManager.setFocused(true) })
+    expect(await screen.findByText(/报名已取消，不能修改原费用/)).toBeVisible()
+    expect(input).toBeInTheDocument(); expect(input).toHaveValue(25.5)
+    expect(screen.getByRole('button', { name: '保存金额' })).toBeDisabled()
+    expect(protection.reason()).not.toBe('')
+    expect(screen.getByRole('button', { name: /未缴 0/ })).toBeVisible()
+    await user.click(screen.getByRole('button', { name: '取消' }))
+    await waitFor(() => expect(screen.queryByText('单次')).toBeNull())
+    expect(protection.reason()).toBe(''); expect(fees.ensureMonthlyFees).not.toHaveBeenCalled()
+  } finally { focusManager.setFocused(undefined); protection.dispose() }
+})

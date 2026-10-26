@@ -42,7 +42,7 @@ export function ReceiptsPage() {
   const monthlyClassId = classScope.kind === 'monthly' ? classScope.id : ''
   const temporaryClassId = classScope.kind === 'temporary' ? classScope.id : ''
   const classFees = useQuery({ queryKey: ['monthly-fees', 'receipt-scope', monthlyClassId], queryFn: () => listMonthlyFees({ classId: monthlyClassId, paymentStatus: 'paid', complete: true }), enabled: Boolean(monthlyClassId) })
-  const temporaryClassFees = useQuery({ queryKey: ['temporary-fees', 'receipt-scope', temporaryClassId], queryFn: ({ signal }) => listTemporaryFeeRecords({ classId: temporaryClassId, month: 'all' }, signal), enabled: Boolean(temporaryClassId) })
+  const temporaryClassFees = useQuery({ queryKey: ['temporary-fees', 'receipt-scope', temporaryClassId], queryFn: ({ signal }) => listTemporaryFeeRecords({ classId: temporaryClassId, month: 'all', includeCancelled: true }, signal), enabled: Boolean(temporaryClassId) })
   const scopeRead = temporaryClassId ? temporaryClassFees : classFees
   const scopeLoading = Boolean(classId) && scopeRead.isLoading
   const scopeError = classScope.kind === 'invalid' || (Boolean(classId) && scopeRead.isError)
@@ -159,13 +159,14 @@ export function ReceiptsPage() {
                 <ContextLink backLabel="收据" className="identity-link" to={`/students/${receipt.student_id}`}><StudentIdentity student={{ name: receipt.student_name, school_class: receipt.school_class, phone: receipt.phone }} /></ContextLink>
                 <span>{formatFeeMonth(receipt.receipt_period)} · {receipt.source_name} · {formatMoney(receipt.amount)}</span>
                 <small>{receipt.source_type === 'temporary_class_payment' ? '临时班' : '常态班月费'} · {formatMalaysiaDateTime(receipt.receipt_completed_at)} 处理</small>
+                {receipt.refunded_at && <small>已退费 {formatMoney(receipt.refunded_amount ?? receipt.amount)} · {formatMalaysiaDateTime(receipt.refunded_at)}，原收据历史保留</small>}
                 <ReceiptPaymentLink receipt={receipt} />
               </span>
-              <button className="button button-secondary button-small" type="button" disabled={restore.isPending} onClick={() => {
+              {!receipt.cancelled_at && <button className="button button-secondary button-small" type="button" disabled={restore.isPending} onClick={() => {
                 if (window.confirm('确定恢复为待处理吗？')) restore.mutate(receipt.receipt_key)
               }}>
                 恢复为待处理
-              </button>
+              </button>}
             </div>
           ))}
         </div>

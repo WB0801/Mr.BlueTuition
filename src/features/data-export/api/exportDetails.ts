@@ -17,13 +17,13 @@ function numberOrBlank(value: unknown): number|null {
   return value
 }
 export async function buildFeeSheet(scope: ExportScope, read: ExportReader): Promise<ExportSheet> {
-  const sheet: ExportSheet={name:'学费记录',headers:['类别','班级','学生','收费月份或上课日期','实际应缴金额','缴费状态','缴费时间','收据状态'],rows:[]}
+  const sheet: ExportSheet={name:'学费记录',headers:['类别','班级','学生','收费月份或上课日期','实际应缴金额','缴费状态','缴费时间','收据状态','报名状态','取消时间','已退费金额','退费记录时间'],rows:[]}
   const monthly = await read<MonthlyFee>('monthly_fees',{column:'enrollment_id',ids:scope.enrollments.map(e=>e.id)})
   for (const fee of monthly) {
     const e = required(scope.enrollments.find(e=>e.id===fee.enrollment_id),'报读')
     if (e.student_id!==fee.student_id) throw new Error('月费学生与报读不匹配。')
     if (!exportMonthIncluded(fee.fee_month,scope.options)) continue
-    sheet.rows.push(['常态班',required(scope.regular.find(c=>c.id===e.class_id),'班级').name,required(scope.students.get(e.student_id),'学生').name,fee.fee_month.slice(0,7),amount(fee.actual_amount),required(paymentLabels[fee.payment_status],'缴费状态'),fee.paid_at?formatMalaysiaDateTime(fee.paid_at):null,required(receiptLabels[fee.receipt_status],'收据状态')])
+    sheet.rows.push(['常态班',required(scope.regular.find(c=>c.id===e.class_id),'班级').name,required(scope.students.get(e.student_id),'学生').name,fee.fee_month.slice(0,7),amount(fee.actual_amount),required(paymentLabels[fee.payment_status],'缴费状态'),fee.paid_at?formatMalaysiaDateTime(fee.paid_at):null,required(receiptLabels[fee.receipt_status],'收据状态'),null,null,null,null])
   }
   const temporary = await read<TemporaryClassPayment>('temporary_class_payments',{column:'temporary_class_enrollment_id',ids:scope.temporaryEnrollments.map(e=>e.id)})
   for (const fee of temporary) {
@@ -31,7 +31,7 @@ export async function buildFeeSheet(scope: ExportScope, read: ExportReader): Pro
     const c = required(scope.temporary.find(c=>c.id===e.temporary_class_id),'临时班')
     const date = toMalaysiaDateInput(c.start_at)
     if (!exportDateIncluded(date,scope.options)) continue
-    sheet.rows.push(['临时班',c.name,required(scope.students.get(e.student_id),'学生').name,date,amount(fee.amount),required(paymentLabels[fee.payment_status],'缴费状态'),fee.paid_at?formatMalaysiaDateTime(fee.paid_at):null,required(receiptLabels[fee.receipt_status],'收据状态')])
+    sheet.rows.push(['临时班',c.name,required(scope.students.get(e.student_id),'学生').name,date,amount(fee.amount),required(paymentLabels[fee.payment_status],'缴费状态'),fee.paid_at?formatMalaysiaDateTime(fee.paid_at):null,required(receiptLabels[fee.receipt_status],'收据状态'),e.status==='cancelled'?'已取消':e.status==='ended'?'已结束':'有效',e.cancelled_at?formatMalaysiaDateTime(e.cancelled_at):null,fee.refunded_amount==null?null:amount(fee.refunded_amount),fee.refunded_at?formatMalaysiaDateTime(fee.refunded_at):null])
   }
   return sheet
 }
