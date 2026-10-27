@@ -4,6 +4,8 @@ import { currentMonthInMalaysia } from '../../../utils/format'
 import { ensureMonthlyFees, listMonthlyFees } from '../api/feesService'
 import { MonthlyFeeCard } from './MonthlyFeeCard'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
+import { CollectionList } from '../collection/CollectionList'
+import { monthlyCollectionKey } from '../collection/collectionHooks'
 
 export function EnrollmentFeesSection({ enrollment, active = true }: { enrollment: EnrollmentDetails; active?: boolean }) {
   const currentMonth = currentMonthInMalaysia()
@@ -38,14 +40,12 @@ export function EnrollmentFeesSection({ enrollment, active = true }: { enrollmen
         {Object.entries(feesByYear).map(([year, yearFees]) => (
           <section className="enrollment-fee-year" key={year}>
             <h3>{year}</h3>
-            <div className="enrollment-fee-year-list">
-              {(yearFees ?? []).map((fee) => (
+            <CollectionList key={`${enrollment.id}:${year}`} className="enrollment-fee-year-list" records={yearFees ?? []} recordKey={monthlyCollectionKey} renderRecord={fee => (
                 <div className="enrollment-fee-row" key={fee.id}>
                   <h4>{Number(fee.fee_month.slice(5, 7))}月</h4>
                   <MonthlyFeeCard fee={fee} showClass={false} showStudent={false} />
                 </div>
-              ))}
-            </div>
+              )} />
           </section>
         ))}
       </div>

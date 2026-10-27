@@ -13,6 +13,8 @@ import { createClass, getClass, updateClass } from '../api/classesService'
 import { listSubjects } from '../api/subjectsService'
 import { ClassForm } from '../components/ClassForm'
 import { invalidateContextClassCreation } from '../../../components/contextual/contextDataInvalidation'
+import { useRef } from 'react'
+import { completedContextOperation } from '../../../components/contextual/contextDataState'
 
 const newClassDefaults: ClassInput = {
   name: '',
@@ -31,6 +33,7 @@ export function ClassFormPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()
+  const savedId = useRef('')
   const [error, setError] = useState('')
   const subjects = useQuery({ queryKey: ['subjects'], queryFn: listSubjects })
   const tuitionClass = useQuery({
@@ -46,15 +49,14 @@ export function ClassFormPage() {
       if (!isEditing) await invalidateContextClassCreation(queryClient)
       await queryClient.invalidateQueries({ queryKey: ['classes'] })
       queryClient.setQueryData(['class', saved.id], saved)
-      const target = objectEditReturnTarget('classes', classId, saved.id, location.state)
-      navigate(target.to, { replace: true, state: target.state })
+      savedId.current = saved.id
     },
     onError: (caughtError) => setError(getErrorMessage(caughtError, '班级资料保存失败，请重试。')),
   })
 
   if (subjects.isLoading || (isEditing && tuitionClass.isLoading)) return <LoadingBlock />
-  if (subjects.isError) return <ErrorBlock message="科目资料载入失败。" />
-  if (isEditing && (tuitionClass.isError || !tuitionClass.data)) return <ErrorBlock message="找不到这个班级，或资料载入失败。" />
+  if (subjects.isError && !subjects.data) return <ErrorBlock message="科目资料载入失败。" />
+  if (isEditing && !tuitionClass.data) return <ErrorBlock message="找不到这个班级，或资料载入失败。" />
 
   const initialValue: ClassInput = tuitionClass.data
     ? {
@@ -82,12 +84,16 @@ export function ClassFormPage() {
         </div>
       ) : (
         <ClassForm
-          key={tuitionClass.data?.updated_at ?? 'new'}
+          key={classId ?? 'new'}
           subjects={subjects.data ?? []}
           initialValue={initialValue}
           submitLabel={isEditing ? '保存修改' : '新增班级'}
           isSubmitting={save.isPending}
           isEditing={isEditing}
+          onSaved={() => {
+            const target = objectEditReturnTarget('classes', classId, savedId.current, location.state)
+            navigate(target.to, { replace: true, state: completedContextOperation({ ...target.state, objectSaved: { kind: 'classes', id: savedId.current } }) })
+          }}
           error={error}
           onSubmit={async (input) => {
             setError('')
@@ -95,6 +101,7 @@ export function ClassFormPage() {
           }}
         />
       )}
+      {((tuitionClass.isError && tuitionClass.data) || (subjects.isError && subjects.data)) && <ErrorBlock message="班级资料刷新失败，当前编辑已保留。" />}
     </section>
   )
 }

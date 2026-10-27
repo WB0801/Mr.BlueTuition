@@ -13,6 +13,9 @@ import { getTemporaryFeeRecord, listTemporaryFeeClasses, listTemporaryFeeRecords
 import { parseFeeClassScope, selectUnifiedFees, unifiedFeeKey, unifiedPayment, type UnifiedFeeRecord } from '../unifiedFeePresentation'
 import { TemporaryFeeCard } from '../components/TemporaryFeeCard'
 import { patchTemporaryFeeLists } from '../../temporary-classes/temporaryPaymentCache'
+import type { MonthlyFeeDetails } from '../../../types/domain'
+import { FormLeaveGuard } from '../../../components/navigation/FormLeaveGuard'
+import { CollectionList } from '../collection/CollectionList'
 
 type FeesView = 'current' | 'unpaid' | 'history'
 
@@ -24,12 +27,17 @@ export function MonthlyFeesPage({ view }: MonthlyFeesPageProps) {
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const location = useLocation()
+  const [monthlyEditors, setMonthlyEditors] = useState<Map<string, { fee: MonthlyFeeDetails; saving: boolean }>>(new Map())
+  const onMonthlyEditingChange = useCallback((id: string, editing: boolean, fee: MonthlyFeeDetails, saving: boolean) => setMonthlyEditors(current => {
+    if (current.has(id) === editing && (!editing || current.get(id)?.saving === saving)) return current
+    const next = new Map(current); if (editing) next.set(id, { fee, saving }); else next.delete(id); return next
+  }), [])
   const [busyRows, setBusyRows] = useState<Map<string, TemporaryFeeRecord>>(new Map())
   const onBusyChange = useCallback((id: string, busy: boolean, record: TemporaryFeeRecord) => setBusyRows(current => {
     if (current.has(id) === busy) return current
     const next = new Map(current); if (busy) next.set(id, record); else next.delete(id); return next
   }), [])
-  const locked = busyRows.size > 0
+  const locked = busyRows.size > 0 || monthlyEditors.size > 0
   const requestedMonth = searchParams.get('month') ?? currentMonthInMalaysia().slice(0, 7)
   const monthInput = requestedMonth === 'all' || /^\d{4}-(0[1-9]|1[0-2])$/.test(requestedMonth) ? requestedMonth : currentMonthInMalaysia().slice(0, 7)
   const classValue = searchParams.get('classId') ?? ''
@@ -108,19 +116,22 @@ export function MonthlyFeesPage({ view }: MonthlyFeesPageProps) {
   const counts = { unpaid: complete ? visibleFees.filter(fee => unifiedPayment(fee).payment_status === 'unpaid').length : '—', paid: complete ? visibleFees.filter(fee => unifiedPayment(fee).payment_status === 'paid').length : '—', all: complete ? visibleFees.length : '—' }
   const displayed: UnifiedFeeRecord[] = [
     ...visibleFees.filter(item => (status === 'all' || unifiedPayment(item).payment_status === status) && (item.source !== 'temporary_class_payment' || !busyRows.has(item.record.payment.id))),
+    ...[...monthlyEditors.values()].filter(({ fee }) => !visibleFees.some(item => item.source === 'monthly_fee' && item.fee.id === fee.id && (status === 'all' || item.fee.payment_status === status)))
+      .map(({ fee }) => ({ source: 'monthly_fee' as const, fee: fees.data?.find(row => row.id === fee.id) ?? fee })),
     ...retainedRows.map((record, index) => ({ source: 'temporary_class_payment' as const, record: retainedReads[index].data ?? record })),
   ]
   const pendingFees = displayed.filter(item => unifiedPayment(item).receipt_status === 'pending')
   const completedFees = displayed.filter(item => unifiedPayment(item).receipt_status === 'completed')
   const renderFee = (item: UnifiedFeeRecord) => item.source === 'monthly_fee'
-    ? <MonthlyFeeCard fee={item.fee} key={unifiedFeeKey(item)} showSource showReminder={status !== 'paid'} />
+    ? <MonthlyFeeCard fee={item.fee} onEditingChange={onMonthlyEditingChange} key={unifiedFeeKey(item)} showSource showReminder={status !== 'paid'} />
     : <TemporaryFeeCard record={item.record} onBusyChange={onBusyChange} key={unifiedFeeKey(item)}
         verificationFailed={retainedReads[retainedRows.findIndex(record => record.payment.id === item.record.payment.id)]?.isError}
         onRetryVerification={() => { void retainedReads[retainedRows.findIndex(record => record.payment.id === item.record.payment.id)]?.refetch() }} />
 
   return (
     <FeesShell>
-      {feeId && <div className="scope-notice"><strong>收据对应的缴费记录</strong><button type="button" className="button button-text" onClick={() => { const next = new URLSearchParams(searchParams); next.delete('feeId'); setSearchParams(next, { replace: true }) }}>显示此范围全部缴费记录</button></div>}
+      <FormLeaveGuard dirty={monthlyEditors.size > 0} saving={[...monthlyEditors.values()].some(editor => editor.saving)} />
+      {feeId && <div className="scope-notice"><strong>收据对应的缴费记录</strong><button disabled={locked} type="button" className="button button-text" onClick={() => { const next = new URLSearchParams(searchParams); next.delete('feeId'); setSearchParams(next, { replace: true }) }}>显示此范围全部缴费记录</button></div>}
       {studentId && <div className="scope-notice" role="status"><strong>{fees.data?.[0]?.student?.name ?? temporaryFees.data?.[0]?.enrollment.student?.name ?? '指定学生'}的缴费记录</strong><button disabled={locked} type="button" className="button button-text" onClick={() => updateFilter('studentId', '')}>显示所有学生</button></div>}
       <fieldset className="fees-workflow-header fees-filter-lock" disabled={locked}>
         <div className="fees-filters">
@@ -162,21 +173,18 @@ export function MonthlyFeesPage({ view }: MonthlyFeesPageProps) {
       {((monthlyEnabled && (ensure.isLoading || fees.isLoading)) || (temporaryEnabled && temporaryFees.isLoading)) && <LoadingBlock message="正在读取缴费记录…" />}
       {monthlyEnabled && (ensure.isError || fees.isError) && <><ErrorBlock message="常态班费用载入失败，当前显示的记录不完整。" /><button className="button button-secondary" type="button" onClick={() => void (ensure.isError ? ensure.refetch() : fees.refetch())}>重试常态班费用</button></>}
       {temporaryEnabled && temporaryFees.isError && <><ErrorBlock message="临时班费用载入失败，当前显示的记录不完整。" /><button className="button button-secondary" type="button" onClick={() => void temporaryFees.refetch()}>重试临时班费用</button></>}
-      {complete && displayed.length === 0 && (
-        <EmptyBlock message={search ? '找不到符合搜索的学生。' : '目前筛选范围没有需要显示的缴费记录。'} />
-      )}
       {status === 'paid' ? (
         <div className="paid-fee-groups">
           <section>
             <h2>待开收据 <span className="section-count">{complete ? pendingFees.length : '—'}</span></h2>
-            {complete && pendingFees.length === 0 ? <p className="settings-note">目前没有待开收据。</p> : <div className="fee-list">{pendingFees.map(renderFee)}</div>}
+            {complete && pendingFees.length === 0 ? <p className="settings-note">目前没有待开收据。</p> : <CollectionList className="fee-list" records={pendingFees} recordKey={unifiedFeeKey} renderRecord={renderFee} />}
           </section>
           <section>
             <h2>收据已处理 <span className="section-count">{complete ? completedFees.length : '—'}</span></h2>
-            {complete && completedFees.length === 0 ? <p className="settings-note">目前没有已处理收据。</p> : <div className="fee-list">{completedFees.map(renderFee)}</div>}
+            {complete && completedFees.length === 0 ? <p className="settings-note">目前没有已处理收据。</p> : <CollectionList className="fee-list" records={completedFees} recordKey={unifiedFeeKey} renderRecord={renderFee} />}
           </section>
         </div>
-      ) : <div className="fee-list">{displayed.map(renderFee)}</div>}
+      ) : <CollectionList key={location.pathname + location.search} className="fee-list" records={displayed} recordKey={unifiedFeeKey} renderRecord={renderFee} retireConfirmed={status === 'unpaid'} empty={complete ? <EmptyBlock message={search ? '找不到符合搜索的学生。' : '目前筛选范围没有需要显示的缴费记录。'} /> : undefined} />}
     </FeesShell>
   )
 }

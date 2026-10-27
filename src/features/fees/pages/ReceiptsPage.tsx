@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
@@ -13,14 +13,23 @@ import {
   listMonthlyFees,
   restoreReceipt,
   getReceiptPaymentTarget,
+  readReceiptStates,
 } from '../api/feesService'
 import { FeesShell } from '../components/FeesShell'
 import { usePwaUpdateGuard } from '../../settings/pwa/updateProtection'
 import { ContextDataWorkspace } from '../../../components/contextual/ContextDataWorkspace'
 import { parseFeeClassScope } from '../unifiedFeePresentation'
 import { listTemporaryFeeRecords } from '../api/temporaryFeesService'
+import { CollectionList } from '../collection/CollectionList'
+import { useCollectionRecords } from '../collection/collectionHooks'
+import { refreshCollectionReads } from '../collection/collectionActions'
 
 export function ReceiptsPage() {
+  const [params] = useSearchParams()
+  return <ReceiptWorkspace key={`${params.get('studentId') ?? ''}:${params.get('classId') ?? ''}`} />
+}
+
+function ReceiptWorkspace() {
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const studentId = searchParams.get('studentId') ?? ''
@@ -29,6 +38,10 @@ export function ReceiptsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   usePwaUpdateGuard(selected.size > 0, '请先处理或取消收据选择，再更新。')
   const [error, setError] = useState('')
+  const [verifying, setVerifying] = useState(false)
+  const verificationRunning = useRef(false)
+  usePwaUpdateGuard(verifying, '收据正在核对，请完成后再更新。')
+  const [result, setResult] = useState<{ count?: number; keys: string[]; startedAt: number; note: string; needsVerification?: boolean; refreshFailed?: boolean; restored?: boolean } | null>(null)
   const requestedMonth = searchParams.get('completedMonth') ?? ''
   const completedMonth = /^\d{4}-(0[1-9]|1[0-2])$/.test(requestedMonth) ? requestedMonth : currentMonthInMalaysia().slice(0, 7)
   const historyOpen = searchParams.get('completed') === '1'
@@ -53,28 +66,63 @@ export function ReceiptsPage() {
       : classScope.kind === 'monthly' && (classFees.data ?? []).some(fee => receipt.receipt_key === `monthly_fee:${fee.id}`)))
   const visiblePending = (pending.data ?? []).filter(inScope)
   const visibleCompleted = (completed.data ?? []).filter(inScope)
-  const groupedPending = groupByMonth(visiblePending)
+  const { merged: retainedPending, store, states } = useCollectionRecords(visiblePending, receiptKey)
   const allIds = visiblePending.map((receipt) => receipt.receipt_key)
   const allSelected = allIds.length > 0 && allIds.every((id) => selected.has(id))
 
   const refresh = async () => {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['monthly-fees'] }),
-      queryClient.invalidateQueries({ queryKey: ['temporary-class'] }),
-      queryClient.invalidateQueries({ queryKey: ['temporary-fees'] }),
-      queryClient.invalidateQueries({ queryKey: ['receipt-queue'] }),
-      queryClient.invalidateQueries({ queryKey: ['pending-receipts'] }),
-      queryClient.invalidateQueries({ queryKey: ['pending-receipt-count'] }),
-    ])
+    await refreshCollectionReads(queryClient, [['monthly-fees'], ['temporary-class'], ['temporary-fees'], ['receipt-queue'], ['pending-receipts'], ['pending-receipt-count']])
+  }
+  async function reconcile(input: { count?: number; keys: string[]; startedAt: number }) {
+    if (verificationRunning.current) return
+    verificationRunning.current = true
+    setVerifying(true)
+    setError('')
+    // Callers may pass a prior result. Do not carry its stale locks/errors forward.
+    const snapshot = { count: input.count, keys: input.keys, startedAt: input.startedAt }
+    try {
+    let done = input.count === input.keys.length ? input.keys : []
+    let unknown = false
+    setResult({ ...snapshot, note: input.count === input.keys.length ? '' : '正在核对最新收据状态…', needsVerification: true })
+    if (input.count !== input.keys.length) {
+      try {
+        const latest = await readReceiptStates(input.keys)
+        done = latest.filter(row => row.receipt_status === 'completed' && input.keys.includes(row.receipt_key)).map(row => row.receipt_key)
+        unknown = input.keys.some(key => !latest.some(row => row.receipt_key === key && ['pending','completed'].includes(row.receipt_status)))
+      }
+      catch { setResult({ ...snapshot, note: '最新状态核对失败，请重试核对。', needsVerification: true }); return }
+    }
+    done.forEach(key => store.markConfirmed(key, input.startedAt))
+    setSelected(current => new Set([...current].filter(key => !done.includes(key))))
+    queryClient.setQueryData<ReceiptQueueItem[]>(['pending-receipts'], current => current?.filter(row => !done.includes(row.receipt_key)))
+    const note = unknown ? '部分所选收据状态无法核实，请刷新后重试核对。' : input.count === input.keys.length ? '' : done.length === 0 ? '已核对最新状态；所选收据仍待处理，可明确重试。' : '已核对最新状态；部分记录可能已由其他操作处理。'
+    try { await refresh(); setResult({ ...snapshot, note, needsVerification: unknown }) }
+    catch { setResult({ ...snapshot, note: `${note ? `${note} ` : ''}列表刷新失败。`, refreshFailed: true, needsVerification: unknown }) }
+    } finally { verificationRunning.current = false; setVerifying(false) }
   }
   const complete = useMutation({
-    mutationFn: () => completeReceipts(allIds.filter((id) => selected.has(id))),
-    onSuccess: async () => { setSelected(new Set()); setError(''); await refresh() },
-    onError: (caughtError) => setError(getErrorMessage(caughtError, '收据更新失败，请重试。')),
+    mutationFn: (input: { keys: string[]; startedAt: number }) => completeReceipts(input.keys),
+    onSuccess: async (count, input) => {
+      setError('')
+      if (!Number.isInteger(count) || count < 0 || count > input.keys.length) { setResult({ ...input, note: '返回数量无法核实，请核对最新状态。', needsVerification: true }); return }
+      await reconcile({ ...input, count })
+    },
+    onError: (caughtError, input) => {
+      if (/^(P0001|22|23|42501)/.test((caughtError as { code?: string })?.code ?? '')) setError(getErrorMessage(caughtError, '收据更新被拒绝，请核对后重试。'))
+      else { setError('收据处理结果未确认。'); setResult({ ...input, note: '请只读核对最新状态后再决定。', needsVerification: true }) }
+    },
   })
   const restore = useMutation({
     mutationFn: restoreReceipt,
-    onSuccess: refresh,
+    onSuccess: async (_, key) => {
+      store.clear(key)
+      const receipt = completed.data?.find(row => row.receipt_key === key)
+      if (receipt) store.clear(`receipt-month:${receipt.receipt_period}`)
+      const outcome = { restored: true, keys: [key], startedAt: Date.now(), note: '' }
+      setResult(outcome)
+      try { await refresh() }
+      catch { setResult({ ...outcome, note: '列表刷新失败，请重试刷新。', refreshFailed: true }) }
+    },
     onError: (caughtError) => setError(getErrorMessage(caughtError, '恢复收据状态失败，请重试。')),
   })
 
@@ -89,7 +137,11 @@ export function ReceiptsPage() {
 
   return (
     <FeesShell>
-      {(studentId || classId) && <div className="scope-notice"><strong>当前学生／班级范围的收据</strong><button className="button button-text" type="button" onClick={() => { setSelected(new Set()); const next = new URLSearchParams(searchParams); next.delete('studentId'); next.delete('classId'); setSearchParams(next, { replace: true }) }}>显示全部收据</button></div>}
+      {result && <div className="notice inline-notice receipt-result" role="status"><span>{result.restored ? '已恢复为待处理' : result.count === undefined ? '收据结果未确认' : `本次处理${result.count}张`}{result.note && ` · ${result.note}`}</span>
+        {result.needsVerification && <button type="button" className="button button-text button-small" disabled={complete.isPending || verifying} onClick={() => { void reconcile(result) }}>核对收据</button>}
+        {result.refreshFailed && <button type="button" className="button button-text button-small" onClick={() => { void refresh().then(() => setResult({ ...result, note: '', refreshFailed: false }), () => undefined) }}>重试刷新</button>}
+      </div>}
+      {(studentId || classId) && <div className="scope-notice"><strong>当前学生／班级范围的收据</strong><button disabled={complete.isPending} className="button button-text" type="button" onClick={() => { setSelected(new Set()); setResult(null); const next = new URLSearchParams(searchParams); next.delete('studentId'); next.delete('classId'); setSearchParams(next, { replace: true }) }}>显示全部收据</button></div>}
       <ContextDataWorkspace label="收据栏目" defaultPanel="0" panelParam="completed" sections={[
       { id: '0', label: '待处理收据', render: () => <>
       <div className="section-heading-row receipts-heading">
@@ -107,16 +159,11 @@ export function ReceiptsPage() {
       {(pending.isLoading || scopeLoading) && <LoadingBlock />}
       {pending.isError && <ErrorBlock message="待开收据载入失败。" />}
       {scopeError && <><ErrorBlock message="班级范围载入失败，请重试。" /><button type="button" className="button button-secondary" onClick={() => void scopeRead.refetch()}>重试班级范围</button></>}
-      {pending.isSuccess && scopeReady && visiblePending.length === 0 && <EmptyBlock message="目前没有待开收据。" />}
+      {pending.isSuccess && scopeReady && retainedPending.length === 0 && <EmptyBlock message="目前没有待开收据。" />}
 
-      <div className="receipt-groups">
-        {groupedPending.map(([month, receipts]) => (
-          <section className="receipt-month" key={month}>
-            <h3>{formatFeeMonth(month)}</h3>
-            <div className="receipt-list">
-              {receipts.map((receipt) => (
+      <ReceiptGroups records={retainedPending} renderReceipt={receipt => (
                 <div className="receipt-row" key={receipt.receipt_key}>
-                  <label className="receipt-check"><input aria-label={`选择 ${receipt.student_name} ${receipt.source_name} ${formatFeeMonth(receipt.receipt_period)} 收据`} type="checkbox" checked={selected.has(receipt.receipt_key)} onChange={() => toggle(receipt.receipt_key)} /></label>
+                  <label className="receipt-check"><input disabled={states.get(receipt.receipt_key)?.phase === 'confirmed'} aria-label={`选择 ${receipt.student_name} ${receipt.source_name} ${formatFeeMonth(receipt.receipt_period)} 收据`} type="checkbox" checked={selected.has(receipt.receipt_key)} onChange={() => toggle(receipt.receipt_key)} /></label>
                   <span className="receipt-details">
                     <ContextLink backLabel="收据" className="identity-link" to={`/students/${receipt.student_id}`}>
                     <StudentIdentity student={{ name: receipt.student_name, school_class: receipt.school_class, phone: receipt.phone }} />
@@ -124,18 +171,15 @@ export function ReceiptsPage() {
                     <span>{receipt.source_name} · {formatMoney(receipt.amount)}</span>
                     <small>{receipt.source_type === 'temporary_class_payment' ? '临时班' : '常态班月费'} · {formatMalaysiaDateTime(receipt.paid_at)} 缴费</small>
                     <ReceiptPaymentLink receipt={receipt} />
+                    {states.get(receipt.receipt_key)?.phase === 'confirmed' && <small>收据已处理</small>}
                   </span>
                 </div>
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
+      )} />
 
       {allIds.some((id) => selected.has(id)) && (
         <div className="receipt-batch-bar">
           <span>已选 {allIds.filter((id) => selected.has(id)).length} 笔</span>
-          <button className="button button-primary" type="button" disabled={complete.isPending} onClick={() => complete.mutate()}>
+          <button className="button button-primary" type="button" disabled={complete.isPending || verifying || result?.needsVerification} onClick={() => complete.mutate({ keys: allIds.filter(id => selected.has(id)), startedAt: Date.now() })}>
             {complete.isPending ? '处理中…' : '标记所选收据已处理'}
           </button>
         </div>
@@ -174,6 +218,27 @@ export function ReceiptsPage() {
       ]} />
     </FeesShell>
   )
+}
+
+const receiptKey = (row: ReceiptQueueItem) => row.receipt_key
+const receiptMonthKey = (group: { month: string }) => `receipt-month:${group.month}`
+function ReceiptGroups({ records, renderReceipt }: { records: ReceiptQueueItem[]; renderReceipt: (row: ReceiptQueueItem) => React.ReactNode }) {
+  const { store, states } = useCollectionRecords(records, receiptKey)
+  const owned = useRef(new Set<string>())
+  const groups = groupByMonth(records).map(([month, receipts]) => ({ month, receipts }))
+  useEffect(() => {
+    for (const group of groups) {
+      const key = receiptMonthKey(group)
+      owned.current.add(key); group.receipts.forEach(row => owned.current.add(receiptKey(row)))
+      if (states.has(key) && group.receipts.some(row => states.get(receiptKey(row))?.phase !== 'confirmed')) { store.clear(key); continue }
+      if (states.get(key)?.visualDone) group.receipts.forEach(row => { if (!states.get(receiptKey(row))?.visualDone) store.visualDone(receiptKey(row)) })
+      else if (!states.has(key) && group.receipts.every(row => states.get(receiptKey(row))?.phase === 'confirmed')) store.markConfirmed(key, Math.max(...group.receipts.map(row => states.get(receiptKey(row))!.startedAt)))
+    }
+  }, [groups, states, store])
+  useEffect(() => () => { owned.current.forEach(key => store.clear(key)) }, [store])
+  return <CollectionList className="receipt-groups" records={groups} recordKey={receiptMonthKey} retireConfirmed renderRecord={group => <section className="receipt-month">
+    <h3>{formatFeeMonth(group.month)}</h3><CollectionList className="receipt-list" records={group.receipts} recordKey={receiptKey} retireConfirmed={!states.has(receiptMonthKey(group))} renderRecord={renderReceipt} />
+  </section>} />
 }
 
 function ReceiptPaymentLink({ receipt }: { receipt: ReceiptQueueItem }) {

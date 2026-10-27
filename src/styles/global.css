@@ -1416,6 +1416,15 @@ label.receipt-row { cursor: pointer; }
 }
 .fee-card:last-child { border-bottom: 0; }
 .fees-filter-lock { margin: 0; padding: 0; border: 0; min-width: 0; }
+.collection-list { display: flex; flex-direction: column; gap: 0; min-width: 0; overflow-anchor: none; }
+.collection-slot, .collection-content { min-width: 0; }
+.collection-content > .fee-card { border-bottom: 1px solid var(--color-border); }
+.collection-slot:last-child > .collection-content > .fee-card { border-bottom: 0; }
+.collection-retiring { overflow: clip; min-height: 0; }
+.collection-glow { background: #eef5fb !important; box-shadow: inset 0 0 0 1px #98b7d055, inset 0 0 14px #b3cce526; transition: background-color 150ms ease, box-shadow 150ms ease; }
+.collection-feedback { grid-column: 1 / -1; margin: 6px 0 0; font-size: .875rem; color: var(--color-text-secondary); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.receipt-result { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+@media (prefers-reduced-motion: reduce) { .collection-glow { transition: none; } }
 .unified-fee-source { color: var(--muted); font-size: 0.78rem; font-weight: 700; }
 .unified-temporary-fee { display: block; }
 .unified-fee-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-bottom: 12px; }

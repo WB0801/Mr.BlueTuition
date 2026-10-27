@@ -2,12 +2,15 @@ import { useState, type FormEvent } from 'react'
 import { ContextLink } from '../../../components/navigation/ContextLink'
 import type { StudentInput } from '../../../types/domain'
 import type { DuplicateStudentWarning } from '../api/studentsService'
-import { preparePwaFormSave } from '../../settings/pwa/updateProtection'
+import { preparePwaFormSave, usePwaFormDraft, usePwaUpdateGuard } from '../../settings/pwa/updateProtection'
+import { FormLeaveGuard } from '../../../components/navigation/FormLeaveGuard'
 
 interface StudentFormProps {
   initialValue?: StudentInput
   submitLabel: string
   isSubmitting: boolean
+  isEditing?: boolean
+  onSaved?: () => void
   error?: string
   duplicateStudents?: DuplicateStudentWarning[]
   duplicateCheckPending?: boolean
@@ -21,6 +24,8 @@ export function StudentForm({
   initialValue = emptyStudent,
   submitLabel,
   isSubmitting,
+  isEditing = false,
+  onSaved,
   error,
   duplicateStudents = [],
   duplicateCheckPending = false,
@@ -29,6 +34,9 @@ export function StudentForm({
 }: StudentFormProps) {
   const [form, setForm] = useState(initialValue)
   const [confirmedDuplicate, setConfirmedDuplicate] = useState(false)
+  const [savedWithDraft, setSavedWithDraft] = useState(false)
+  const { formRef, dirty } = usePwaFormDraft()
+  usePwaUpdateGuard(isSubmitting)
 
   const updateForm = (next: StudentInput) => {
     setConfirmedDuplicate(false)
@@ -38,21 +46,26 @@ export function StudentForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (isSubmitting) return
     const acknowledgeSave = preparePwaFormSave(event.currentTarget)
     try {
       await onSubmit(form)
-      acknowledgeSave()
+      const hasLaterDraft = acknowledgeSave()
+      setSavedWithDraft(hasLaterDraft)
+      if (!hasLaterDraft) onSaved?.()
     } catch {
       // The parent displays the mutation error.
     }
   }
 
   return (
-    <form className="form-card student-form" onSubmit={handleSubmit}>
+    <form ref={formRef} className="form-card student-form" onSubmit={handleSubmit}>
+      <FormLeaveGuard dirty={dirty} saving={isSubmitting} />
       <label className="field">
         <span>姓名</span>
         <input
           value={form.name}
+          disabled={isSubmitting && !isEditing}
           onChange={(event) => updateForm({ ...form, name: event.target.value })}
           autoFocus
           required
@@ -63,6 +76,7 @@ export function StudentForm({
         <span>学校班级 <small className="optional-label">选填</small></span>
         <input
           value={form.school_class}
+          disabled={isSubmitting && !isEditing}
           onChange={(event) => updateForm({ ...form, school_class: event.target.value })}
           maxLength={100}
           placeholder="例如：高一商仁"
@@ -72,6 +86,7 @@ export function StudentForm({
         <span>联系电话 <small className="optional-label">选填</small></span>
         <input
           value={form.phone}
+          disabled={isSubmitting && !isEditing}
           onChange={(event) => updateForm({ ...form, phone: event.target.value })}
           maxLength={50}
           inputMode="tel"
@@ -92,11 +107,12 @@ export function StudentForm({
             ))}
           </div>
           <label className="checkbox-field">
-            <input type="checkbox" checked={confirmedDuplicate} onChange={(event) => setConfirmedDuplicate(event.target.checked)} />
+            <input type="checkbox" checked={confirmedDuplicate} disabled={isSubmitting && !isEditing} onChange={(event) => setConfirmedDuplicate(event.target.checked)} />
             <span>这些可能是不同学生，我确认仍然建立</span>
           </label>
         </section>
       )}
+      {savedWithDraft && dirty && <p className="notice inline-notice" role="status">本次提交已保存，后续修改尚未保存</p>}
       {error && <p className="form-error" role="alert">{error}</p>}
       <div className="form-actions">
         <button className="button button-primary" type="submit" disabled={isSubmitting || duplicateCheckPending || (duplicateStudents.length > 0 && !confirmedDuplicate)}>

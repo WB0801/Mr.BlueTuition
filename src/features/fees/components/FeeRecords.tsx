@@ -4,11 +4,15 @@ import { RecordDetailFrame } from '../../../components/contextual/RecordDetailFr
 import { useRecordParams } from '../../../components/contextual/contextDataState'
 import { currentMonthInMalaysia, formatFeeMonth, formatMalaysiaDateTime, formatMoney, normalizeMonthInput } from '../../../utils/format'
 import type { MonthlyFeeDetails } from '../../../types/domain'
-import { completeReceipts, ensureMonthlyFees, listMonthlyFees, restoreReceipt } from '../api/feesService'
+import { completeReceipts, ensureMonthlyFees, listMonthlyFees, readReceiptStates, restoreReceipt } from '../api/feesService'
+import { useState } from 'react'
 import { matchesFeeStatus, sortFeesForWorkflow, type FeeStatusFilter } from '../feePresentation'
 import { MonthlyFeeCard } from './MonthlyFeeCard'
 import { getErrorMessage } from '../../../utils/errors'
 import { FeeReminderButton } from './FeeReminderButton'
+import { CollectionList } from '../collection/CollectionList'
+import { monthlyCollectionKey } from '../collection/collectionHooks'
+import { refreshCollectionReads } from '../collection/collectionActions'
 
 export interface FeeRecordScope { studentId?: string; classId?: string }
 
@@ -51,7 +55,7 @@ export function FeeRecords({ scope, prefix = 'fees', active = true }: { scope: F
     {recordId && <RecordDetailFrame title={get('receipt') === '1' ? '收据详情' : '缴费记录详情'} backLabel="缴费记录" onBack={() => set('record', '', true)}>
       {fees.isSuccess && !record && <ErrorBlock message="此范围内找不到该笔缴费记录。" />}
       {record && <>
-        <div hidden={get('receipt') === '1'}><MonthlyFeeCard key={record.id} fee={record} showStudent={!scope.studentId} showClass={!scope.classId} backLabel={scope.studentId ? '学生' : '班级'} showReminder={Boolean(scope.studentId)} />
+        <div hidden={get('receipt') === '1'}><CollectionList key={record.id} records={[record]} recordKey={monthlyCollectionKey} renderRecord={fee => <MonthlyFeeCard fee={fee} showStudent={!scope.studentId} showClass={!scope.classId} backLabel={scope.studentId ? '学生' : '班级'} showReminder={Boolean(scope.studentId)} />} />
           {record.payment_status === 'paid' && <button type="button" className="button button-secondary" onClick={() => set('receipt', '1', true)} disabled={locked}>查看收据详情</button>}
         </div>
         {get('receipt') === '1' && <FeeReceiptDetails fee={record} onBack={() => set('receipt', '', true)} />}
@@ -71,14 +75,24 @@ export function FeeRecordList({ records, studentScoped, onSelect }: { records: M
 
 function FeeReceiptDetails({ fee, onBack }: { fee: MonthlyFeeDetails; onBack: () => void }) {
   const client = useQueryClient()
+  const [result, setResult] = useState('')
   const mutation = useMutation({
-    mutationFn: async () => { if (fee.receipt_status === 'pending') await completeReceipts([`monthly_fee:${fee.id}`]); else await restoreReceipt(`monthly_fee:${fee.id}`) },
-    onSuccess: () => Promise.all(['monthly-fees', 'pending-receipts', 'pending-receipt-count', 'receipt-queue'].map(key => client.invalidateQueries({ queryKey: [key] }))),
+    mutationFn: async () => { if (fee.receipt_status === 'pending') return { count: await completeReceipts([`monthly_fee:${fee.id}`]) }; await restoreReceipt(`monthly_fee:${fee.id}`); return {} },
+    onSuccess: async outcome => {
+      setResult(outcome.count === undefined ? '已恢复为待处理' : `本次处理${outcome.count}张`)
+      if (outcome.count === 0) {
+        try { await readReceiptStates([`monthly_fee:${fee.id}`]); setResult('本次处理0张 · 已核对最新收据状态') }
+        catch { setResult('本次处理0张 · 最新状态核对失败，请重新载入核对。') }
+      }
+      try { await refreshCollectionReads(client, [['monthly-fees'], ['pending-receipts'], ['pending-receipt-count'], ['receipt-queue']]) }
+      catch { setResult(current => `${current} · 列表刷新失败，请重新载入核对。`) }
+    },
   })
   const locked = useRecordParams('fees').locked
   return <section><button type="button" className="button button-text" disabled={locked} onClick={onBack}>返回缴费详情</button>
     <dl className="details-card"><div><dt>收费对象</dt><dd>{fee.student?.name} · {fee.enrollment?.class?.name}</dd></div><div><dt>收费月份</dt><dd>{formatFeeMonth(fee.fee_month)}</dd></div><div><dt>金额</dt><dd>{formatMoney(fee.actual_amount)}</dd></div><div><dt>缴费时间</dt><dd>{formatMalaysiaDateTime(fee.paid_at)}</dd></div><div><dt>收据状态</dt><dd>{fee.receipt_status === 'pending' ? '待开收据' : fee.receipt_status === 'completed' ? '已处理' : '无需收据'}</dd></div>{fee.receipt_completed_at && <div><dt>处理时间</dt><dd>{formatMalaysiaDateTime(fee.receipt_completed_at)}</dd></div>}</dl>
     {fee.payment_status === 'paid' && <button className="button button-secondary" disabled={mutation.isPending} onClick={() => { if (fee.receipt_status !== 'completed' || window.confirm('确定恢复为待处理吗？')) mutation.mutate() }}>{mutation.isPending ? '处理中…' : fee.receipt_status === 'pending' ? '标记收据已处理' : '恢复为待处理'}</button>}
     {mutation.isError && <p role="alert" className="form-error">{getErrorMessage(mutation.error, '收据更新失败，请重试。')}</p>}
+    {result && <p role="status" className="notice inline-notice">{result}</p>}
   </section>
 }

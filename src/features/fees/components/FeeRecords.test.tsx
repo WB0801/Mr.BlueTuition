@@ -44,13 +44,14 @@ it('keeps object, filters and list while viewing a fee and its receipt, then swi
   expect(ensureMonthlyFees).toHaveBeenCalledTimes(1)
   expect(screen.queryByText('显示所有学生')).not.toBeInTheDocument()
 })
-it('blocks detail close and panel switches until the original payment finishes', async () => {
+it('allows detail close and panel switches while only the original payment is locked', async () => {
   let finish!: (value: MonthlyFeeDetails) => void
   vi.mocked(markMonthlyFeePaid).mockImplementation(() => new Promise(resolve => { finish = resolve }))
   const user = userEvent.setup(); setup(); await user.click(await screen.findByRole('button', { name: /2026年9月.*查看记录/ }))
   await user.click(screen.getByRole('button', { name: '确认已缴' }))
-  expect(screen.getByRole('button', { name: '← 返回缴费记录' })).toBeDisabled()
-  expect(screen.getByRole('button', { name: '其他资料' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: '← 返回缴费记录' })).toBeEnabled()
+  expect(screen.getByRole('button', { name: '其他资料' })).toBeEnabled()
+  expect(screen.getByRole('button', { name: '处理中…' })).toBeDisabled()
   finish({ ...rows[1], payment_status: 'paid', receipt_status: 'pending' })
   await waitFor(() => expect(screen.getByRole('button', { name: '← 返回缴费记录' })).toBeEnabled())
 })

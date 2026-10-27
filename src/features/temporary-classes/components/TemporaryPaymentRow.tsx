@@ -12,6 +12,12 @@ import { preparePwaFormSave } from '../../settings/pwa/updateProtection'
 import { useContextDataBusy } from '../../../components/contextual/contextDataState'
 import { refreshTemporaryPayment } from '../temporaryPaymentCache'
 import { TemporaryCancellationButton } from './TemporaryCancellationButton'
+import type { TemporaryClassPayment } from '../../../types/domain'
+import { getTemporaryFeeRecord } from '../../fees/api/temporaryFeesService'
+import { patchTemporaryFeeLists } from '../temporaryPaymentCache'
+import { useCollectionAction } from '../../fees/collection/useCollectionAction'
+import { useCollectionGlow } from '../../fees/collection/collectionHooks'
+import { CollectionFeedback } from '../../fees/collection/CollectionFeedback'
 
 export function TemporaryPaymentRow({ enrollment, allowActions, allowAmountEdit = false, backLabel = '临时班', onBusyChange, classNameForCancellation, allowCancellation = true, onCancelled }: { enrollment: TemporaryClassEnrollment; allowActions: boolean; allowAmountEdit?: boolean; backLabel?: string; onBusyChange?: (id: string, busy: boolean) => void; classNameForCancellation?: string; allowCancellation?: boolean; onCancelled?: () => void }) {
   const queryClient = useQueryClient()
@@ -19,6 +25,7 @@ export function TemporaryPaymentRow({ enrollment, allowActions, allowAmountEdit 
   const [editing, setEditing] = useState(false)
   const [cancellationOpen, setCancellationOpen] = useState(false)
   const [amount, setAmount] = useState('')
+  const [amountFeedback, setAmountFeedback] = useState('')
   const amountRef = useRef(amount)
   const editButton = useRef<HTMLButtonElement>(null)
   const wasEditing = useRef(false)
@@ -26,19 +33,28 @@ export function TemporaryPaymentRow({ enrollment, allowActions, allowAmountEdit 
     if (!editing && wasEditing.current) editButton.current?.focus({ preventScroll: true })
     wasEditing.current = editing
   }, [editing])
-  const payment = enrollment.payment
+  const latestPayment = useRef(enrollment.payment)
+  const originalPayment = enrollment.payment
+  const collection = useCollectionAction(`temporary_class_payment:${originalPayment?.id ?? enrollment.id}`, {
+    id: originalPayment?.id ?? '',
+    pay: () => markTemporaryClassPaymentPaid(originalPayment?.id ?? ''),
+    verify: async () => {
+      const record = await getTemporaryFeeRecord(originalPayment?.id ?? '', enrollment.temporary_class_id, enrollment.student_id)
+      patchTemporaryFeeLists(queryClient, record.payment, record.enrollment)
+      return { ...record.payment, cancelled_at: record.enrollment.cancelled_at }
+    },
+    onFact: fact => { latestPayment.current = fact; patchTemporaryFeeLists(queryClient, fact) },
+    refresh: () => refreshTemporaryPayment(queryClient, enrollment, latestPayment.current ?? undefined, true),
+  }, originalPayment ?? undefined)
+  const glow = useCollectionGlow(collection.state)
+  const fact = collection.fact as TemporaryClassPayment | undefined
+  const payment = originalPayment && { ...originalPayment, ...(enrollment.status !== 'cancelled' ? fact : {}) }
   const refresh = async (updated?: NonNullable<TemporaryClassEnrollment['payment']>) => {
     setError('')
     await refreshTemporaryPayment(queryClient, enrollment, updated)
   }
   const mutationKey = ['temporary-payment', payment?.id]
   const pendingForPayment = useIsMutating({ mutationKey }) > 0
-  const paid = useMutation({
-    mutationKey,
-    mutationFn: () => markTemporaryClassPaymentPaid(payment?.id ?? ''),
-    onSuccess: updated => refresh(updated),
-    onError: (caughtError) => setError(getErrorMessage(caughtError, '确认缴费失败。')),
-  })
   const undo = useMutation({
     mutationKey,
     mutationFn: () => undoTemporaryClassPayment(payment?.id ?? ''),
@@ -49,20 +65,21 @@ export function TemporaryPaymentRow({ enrollment, allowActions, allowAmountEdit 
     mutationKey,
     mutationFn: (value: number) => updateTemporaryClassPaymentAmount(payment?.id ?? '', enrollment.temporary_class_id, value),
   })
-  const busy = paid.isPending || undo.isPending || changeAmount.isPending || pendingForPayment || cancellationOpen
+  const busy = undo.isPending || changeAmount.isPending || pendingForPayment || cancellationOpen
+  const collectionLocked = collection.busy || collection.state?.phase === 'uncertain' || collection.state?.phase === 'verified'
   useContextDataBusy(editing || busy)
   const paymentId = payment?.id ?? enrollment.id
   useEffect(() => {
     onBusyChange?.(paymentId, editing || busy)
     return () => onBusyChange?.(paymentId, false)
   }, [paymentId, editing, busy, onBusyChange])
-  const cancelled = enrollment.status === 'cancelled'
+  const cancelled = enrollment.status === 'cancelled' || Boolean(collection.state?.fact?.cancelled_at)
   const canAct = allowActions && !cancelled
   const canEdit = canAct && allowAmountEdit && payment?.payment_status === 'unpaid'
 
   async function saveAmount(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!canEdit || busy) return
+    if (!canEdit || busy || collectionLocked) return
     const submittedText = amount
     const acknowledgeSave = preparePwaFormSave(event.currentTarget)
     let value: number
@@ -74,6 +91,7 @@ export function TemporaryPaymentRow({ enrollment, allowActions, allowAmountEdit 
       acknowledgeSave()
       // A later edit must stay visible and protected, not be lost on success.
       if (amountRef.current === submittedText) setEditing(false)
+      setAmountFeedback(amountRef.current === submittedText ? '金额已保存' : '本次提交已保存，后续修改尚未保存')
       await refresh(updated)
     } catch (caughtError) {
       const message = temporaryPaymentAmountError(caughtError)
@@ -88,7 +106,7 @@ export function TemporaryPaymentRow({ enrollment, allowActions, allowAmountEdit 
   const receiptLabel = payment.receipt_status === 'pending' ? cancelled ? '原收据待处理（已移出队列）' : '收据待处理' : payment.receipt_status === 'completed' ? cancelled ? '原收据已处理' : '收据已处理' : ''
 
   return (
-    <article className="temporary-enrollment-row">
+    <article className={`temporary-enrollment-row${glow ? ' collection-glow' : ''}`}>
       <ContextLink backLabel={backLabel} className="identity-link" to={`/students/${enrollment.student.id}`}>
         <StudentIdentity student={enrollment.student} />
       </ContextLink>
@@ -104,26 +122,27 @@ export function TemporaryPaymentRow({ enrollment, allowActions, allowAmountEdit 
       </div>
       {canAct && payment.payment_status === 'unpaid' && !editing && (
         <div className="inline-actions">
-        <button className="button button-primary button-small" type="button" disabled={busy} onClick={() => paid.mutate()}>
-          {paid.isPending ? '处理中…' : '确认已缴'}
+        <button className="button button-primary button-small" type="button" disabled={busy || collectionLocked} onClick={() => { void collection.start() }}>
+          {collection.busy ? '处理中…' : collection.state?.phase === 'retry' ? '重试收款' : '确认已缴'}
         </button>
-        {canEdit && <button ref={editButton} className="button button-text button-small" type="button" disabled={busy} onClick={() => {
+        {canEdit && <button ref={editButton} className="button button-text button-small" type="button" disabled={busy || collectionLocked} onClick={() => {
+          collection.dismiss(); setAmountFeedback('')
           const initial = String(payment.amount)
           setAmount(initial); amountRef.current = initial; setError(''); setEditing(true)
         }}>修改金额</button>}
         </div>
       )}
       {canAct && payment.payment_status === 'paid' && (
-        <button className="button button-secondary button-small" type="button" disabled={busy || editing} onClick={() => {
+        <button className="button button-secondary button-small" type="button" disabled={busy || editing || collectionLocked || glow} onClick={() => {
           const warning = payment.receipt_status === 'completed'
             ? '此笔费用已标记收据处理完成，撤销缴费后收据状态也会一并重置。确定继续吗？'
             : '确定撤销这笔缴费吗？'
-          if (window.confirm(warning)) undo.mutate()
+          if (window.confirm(warning)) { collection.dismiss(); undo.mutate() }
         }}>
           撤销缴费
         </button>
       )}
-      {((canAct && allowCancellation) || cancellationOpen) && classNameForCancellation && <TemporaryCancellationButton enrollment={enrollment} className={classNameForCancellation} disabled={busy || editing || !canAct || !allowCancellation} onOpenChange={setCancellationOpen} onCancelled={onCancelled} />}
+      {((canAct && allowCancellation) || cancellationOpen) && classNameForCancellation && <TemporaryCancellationButton enrollment={enrollment} className={classNameForCancellation} disabled={busy || editing || collectionLocked || glow || !canAct || !allowCancellation} onOpenChange={open => { if (open) collection.dismiss(); setCancellationOpen(open) }} onCancelled={onCancelled} />}
       {editing && <form className="fee-amount-form" onSubmit={saveAmount}>
         <label className="field"><span>应缴金额</span>
           <input type="number" inputMode="decimal" min="0" max="99999999.99" step="0.01" required autoFocus disabled={!canEdit} value={amount} onChange={event => {
@@ -131,11 +150,13 @@ export function TemporaryPaymentRow({ enrollment, allowActions, allowAmountEdit 
           }} />
         </label>
         <div className="inline-actions">
-          <button className="button button-primary button-small" type="submit" disabled={busy || !canEdit}>{changeAmount.isPending ? '保存中…' : '保存金额'}</button>
+          <button className="button button-primary button-small" type="submit" disabled={busy || !canEdit || collectionLocked}>{changeAmount.isPending ? '保存中…' : '保存金额'}</button>
           <button className="button button-text button-small" type="button" disabled={busy} onClick={() => { setEditing(false); setError('') }}>取消</button>
         </div>
       </form>}
       {error && <p className="form-error" role="alert">{error}</p>}
+      {amountFeedback && <p className="collection-feedback" role="status">{amountFeedback}</p>}
+      <CollectionFeedback state={collection.state} onVerify={() => { void collection.verify() }} onRefresh={() => { void collection.refresh() }} onDismiss={collection.dismiss} />
       {editing && payment.payment_status === 'paid' && !error && <p className="form-error" role="alert">这笔费用已缴，不能修改金额。请取消编辑后核对。</p>}
       {editing && cancelled && <p className="form-error" role="alert">报名已取消，不能修改原费用。草稿已保留，请取消编辑后核对取消记录。</p>}
     </article>

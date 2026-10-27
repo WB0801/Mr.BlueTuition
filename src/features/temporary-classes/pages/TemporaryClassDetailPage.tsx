@@ -16,6 +16,8 @@ import {
 } from '../api/temporaryClassesService'
 import { TemporaryClassRegistrationPanel } from '../components/TemporaryClassRegistrationPanel'
 import { TemporaryPaymentRow } from '../components/TemporaryPaymentRow'
+import { CollectionList } from '../../fees/collection/CollectionList'
+import { temporaryCollectionKey } from '../../fees/collection/collectionHooks'
 import { PermanentDeleteZone } from '../../deletion/components/PermanentDeleteZone'
 import { ContextDataWorkspace } from '../../../components/contextual/ContextDataWorkspace'
 import { completedContextOperation } from '../../../components/contextual/contextDataState'
@@ -103,7 +105,7 @@ function TemporaryClassDetailView({ temporaryClassId }: { temporaryClassId: stri
         </div>
         {!current.length && <EmptyBlock message="目前没有有效报名。" />}
         <div className="temporary-enrollment-list compact-data-list">
-          {enrollments.data?.filter(enrollment => (enrollment.status !== 'cancelled' || busyRows.has(enrollment.payment?.id ?? enrollment.id)) && (!paymentId || enrollment.payment?.id === paymentId)).map((enrollment) => <TemporaryPaymentRow enrollment={enrollment} allowActions={!readError} allowAmountEdit={isActive} key={enrollment.id} onBusyChange={rowBusy} classNameForCancellation={data.name} allowCancellation={isActive && !readError} onCancelled={() => setNotice('报名已取消，原记录可在「取消记录」查看。')} />)}
+          <CollectionList key={`${temporaryClassId}:${paymentId}`} records={(enrollments.data ?? []).filter(enrollment => (enrollment.status !== 'cancelled' || busyRows.has(enrollment.payment?.id ?? enrollment.id)) && (!paymentId || enrollment.payment?.id === paymentId))} recordKey={temporaryCollectionKey} renderRecord={enrollment => <TemporaryPaymentRow enrollment={enrollment} allowActions={!readError} allowAmountEdit={isActive} onBusyChange={rowBusy} classNameForCancellation={data.name} allowCancellation={isActive && !readError} onCancelled={() => setNotice('报名已取消，原记录可在「取消记录」查看。')} />} />
           {paymentId && !enrollments.data?.some((enrollment) => enrollment.payment?.id === paymentId) && <EmptyBlock message="这笔缴费记录已不存在或不属于此临时班。" />}
         </div>
       </section> },

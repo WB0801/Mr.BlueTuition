@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { TuitionClass } from '../../../types/domain'
 import { getErrorMessage } from '../../../utils/errors'
-import { todayInMalaysia } from '../../../utils/format'
+import { formatDate, todayInMalaysia } from '../../../utils/format'
 import { createEnrollment } from '../api/enrollmentsService'
 import { preparePwaFormSave } from '../../settings/pwa/updateProtection'
 
@@ -18,11 +18,13 @@ export function NewEnrollmentForm({ studentId, classes, excludedClassIds = [], o
   const [classId, setClassId] = useState('')
   const [joinDate, setJoinDate] = useState(todayInMalaysia())
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const queryClient = useQueryClient()
   const mutation = useMutation({
-    mutationFn: (input: { classId: string; joinDate: string }) => createEnrollment(studentId, input.classId, input.joinDate),
+    mutationFn: (input: { classId: string; joinDate: string; className: string }) => createEnrollment(studentId, input.classId, input.joinDate),
     onSuccess: async (_, input) => {
       setClassId(current => current === input.classId ? '' : current)
+      setSuccess(`已加入${input.className} · ${formatDate(input.joinDate)}生效`)
       await queryClient.invalidateQueries({ queryKey: ['enrollments'] })
       onSuccess?.()
     },
@@ -35,14 +37,16 @@ export function NewEnrollmentForm({ studentId, classes, excludedClassIds = [], o
     const classField = event.currentTarget.querySelector('select')!
     const acknowledgeSave = preparePwaFormSave(event.currentTarget)
     try {
-      await mutation.mutateAsync({ classId, joinDate })
+      if (mutation.isPending) return
+      setSuccess('')
+      await mutation.mutateAsync({ classId, joinDate, className: classes.find(item => item.id === classId)?.name ?? '所选班级' })
       acknowledgeSave(new Map([[classField, '']]))
     } catch {
       // Error is displayed by the mutation callback.
     }
   }
 
-  if (availableClasses.length === 0) {
+  if (availableClasses.length === 0 && !success && !mutation.isPending) {
     return <p className="muted">目前没有可加入的进行中班级。</p>
   }
 
@@ -62,7 +66,9 @@ export function NewEnrollmentForm({ studentId, classes, excludedClassIds = [], o
         <input type="date" value={joinDate} onChange={(event) => setJoinDate(event.target.value)} required />
       </label>
       {error && <p className="form-error" role="alert">{error}</p>}
-      <button className="button button-primary" type="submit" disabled={mutation.isPending}>
+      {success && <p className="notice inline-notice" role="status">{success}</p>}
+      {availableClasses.length === 0 && <p className="muted">目前没有可加入的进行中班级。</p>}
+      <button className="button button-primary" type="submit" disabled={mutation.isPending || availableClasses.length === 0}>
         {mutation.isPending ? '加入中…' : '加入班级'}
       </button>
     </form>

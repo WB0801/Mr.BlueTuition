@@ -22,6 +22,7 @@ import { endClass, getClass } from '../api/classesService'
 import { getEndClassConfirmationMessage } from '../classActions'
 import { AddStudentToClass } from '../components/AddStudentToClass'
 import { PermanentDeleteZone } from '../../deletion/components/PermanentDeleteZone'
+import { ObjectSavedNotice } from '../../../components/feedback/ObjectSavedNotice'
 
 export function ClassDetailPage() {
   const { classId = '' } = useParams()
@@ -57,6 +58,7 @@ function ClassDetailView({ classId }: { classId: string }) {
   }
   return <section className="management-page detail-page class-detail-page">
     <PageHeader title={data.name} backTo="/classes" backLabel="班级" actions={<ContextLink backLabel="班级" className="button button-secondary" to={`/settings/export?classId=${encodeURIComponent(classId)}`}>导出资料</ContextLink>} />
+    <ObjectSavedNotice kind="classes" id={classId} />
     <div className="detail-title-row compact-title-row"><p className="eyebrow">{data.subject?.name}</p><StatusBadge status={data.status} /></div>
     <dl className="details-card details-grid class-overview"><div><dt>当前学生</dt><dd>{current.length} 人</dd></div><div><dt>每月学费</dt><dd>{formatMoney(data.monthly_fee)}</dd></div></dl>
     <ContextDataWorkspace label="班级相关资料" defaultPanel="students" sections={[

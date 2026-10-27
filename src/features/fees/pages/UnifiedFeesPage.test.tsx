@@ -2,13 +2,13 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import userEvent from '@testing-library/user-event'
 import { focusManager, onlineManager, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createFormProtection } from '../../settings/pwa/updateProtection'
-import { MemoryRouter } from 'react-router-dom'
+import { createMemoryRouter, RouterProvider, Link } from 'react-router-dom'
 import { MonthlyFeesPage } from './MonthlyFeesPage'
 import * as fees from '../api/feesService'
 import * as temporary from '../api/temporaryFeesService'
 import * as payment from '../../temporary-classes/api/temporaryClassesService'
 import type { MonthlyFeeDetails } from '../../../types/domain'
-vi.mock('../api/feesService', () => ({ ensureMonthlyFees: vi.fn(), listMonthlyFees: vi.fn(), markMonthlyFeePaid: vi.fn(), undoMonthlyFeePayment: vi.fn(), updateMonthlyFeeAmount: vi.fn(), waiveMonthlyFee: vi.fn() }))
+vi.mock('../api/feesService', () => ({ ensureMonthlyFees: vi.fn(), listMonthlyFees: vi.fn(), getMonthlyFee: vi.fn(), markMonthlyFeePaid: vi.fn(), undoMonthlyFeePayment: vi.fn(), updateMonthlyFeeAmount: vi.fn(), waiveMonthlyFee: vi.fn() }))
 vi.mock('../api/temporaryFeesService', () => ({ listTemporaryFeeRecords: vi.fn(), listTemporaryFeeClasses: vi.fn(), getTemporaryFeeRecord: vi.fn() }))
 vi.mock('../../classes/api/classesService', () => ({ listClasses: vi.fn(async () => [{ id: 'same', name: '同名班', status: 'active' }]) }))
 vi.mock('../../temporary-classes/api/temporaryClassesService', () => ({ markTemporaryClassPaymentPaid: vi.fn(), undoTemporaryClassPayment: vi.fn(), updateTemporaryClassPaymentAmount: vi.fn() }))
@@ -19,6 +19,7 @@ beforeEach(() => {
   vi.resetAllMocks(); tempRows = [oneOff()]; monthlyRows = [structuredClone(monthRow)]
   vi.mocked(fees.ensureMonthlyFees).mockResolvedValue({ created_count: 0 })
   vi.mocked(fees.listMonthlyFees).mockImplementation(async () => structuredClone(monthlyRows))
+  vi.mocked(fees.getMonthlyFee).mockImplementation(async id => structuredClone(monthlyRows.find(row => row.id === id)!))
   vi.mocked(temporary.listTemporaryFeeRecords).mockImplementation(async filters => structuredClone(tempRows.filter(row => filters.month === 'all' || row.payment.payment_status === 'unpaid' || row.payment.paid_at?.startsWith(filters.month))))
   vi.mocked(temporary.getTemporaryFeeRecord).mockImplementation(async id => structuredClone(tempRows.find(row => row.payment.id === id)!))
   vi.mocked(temporary.listTemporaryFeeClasses).mockResolvedValue([oneOff().class, { id: 'ended', name: '已结束班', status: 'ended', start_at: '2025-01-01' }])
@@ -27,13 +28,14 @@ beforeEach(() => {
 })
 function setup(url = '/fees?month=2026-10', staleTime = 0) {
   const client = new QueryClient({ defaultOptions: { queries: { staleTime, retry: false, refetchOnWindowFocus: false }, mutations: { retry: false } } })
-  render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[url]}><MonthlyFeesPage view="current" /></MemoryRouter></QueryClientProvider>)
-  return client
+  const router = createMemoryRouter([{ path: '/fees', element: <><Link to="/elsewhere">离开学费</Link><MonthlyFeesPage view="current" /></> }, { path: '*', element: <p>其他页面</p> }], { initialEntries: [url] })
+  render(<QueryClientProvider client={client}><RouterProvider router={router} /></QueryClientProvider>)
+  return Object.assign(client, { router })
 }
 it('shows both original IDs and pays each through its existing RPC, independently', async () => {
   const client = setup(); const user = userEvent.setup()
   expect(await screen.findByText('单次')).toBeVisible()
-  expect(screen.getAllByText('虚构蓝同学')).toHaveLength(2)
+  await waitFor(() => expect(screen.getAllByText('虚构蓝同学')).toHaveLength(2))
   const tempCard = screen.getByText('单次').closest('article')!
   await user.click(within(tempCard).getByRole('button', { name: '确认已缴' }))
   await waitFor(() => expect(screen.queryByText('单次')).not.toBeInTheDocument())
@@ -45,6 +47,43 @@ it('shows both original IDs and pays each through its existing RPC, independentl
   expect(fees.markMonthlyFeePaid).toHaveBeenCalledExactlyOnceWith('same')
   expect(client.getQueryState(['receipt-queue', 'pending'])?.isInvalidated).toBe(true)
   expect(client.getQueryState(['monthly-fees-generation', '2026-10-01'])?.isInvalidated).toBe(false)
+})
+
+it('starts three payments without a page lock and retains their original slots through reverse-order confirmation', async () => {
+  monthlyRows = ['a','b','c'].map(id => ({ ...structuredClone(monthRow), id, student: { ...monthRow.student!, id, name: `虚构${id}` } }))
+  const finishes = new Map<string, () => void>()
+  vi.mocked(fees.markMonthlyFeePaid).mockImplementation(id => new Promise(resolve => { finishes.set(id, () => { const row = monthlyRows.find(item => item.id === id)!; row.payment_status='paid';row.receipt_status='pending';resolve({...row}) }) }))
+  setup('/fees?month=2026-10&classId=monthly:same')
+  await screen.findByText('虚构c')
+  for (const id of ['a','b','c']) fireEvent.click(within(screen.getByText(`虚构${id}`).closest('article')!).getByRole('button',{name:'确认已缴'}))
+  expect(fees.markMonthlyFeePaid).toHaveBeenCalledTimes(3)
+  expect(screen.getByRole('combobox',{name:'班级'})).toBeEnabled()
+  for (const id of ['c','b','a']) await act(async () => finishes.get(id)!())
+  expect([...document.querySelectorAll('[data-fee-key]')].map(node=>node.getAttribute('data-fee-key'))).toEqual(['monthly_fee:a','monthly_fee:b','monthly_fee:c'])
+  await waitFor(()=>{ for (const id of ['a','b','c']) expect(screen.queryByText(`虚构${id}`)).not.toBeInTheDocument() },{timeout:2000})
+  expect(fees.ensureMonthlyFees).toHaveBeenCalledTimes(1)
+})
+
+it('keeps a verified paid record after a lost response, and never automatically replays collection', async () => {
+  vi.mocked(fees.markMonthlyFeePaid).mockImplementationOnce(async () => { monthlyRows[0].payment_status='paid';monthlyRows[0].receipt_status='pending'; throw new TypeError('Failed to fetch') })
+  setup('/fees?month=2026-10&classId=monthly:same')
+  await userEvent.setup().click(await screen.findByRole('button',{name:'确认已缴'}))
+  expect(await screen.findByText(/最新记录已缴/)).toBeVisible()
+  expect(fees.getMonthlyFee).toHaveBeenCalledWith('same');expect(fees.markMonthlyFeePaid).toHaveBeenCalledTimes(1)
+  expect(screen.queryByRole('button',{name:'确认已缴'})).not.toBeInTheDocument()
+  await userEvent.setup().click(screen.getByRole('button',{name:'已核对，关闭'}))
+  await waitFor(()=>expect(screen.queryByText('虚构蓝同学')).not.toBeInTheDocument())
+})
+
+it('preserves a confirmed payment when list refresh fails and retries only the read', async () => {
+  setup('/fees?month=2026-10&classId=monthly:same');await screen.findByText('虚构蓝同学')
+  vi.mocked(fees.listMonthlyFees).mockRejectedValueOnce(new Error('isolated refresh failed'))
+  await userEvent.setup().click(screen.getByRole('button',{name:'确认已缴'}))
+  expect(await screen.findByText(/已确认缴费；列表刷新失败/)).toBeVisible()
+  expect(screen.getByText('已缴 · 收据待处理')).toBeVisible()
+  await userEvent.setup().click(screen.getByRole('button',{name:'重试刷新'}))
+  await waitFor(()=>expect(screen.queryByText('虚构蓝同学')).not.toBeInTheDocument(),{timeout:2000})
+  expect(fees.markMonthlyFeePaid).toHaveBeenCalledTimes(1)
 })
 it('temporary-only scope never generates monthly fees or exposes monthly reminders', async () => {
   tempRows[0].class.status = 'ended'; setup('/fees?month=2026-10&classId=temporary:same')
@@ -104,6 +143,71 @@ it('reads fresh temporary payments on focus without running monthly generation',
     expect(await screen.findByText('RM31')).toBeVisible()
     expect(fees.ensureMonthlyFees).not.toHaveBeenCalled()
   } finally { focusManager.setFocused(undefined) }
+})
+
+it.each(['focus', 'reconnect'] as const)('retains the same monthly editor and protected draft when %s refresh removes an unpaid match', async event => {
+  const client = setup('/fees?month=2026-10&classId=monthly:same'), user = userEvent.setup()
+  const protection = createFormProtection(document)
+  try {
+    await user.click(await screen.findByRole('button', { name: '修改本月金额' }))
+    const input = screen.getByRole('spinbutton', { name: /本月实际收费/ })
+    fireEvent.change(input, { target: { value: '25.50' } })
+    monthlyRows[0] = { ...monthlyRows[0], payment_status: 'paid', receipt_status: 'pending', paid_at: '2026-10-27T00:00:00Z' }
+    const reads = vi.mocked(fees.listMonthlyFees).mock.calls.length
+    await act(async () => {
+      if (event === 'focus') { focusManager.setFocused(false); focusManager.setFocused(true) }
+      else { onlineManager.setOnline(false); onlineManager.setOnline(true) }
+    })
+    await screen.findByText('已缴 · 收据待处理')
+    expect(vi.mocked(fees.listMonthlyFees).mock.calls.length).toBeGreaterThan(reads)
+    expect(screen.getByRole('spinbutton')).toBe(input); expect(input).toHaveValue(25.5)
+    expect(screen.getByRole('button', { name: '保存金额' })).toBeDisabled()
+    expect(screen.getByRole('combobox', { name: '班级' })).toBeDisabled()
+    expect(protection.reason()).toContain('未保存')
+    expect(fees.ensureMonthlyFees).toHaveBeenCalledTimes(1)
+    await user.click(screen.getByRole('button', { name: '取消' }))
+    await waitFor(() => expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument())
+    expect(screen.queryByText('虚构蓝同学')).not.toBeInTheDocument()
+    expect(protection.reason()).toBe('')
+    expect(client.isMutating()).toBe(0)
+  } finally { protection.dispose(); focusManager.setFocused(undefined); onlineManager.setOnline(true) }
+})
+
+it('keeps a newer monthly draft through the real list save/refetch and closes only after its own save', async () => {
+  setup('/fees?month=2026-10&classId=monthly:same'); const user = userEvent.setup()
+  await user.click(await screen.findByRole('button', { name: '修改本月金额' }))
+  const input = screen.getByRole('spinbutton', { name: /本月实际收费/ })
+  let finish!: () => void
+  vi.mocked(fees.updateMonthlyFeeAmount).mockImplementationOnce(async (_id, amount) => {
+    await new Promise<void>(resolve => { finish = resolve }); monthlyRows[0].actual_amount = amount; return { ...monthlyRows[0] }
+  })
+  fireEvent.change(input, { target: { value: '25.50' } }); await user.click(screen.getByRole('button', { name: '保存金额' }))
+  expect(screen.getByRole('button', { name: '取消' })).toBeDisabled()
+  fireEvent.change(input, { target: { value: '28.80' } }); await act(async () => finish())
+  expect(await screen.findByText('本次提交已保存，后续修改尚未保存')).toBeVisible()
+  expect(screen.getByRole('spinbutton')).toBe(input); expect(input).toHaveValue(28.8)
+  expect(monthlyRows[0].actual_amount).toBe(25.5)
+  expect(screen.getByRole('searchbox')).toBeDisabled()
+  await user.click(screen.getByRole('button', { name: '取消' }))
+  expect(await screen.findByText('本月 RM25.50')).toBeVisible()
+  expect(screen.getByRole('searchbox')).toBeEnabled()
+  expect(fees.ensureMonthlyFees).toHaveBeenCalledTimes(1)
+})
+
+it('cannot unmount a monthly draft through navigation or browser close without explicit discard', async () => {
+  const client = setup('/fees?month=2026-10&classId=monthly:same'), user = userEvent.setup()
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+  try {
+    await user.click(await screen.findByRole('button', { name: '修改本月金额' }))
+    const input = screen.getByRole('spinbutton'); fireEvent.change(input, { target: { value: '28.80' } })
+    await user.click(screen.getByRole('link', { name: '离开学费' }))
+    expect(confirm).toHaveBeenCalledTimes(1); expect(client.router.state.location.pathname).toBe('/fees')
+    expect(input).toHaveValue(28.8)
+    const unload = new Event('beforeunload', { cancelable: true }); window.dispatchEvent(unload); expect(unload.defaultPrevented).toBe(true)
+    await user.click(screen.getByRole('button', { name: '取消' }))
+    await user.click(screen.getByRole('link', { name: '离开学费' }))
+    expect(client.router.state.location.pathname).toBe('/elsewhere'); expect(confirm).toHaveBeenCalledTimes(1)
+  } finally { confirm.mockRestore() }
 })
 
 it.each(['2026-10-20T00:00:00Z', '2026-11-01T00:00:00Z'])('keeps the original editor after a rejected save and paid refresh at %s', async paidAt => {

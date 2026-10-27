@@ -9,6 +9,8 @@ import { getErrorMessage } from '../../../utils/errors'
 import type { StudentInput } from '../../../types/domain'
 import { createStudent, findPotentialDuplicateStudents, getStudent, updateStudent } from '../api/studentsService'
 import { StudentForm } from '../components/StudentForm'
+import { useRef } from 'react'
+import { completedContextOperation } from '../../../components/contextual/contextDataState'
 
 export function StudentFormPage() {
   const { studentId } = useParams()
@@ -17,6 +19,7 @@ export function StudentFormPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()
+  const savedId = useRef('')
   const [error, setError] = useState('')
   const [draft, setDraft] = useState<StudentInput>({ name: '', school_class: '', phone: '' })
   const deferredDraft = useDeferredValue(draft)
@@ -38,14 +41,13 @@ export function StudentFormPage() {
     onSuccess: async (saved) => {
       await queryClient.invalidateQueries({ queryKey: ['students'] })
       queryClient.setQueryData(['student', saved.id], saved)
-      const target = objectEditReturnTarget('students', studentId, saved.id, location.state)
-      navigate(target.to, { replace: true, state: target.state })
+      savedId.current = saved.id
     },
     onError: (caughtError) => setError(getErrorMessage(caughtError, '学生资料保存失败，请重试。')),
   })
 
   if (isEditing && student.isLoading) return <LoadingBlock />
-  if (isEditing && student.isError) return <ErrorBlock message="找不到这位学生，或资料载入失败。" />
+  if (isEditing && student.isError && !student.data) return <ErrorBlock message="找不到这位学生，或资料载入失败。" />
 
   const initialValue = student.data
     ? {
@@ -63,10 +65,15 @@ export function StudentFormPage() {
         backLabel={isEditing ? '学生资料' : '学生列表'}
       />
       <StudentForm
-        key={student.data?.updated_at ?? 'new'}
+        key={studentId ?? 'new'}
         initialValue={initialValue}
         submitLabel={isEditing ? '保存修改' : '新增学生'}
         isSubmitting={saveStudent.isPending}
+        isEditing={isEditing}
+        onSaved={() => {
+          const target = objectEditReturnTarget('students', studentId, savedId.current, location.state)
+          navigate(target.to, { replace: true, state: completedContextOperation({ ...target.state, objectSaved: { kind: 'students', id: savedId.current } }) })
+        }}
         error={error}
         duplicateStudents={isEditing ? [] : duplicates.data}
         duplicateCheckPending={!isEditing && duplicates.isFetching}
@@ -76,6 +83,7 @@ export function StudentFormPage() {
           await saveStudent.mutateAsync(input)
         }}
       />
+      {student.isError && student.data && <ErrorBlock message="学生资料刷新失败，当前编辑已保留。" />}
     </section>
   )
 }

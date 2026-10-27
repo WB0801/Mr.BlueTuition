@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import type { ClassInput, Subject } from '../../../types/domain'
+import { preparePwaFormSave, usePwaFormDraft, usePwaUpdateGuard } from '../../settings/pwa/updateProtection'
+import { FormLeaveGuard } from '../../../components/navigation/FormLeaveGuard'
 
 interface ClassFormProps {
   subjects: Subject[]
@@ -7,30 +9,41 @@ interface ClassFormProps {
   submitLabel: string
   isSubmitting: boolean
   isEditing?: boolean
+  onSaved?: () => void
   error?: string
   onSubmit: (input: ClassInput) => Promise<void>
 }
 
-export function ClassForm({ subjects, initialValue, submitLabel, isSubmitting, isEditing = false, error, onSubmit }: ClassFormProps) {
+export function ClassForm({ subjects, initialValue, submitLabel, isSubmitting, isEditing = false, error, onSubmit, onSaved }: ClassFormProps) {
   const [form, setForm] = useState(initialValue)
   const [validationError, setValidationError] = useState('')
+  const [savedWithDraft, setSavedWithDraft] = useState(false)
+  const { formRef, dirty } = usePwaFormDraft()
+  usePwaUpdateGuard(isSubmitting)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (isSubmitting) return
     if (!isEditing && form.end_time <= form.start_time) {
       setValidationError('结束时间必须晚于开始时间。')
       return
     }
     setValidationError('')
+    const acknowledgeSave = preparePwaFormSave(event.currentTarget)
     try {
       await onSubmit(form)
+      const hasLaterDraft = acknowledgeSave()
+      setSavedWithDraft(hasLaterDraft)
+      if (!hasLaterDraft) onSaved?.()
     } catch {
       // The parent displays the mutation error.
     }
   }
 
   return (
-    <form className="form-card class-form" onSubmit={handleSubmit}>
+    <form ref={formRef} className="form-card class-form" onSubmit={handleSubmit}>
+      <FormLeaveGuard dirty={dirty} saving={isSubmitting} />
+      <fieldset disabled={isSubmitting && !isEditing} style={{ border: 0, padding: 0, margin: 0, minWidth: 0, display: 'contents' }}>
       <label className="field">
         <span>班级名称</span>
         <input
@@ -93,12 +106,14 @@ export function ClassForm({ subjects, initialValue, submitLabel, isSubmitting, i
           <input type="date" value={form.start_date} onChange={(event) => setForm({ ...form, start_date: event.target.value })} required />
         </label>
       </div>
+      {savedWithDraft && dirty && <p className="notice inline-notice" role="status">本次提交已保存，后续修改尚未保存</p>}
       {(validationError || error) && <p className="form-error" role="alert">{validationError || error}</p>}
       <div className="form-actions">
         <button className="button button-primary" type="submit" disabled={isSubmitting}>
           {isSubmitting ? '保存中…' : submitLabel}
         </button>
       </div>
+      </fieldset>
     </form>
   )
 }

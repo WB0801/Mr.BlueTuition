@@ -78,6 +78,27 @@ export async function listPendingReceipts(): Promise<MonthlyFeeDetails[]> {
   return (data ?? []).map((row) => mapMonthlyFeeDetails(row as unknown as FeeQueryRow))
 }
 
+/** Reconcile one original payment only; never generate or recreate fees. */
+export async function getMonthlyFee(feeId: string): Promise<MonthlyFeeDetails> {
+  const { data, error } = await requireSupabase().from('monthly_fees').select(feeSelection).eq('id', feeId).single()
+  if (error) throw error
+  return mapMonthlyFeeDetails(data as unknown as FeeQueryRow)
+}
+
+export async function readReceiptStates(keys: readonly string[]): Promise<{ receipt_key: string; receipt_status: string }[]> {
+  const result: { receipt_key: string; receipt_status: string }[] = []
+  for (let offset = 0; offset < keys.length; offset += 100) {
+    const batch = keys.slice(offset, offset + 100)
+    const rows = await readAllPages(async (from, to) => {
+      const { data, error } = await requireSupabase().from('receipt_queue').select('receipt_key,receipt_status').in('receipt_key', batch).order('receipt_key').range(from, to)
+      if (error) throw error
+      return (data ?? []).map(row => ({ ...row, id: row.receipt_key }))
+    })
+    result.push(...rows.map(row => ({ receipt_key: row.receipt_key, receipt_status: row.receipt_status })))
+  }
+  return result
+}
+
 export async function countPendingReceipts(): Promise<number> {
   const { count, error } = await requireSupabase()
     .from('receipt_queue')

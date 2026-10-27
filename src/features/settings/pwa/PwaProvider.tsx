@@ -4,6 +4,7 @@ import { PwaContext, type PwaContextValue } from './pwaContext'
 import { fetchPublishedVersion, runningBuild } from './buildVersion'
 import { consumeUpdateConfirmation, UpdateController, UPDATE_ATTEMPT_KEY, type UpdateState } from './updateController'
 import { createFormProtection, updateProtection } from './updateProtection'
+import { collectionActions } from '../../fees/collection/collectionActions'
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
@@ -20,7 +21,7 @@ export function PwaProvider({ children }: PropsWithChildren) {
     container: navigator.serviceWorker,
     fetchVersion: fetchPublishedVersion,
     online: () => navigator.onLine,
-    blocked: () => updateProtection.reason() || (queryClient.isMutating() ? '操作正在提交，请完成后再更新。' : ''),
+    blocked: () => updateProtection.reason() || (collectionActions(queryClient).busy ? '收款正在处理或核对，请完成后再更新。' : '') || (queryClient.isMutating() ? '操作正在提交，请完成后再更新。' : ''),
     reload: () => window.location.reload(),
     saveConfirmation: value => { try { sessionStorage.setItem(UPDATE_ATTEMPT_KEY, JSON.stringify(value)) } catch { /* Feedback optional; safety is not. */ } },
   }))

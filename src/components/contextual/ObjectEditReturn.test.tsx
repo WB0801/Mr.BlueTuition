@@ -1,7 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { createFormProtection } from '../../features/settings/pwa/updateProtection'
+import { updateProtection } from '../../features/settings/pwa/updateProtection'
+import { UpdateController } from '../../features/settings/pwa/updateController'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
+import { createMemoryRouter, RouterProvider, Link, Outlet, useLocation } from 'react-router-dom'
 import { ContextLink } from '../navigation/ContextLink'
 import { StudentFormPage } from '../../features/students/pages/StudentFormPage'
 import { ClassFormPage } from '../../features/classes/pages/ClassFormPage'
@@ -40,12 +43,14 @@ function Detail({ kind }: { kind: 'students' | 'classes' }) {
 }
 function setup(kind: 'students' | 'classes', entry: { pathname: string; search?: string; state?: unknown }) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } }); installContextDataInvalidation(client)
-  render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[entry]}><Routes>
-    <Route path={`/${kind}/a`} element={<Detail kind={kind} />} />
-    <Route path={`/${kind}/:${kind === 'students' ? 'studentId' : 'classId'}/edit`} element={kind === 'students' ? <StudentFormPage /> : <ClassFormPage />} />
-    <Route path={`/${kind}/new`} element={kind === 'students' ? <StudentFormPage /> : <ClassFormPage />} />
-    <Route path="*" element={<Probe />} />
-  </Routes></MemoryRouter></QueryClientProvider>)
+  const router = createMemoryRouter([{ element: <><Link to="/elsewhere">离开编辑</Link><Outlet /></>, children: [
+    { path: `/${kind}/a`, element: <Detail kind={kind} /> },
+    { path: `/${kind}/:${kind === 'students' ? 'studentId' : 'classId'}/edit`, element: kind === 'students' ? <StudentFormPage /> : <ClassFormPage /> },
+    { path: `/${kind}/new`, element: kind === 'students' ? <StudentFormPage /> : <ClassFormPage /> },
+    { path: '*', element: <Probe /> },
+  ] }], { initialEntries: [entry] })
+  render(<QueryClientProvider client={client}><RouterProvider router={router} /></QueryClientProvider>)
+  return Object.assign(router, { queryClient: client })
 }
 
 it.each(['students','classes'] as const)('restores the %s URL, filters and source after a real edit/save, and refreshes receipt identity without generation', async kind => {
@@ -78,4 +83,110 @@ it.each(['students','classes'] as const)('never returns a newly created %s to an
   if (kind === 'classes') await user.selectOptions(screen.getByLabelText('科目'), 'subject')
   await user.click(screen.getByRole('button', { name: kind === 'students' ? '新增学生' : '新增班级' }))
   expect(await screen.findByTestId('location')).toHaveTextContent(`"url":"/${kind}/created"`)
+})
+
+it.each(['students','classes'] as const)('keeps the real %s form and later draft after an earlier save updates its query cache', async kind => {
+  let finish!: () => void
+  if (kind === 'students') vi.mocked(updateStudent).mockImplementationOnce(async (_id, input) => {
+    await new Promise<void>(resolve => { finish = resolve }); student = { ...student, ...input, updated_at: 'saved' }; return student
+  })
+  else vi.mocked(updateClass).mockImplementationOnce(async (_id, input) => {
+    await new Promise<void>(resolve => { finish = resolve }); tuitionClass = { ...tuitionClass, ...input, updated_at: 'saved' }; return tuitionClass
+  })
+  setup(kind, { pathname: `/${kind}/a/edit`, state: { contextBack: { to: `/${kind}/a?panel=management`, label: '资料' } } })
+  const protection = createFormProtection(document), user = userEvent.setup()
+  try {
+    const name = await screen.findByLabelText(kind === 'students' ? '姓名' : '班级名称')
+    fireEvent.change(name, { target: { value: '第一份修改' } })
+    await user.click(screen.getByRole('button', { name: '保存修改' }))
+    fireEvent.change(name, { target: { value: '稍后的新草稿' } })
+    await act(async () => finish())
+    expect(screen.getByLabelText(kind === 'students' ? '姓名' : '班级名称')).toBe(name)
+    expect(name).toHaveValue('稍后的新草稿')
+    expect(screen.getByRole('status')).toHaveTextContent('本次提交已保存，后续修改尚未保存')
+    expect(protection.reason()).toContain('未保存')
+    const worker = Object.assign(new EventTarget(), { state: 'activated', postMessage: vi.fn() })
+    const registration = Object.assign(new EventTarget(), { scope: 'https://example.test/Mr.BlueTuition/', active: worker, waiting: worker, update: vi.fn().mockResolvedValue(undefined) })
+    const container = Object.assign(new EventTarget(), { controller: worker, register: vi.fn().mockResolvedValue(registration) })
+    const reload = vi.fn()
+    const controller = new UpdateController({ baseUrl: registration.scope, buildId: 'A', container: container as unknown as ServiceWorkerContainer, fetchVersion: async () => 'B', online: () => true, blocked: updateProtection.reason, reload, saveConfirmation: vi.fn() })
+    try {
+      await controller.check(); await controller.apply()
+      expect(worker.postMessage).not.toHaveBeenCalled(); expect(reload).not.toHaveBeenCalled()
+      expect(controller.state.message).toContain('未保存')
+      container.controller = { ...worker } as typeof worker; container.dispatchEvent(new Event('controllerchange'))
+      await controller.apply(); expect(reload).not.toHaveBeenCalled()
+    } finally { controller.dispose() }
+    fireEvent.change(name, { target: { value: '第一份修改' } })
+    expect(protection.reason()).toBe('')
+    fireEvent.change(name, { target: { value: '最终修改' } })
+    await user.click(screen.getByRole('button', { name: '保存修改' }))
+    await screen.findByRole('link', { name: '编辑资料' })
+    expect(screen.getByTestId('location')).toHaveTextContent(`/${kind}/a?panel=management`)
+    expect(kind === 'students' ? student.name : tuitionClass.name).toBe('最终修改')
+    expect(protection.reason()).toBe('')
+  } finally { protection.dispose() }
+})
+
+it.each(['students','classes'] as const)('keeps a failed %s save editable and protected; never retries by itself', async kind => {
+  const update = kind === 'students' ? updateStudent : updateClass
+  vi.mocked(update).mockRejectedValueOnce(new Error('isolated failure'))
+  setup(kind, { pathname: `/${kind}/a/edit` })
+  const protection = createFormProtection(document), user = userEvent.setup()
+  try {
+    const name = await screen.findByLabelText(kind === 'students' ? '姓名' : '班级名称')
+    fireEvent.change(name, { target: { value: '失败后保留' } })
+    await user.click(screen.getByRole('button', { name: '保存修改' }))
+    expect(await screen.findByRole('alert')).toBeVisible()
+    expect(name).toHaveValue('失败后保留'); expect(protection.reason()).toContain('未保存')
+    await waitFor(() => expect(screen.getByRole('button', { name: '保存修改' })).toBeEnabled())
+    expect(update).toHaveBeenCalledTimes(1)
+  } finally { protection.dispose() }
+})
+
+it.each(['students','classes'] as const)('%s: rejects leaving during save and asks before discarding a later draft; cancelled departure preserves it', async kind => {
+  let finish!: () => void
+  if (kind === 'students') vi.mocked(updateStudent).mockImplementationOnce(async (_id, input) => { await new Promise<void>(resolve => { finish = resolve }); return { ...student, ...input } })
+  else vi.mocked(updateClass).mockImplementationOnce(async (_id, input) => { await new Promise<void>(resolve => { finish = resolve }); return { ...tuitionClass, ...input } })
+  const router = setup(kind, { pathname: `/${kind}/a/edit` }), user = userEvent.setup()
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+  try {
+    const name = await screen.findByLabelText(kind === 'students' ? '姓名' : '班级名称')
+    fireEvent.change(name, { target: { value: '已提交修改' } }); await user.click(screen.getByRole('button', { name: '保存修改' }))
+    await user.click(screen.getByRole('link', { name: '离开编辑' })); expect(router.state.location.pathname).toContain('/edit')
+    expect(confirm).not.toHaveBeenCalled()
+    fireEvent.change(name, { target: { value: '后续草稿' } }); await act(async () => finish())
+    await user.click(screen.getByRole('link', { name: '离开编辑' }))
+    expect(confirm).toHaveBeenCalledTimes(1); expect(name).toHaveValue('后续草稿'); expect(router.state.location.pathname).toContain('/edit')
+    const unload = new Event('beforeunload', { cancelable: true }); window.dispatchEvent(unload); expect(unload.defaultPrevented).toBe(true)
+    confirm.mockReturnValue(true); await user.click(screen.getByRole('link', { name: '离开编辑' }))
+    expect(router.state.location.pathname).toBe('/elsewhere')
+  } finally { confirm.mockRestore() }
+})
+
+it.each(['students','classes'] as const)('%s creation locks fields and duplicate submits until its one successful return', async kind => {
+  let finish!: () => void
+  if (kind === 'students') vi.mocked(createStudent).mockImplementationOnce(async () => { await new Promise<void>(resolve => { finish = resolve }); return { ...student, id: 'created' } })
+  else vi.mocked(createClass).mockImplementationOnce(async () => { await new Promise<void>(resolve => { finish = resolve }); return { ...tuitionClass, id: 'created' } })
+  const router = setup(kind, { pathname: `/${kind}/new` }), user = userEvent.setup()
+  const name = await screen.findByLabelText(kind === 'students' ? '姓名' : '班级名称')
+  fireEvent.change(name, { target: { value: '新增虚构对象' } })
+  if (kind === 'classes') await user.selectOptions(screen.getByLabelText('科目'), 'subject')
+  await user.click(screen.getByRole('button', { name: kind === 'students' ? '新增学生' : '新增班级' }))
+  expect(name).toBeDisabled(); fireEvent.submit(name.closest('form')!)
+  expect(kind === 'students' ? createStudent : createClass).toHaveBeenCalledTimes(1)
+  await act(async () => finish())
+  expect(router.state.location.pathname).toBe(`/${kind}/created`)
+})
+
+it.each(['students','classes'] as const)('%s background refresh failure cannot unmount an unsaved form', async kind => {
+  const router = setup(kind, { pathname: `/${kind}/a/edit` })
+  const name = await screen.findByLabelText(kind === 'students' ? '姓名' : '班级名称')
+  fireEvent.change(name, { target: { value: '刷新失败后保留的草稿' } })
+  if (kind === 'students') vi.mocked(getStudent).mockRejectedValueOnce(new Error('read failed'))
+  else vi.mocked(getClass).mockRejectedValueOnce(new Error('read failed'))
+  await act(async () => router.queryClient.refetchQueries({ queryKey: [kind === 'students' ? 'student' : 'class', 'a'] }))
+  expect(await screen.findByText(/刷新失败，当前编辑已保留/)).toBeVisible()
+  expect(screen.getByLabelText(kind === 'students' ? '姓名' : '班级名称')).toBe(name)
+  expect(name).toHaveValue('刷新失败后保留的草稿')
 })

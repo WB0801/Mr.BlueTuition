@@ -3,6 +3,9 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { vi } from 'vitest'
 import { TemporaryPaymentRow } from './TemporaryPaymentRow'
+import userEvent from '@testing-library/user-event'
+import type { TemporaryClassEnrollment } from '../../../types/domain'
+import { markTemporaryClassPaymentPaid } from '../api/temporaryClassesService'
 
 vi.mock('../api/temporaryClassesService', () => ({
   markTemporaryClassPaymentPaid: vi.fn(),
@@ -10,6 +13,18 @@ vi.mock('../api/temporaryClassesService', () => ({
 }))
 
 describe('TemporaryPaymentRow', () => {
+  it('can explicitly collect again after a newer cross-entry undo without a stale confirmed action swallowing the click', async () => {
+    vi.clearAllMocks()
+    const payment = {id:'p',owner_id:'o',temporary_class_enrollment_id:'e',amount:40,payment_status:'unpaid',receipt_status:'not_applicable',paid_at:null,receipt_completed_at:null,created_at:'2026-10-01T00:00:00Z',updated_at:'2026-10-01T00:00:00Z'} as const
+    const enrollment={id:'e',owner_id:'o',temporary_class_id:'t',student_id:'s',joined_at:'',created_at:'',status:'active',student:{id:'s',name:'虚构甲',school_class:null,phone:null},payment} as TemporaryClassEnrollment
+    vi.mocked(markTemporaryClassPaymentPaid).mockResolvedValue({...payment,payment_status:'paid',receipt_status:'pending',updated_at:'2026-10-27T01:00:00Z'})
+    const client=new QueryClient(),content=(value:TemporaryClassEnrollment)=><QueryClientProvider client={client}><MemoryRouter><TemporaryPaymentRow enrollment={value} allowActions allowCancellation={false}/></MemoryRouter></QueryClientProvider>
+    const view=render(content(enrollment)), user=userEvent.setup()
+    await user.click(screen.getByRole('button',{name:'确认已缴'}));await screen.findByText('已缴')
+    view.rerender(content({...enrollment,payment:{...payment,updated_at:'2026-10-27T01:01:00Z'}}))
+    await user.click(await screen.findByRole('button',{name:'确认已缴'}))
+    expect(markTemporaryClassPaymentPaid).toHaveBeenCalledTimes(2)
+  })
   it('shows student identity, amount, payment and receipt status together', () => {
     const client = new QueryClient()
     render(

@@ -17,6 +17,7 @@ import { FeeRecords } from '../../fees/components/FeeRecords'
 import { ObjectCourseRecords } from '../../schedule/components/ObjectCourseRecords'
 import { getStudent } from '../api/studentsService'
 import { recordStudentView } from '../recentStudentViews'
+import { ObjectSavedNotice } from '../../../components/feedback/ObjectSavedNotice'
 
 export function StudentDetailPage() {
   const { studentId = '' } = useParams()
@@ -34,6 +35,7 @@ function StudentDetailView({ studentId }: { studentId: string }) {
   const current = enrollments.data?.filter(item => item.status === 'active') ?? []
   return <section className="management-page detail-page student-detail-page">
     <PageHeader title={data.name} backTo="/students" backLabel="学生" />
+    <ObjectSavedNotice kind="students" id={studentId} />
     <dl className="details-card student-profile-card"><div><dt>学校班级</dt><dd>{data.school_class || '未填写'}</dd></div><div><dt>联系电话</dt><dd>{data.phone || '未填写'}</dd></div></dl>
     <ContextDataWorkspace label="学生相关资料" defaultPanel="enrollments" sections={[
       { id: 'enrollments', label: '班级与报读', render: () => <>
