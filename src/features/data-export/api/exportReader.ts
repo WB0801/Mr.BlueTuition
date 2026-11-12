@@ -6,7 +6,7 @@ import { ExportPreparationError } from '../exportRules'
 export const exportColumns = {
   classes: 'id,name,subject_id,status,start_date,end_date',
   temporary_classes: 'id,name,subject_id,status,start_at,end_at',
-  enrollments: 'id,student_id,class_id,status,join_date,end_date',
+  enrollments: 'id,student_id,class_id,status,join_date,end_date,transferred_from_enrollment_id',
   temporary_class_enrollments: 'id,temporary_class_id,student_id,status,joined_at,cancelled_at',
   students: 'id,name,school_class,phone',
   subjects: 'id,name',
@@ -17,7 +17,7 @@ export const exportColumns = {
   tuition_quiz_scores: 'id,quiz_id,student_id,enrollment_id,score',
   school_exams: 'id,subject_id,name,exam_date,max_score',
   school_exam_scores: 'id,exam_id,student_id,score',
-  monthly_fees: 'id,student_id,enrollment_id,fee_month,actual_amount,payment_status,paid_at,receipt_status',
+  monthly_fees: 'id,student_id,enrollment_id,fee_month,actual_amount,payment_status,paid_at,receipt_status,billing_cancelled_at',
   temporary_class_payments: 'id,temporary_class_enrollment_id,amount,payment_status,paid_at,receipt_status,refunded_amount,refunded_at',
 } as const
 export type ExportTable = keyof typeof exportColumns

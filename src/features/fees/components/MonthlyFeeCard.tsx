@@ -10,12 +10,15 @@ import {
   undoMonthlyFeePayment,
   updateMonthlyFeeAmount,
   waiveMonthlyFee,
+  cancelMonthlyFee,
+  restoreMonthlyFee,
 } from '../api/feesService'
 import { canWaiveFinalMonth, getFeeStatusLabel } from '../feePresentation'
+import { feeBillingNote, feeInapplicableReason, isFeeReceivable } from '../billingEligibility'
 import { useContextDataBusy } from '../../../components/contextual/contextDataState'
 import { FeeReminderButton } from './FeeReminderButton'
 import { useEffect, useMemo } from 'react'
-import { preparePwaFormSave, usePwaFormDraft } from '../../settings/pwa/updateProtection'
+import { preparePwaFormSave, usePwaFormDraft, usePwaUpdateGuard } from '../../settings/pwa/updateProtection'
 import { getMonthlyFee } from '../api/feesService'
 import { useCollectionAction } from '../collection/useCollectionAction'
 import { useCollectionGlow } from '../collection/collectionHooks'
@@ -53,9 +56,9 @@ export function MonthlyFeeCard({ fee: incoming, showClass = true, showStudent = 
   const glow = useCollectionGlow(collection.state)
   const fee = useMemo(() => ({ ...incoming, ...(collection.fact as MonthlyFee | undefined), student: incoming.student, enrollment: incoming.enrollment }), [incoming, collection.fact])
 
-  const refresh = async () => {
+  const refresh = async (readsOnly = false) => {
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['monthly-fees'] }),
+      queryClient.invalidateQueries({ queryKey: ['monthly-fees'], predicate: query => !readsOnly || query.queryKey[1] !== 'ensure' }),
       queryClient.invalidateQueries({ queryKey: ['pending-receipts'] }),
       queryClient.invalidateQueries({ queryKey: ['pending-receipt-count'] }),
       queryClient.invalidateQueries({ queryKey: ['receipt-queue'] }),
@@ -63,29 +66,44 @@ export function MonthlyFeeCard({ fee: incoming, showClass = true, showStudent = 
   }
 
   const mutation = useMutation({
-    mutationFn: async (action: 'paid' | 'undo' | 'waive' | { amount: number }) => {
+    mutationFn: async (action: 'paid' | 'undo' | 'waive' | 'cancel-charge' | 'restore-charge' | { amount: number }) => {
       if (typeof action !== 'string') return updateMonthlyFeeAmount(fee.id, action.amount)
       if (action === 'paid') return markMonthlyFeePaid(fee.id)
       if (action === 'undo') return undoMonthlyFeePayment(fee.id)
+      if (action === 'cancel-charge') return cancelMonthlyFee(fee.id)
+      if (action === 'restore-charge') return restoreMonthlyFee(fee.id)
       return waiveMonthlyFee(fee.id)
     },
-    onSuccess: async (updated) => {
+    onSuccess: async (updated, action) => {
       setError('')
-      queryClient.setQueriesData<MonthlyFeeDetails[]>({ queryKey: ['monthly-fees', 'list'] }, (current) => (
-        current?.map((item) => item.id === fee.id ? { ...item, ...updated } : item)
+      queryClient.setQueriesData<MonthlyFeeDetails[]>({ queryKey: ['monthly-fees'], predicate: query => query.queryKey[1] !== 'ensure' }, (current) => (
+        Array.isArray(current) ? current.map((item) => item.id === fee.id ? { ...item, ...updated } : item) : current
       ))
-      await refresh()
+      if (action === 'cancel-charge' || action === 'restore-charge') {
+        try { await refresh(true) }
+        catch { setError('收费状态已更新；列表刷新失败，请重新载入核对。') }
+      } else await refresh()
     },
-    onError: (caughtError) => setError(getErrorMessage(caughtError, '操作失败，请重试。')),
+    onError: async (caughtError, action) => {
+      setError(getErrorMessage(caughtError, '操作失败，请重试。'))
+      if (action === 'cancel-charge' || action === 'restore-charge') {
+        try {
+          const latest = await getMonthlyFee(fee.id)
+          queryClient.setQueriesData<MonthlyFeeDetails[]>({ queryKey: ['monthly-fees'], predicate: query => query.queryKey[1] !== 'ensure' }, current => Array.isArray(current) ? current.map(item => item.id === fee.id ? latest : item) : current)
+        } catch { /* Keep the original record and error when read-only reconciliation also fails. */ }
+      }
+    },
   })
   useEffect(() => {
     onEditingChange?.(fee.id, editing, fee, mutation.isPending)
     return () => onEditingChange?.(fee.id, false, fee, false)
   }, [editing, fee, mutation.isPending, onEditingChange])
+  usePwaUpdateGuard(mutation.isPending, '学费操作正在提交，请完成后再更新。')
+  useContextDataBusy(mutation.isPending)
 
   async function saveAmount(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (mutation.isPending || fee.payment_status !== 'unpaid') return
+    if (mutation.isPending || !isFeeReceivable(fee)) return
     const parsed = Number(amount)
     if (!Number.isFinite(parsed) || parsed < 0) {
       setError('请输入正确的金额。')
@@ -125,12 +143,14 @@ export function MonthlyFeeCard({ fee: incoming, showClass = true, showStudent = 
           {fee.actual_amount !== fee.normal_amount && <span>标准 {formatMoney(fee.normal_amount)}</span>}
         </div>
         <span className={`fee-status fee-status-${fee.payment_status}`}>{getFeeStatusLabel(fee)}</span>
+        {fee.billing_cancelled_at && <span className="record-meta">{formatMalaysiaDateTime(fee.billing_cancelled_at)} 取消收费</span>}
+        {feeBillingNote(fee) && feeBillingNote(fee) !== getFeeStatusLabel(fee) && <span className="record-meta">{feeBillingNote(fee)}</span>}
         {fee.paid_at && <span className="record-meta">{formatMalaysiaDateTime(fee.paid_at)} 缴费</span>}
       </div>
 
       {!readonly && (
         <div className="fee-actions">
-          {fee.payment_status === 'unpaid' && !editing && (
+          {isFeeReceivable(fee) && !editing && (
             <>
               <button className="button button-primary button-small" type="button" disabled={mutation.isPending || collection.busy || collection.state?.phase === 'uncertain'} onClick={() => { void collection.start() }}>
                 {collection.busy ? '处理中…' : collection.state?.phase === 'retry' ? '重试收款' : '确认已缴'}
@@ -143,10 +163,16 @@ export function MonthlyFeeCard({ fee: incoming, showClass = true, showStudent = 
                   {canWaiveFinalMonth(fee) && <button className="button button-text button-small danger-text" type="button" disabled={mutation.isPending || collection.busy || collection.state?.phase === 'uncertain'} onClick={() => {
                     if (window.confirm('确定将这笔学费标记为「本月不再追缴」吗？')) mutation.mutate('waive')
                   }}>本月不再追缴</button>}
+                  <button className="button button-text button-small danger-text" type="button" disabled={mutation.isPending || collection.busy || collection.state?.phase === 'uncertain'} onClick={() => {
+                    if (window.confirm(`取消此月收费？\n${fee.student?.name ?? '学生'} · ${fee.enrollment?.class?.name ?? '班级'}\n${formatFeeMonth(fee.fee_month)} · ${formatMoney(fee.actual_amount)}\n只取消此笔费用，报读及后续月份不变。`)) { collection.dismiss(); mutation.mutate('cancel-charge') }
+                  }}>取消此月收费</button>
                 </div>
               </details>
             </>
           )}
+          {fee.payment_status === 'unpaid' && fee.billing_cancelled_at && !feeInapplicableReason(fee) && !editing && <button className="button button-secondary button-small" type="button" disabled={mutation.isPending || collection.busy} onClick={() => {
+            if (window.confirm(`恢复收费？\n${fee.student?.name ?? '学生'} · ${fee.enrollment?.class?.name ?? '班级'}\n${formatFeeMonth(fee.fee_month)} · ${formatMoney(fee.actual_amount)}\n恢复原记录及金额为未缴。`)) { collection.dismiss(); mutation.mutate('restore-charge') }
+          }}>恢复收费</button>}
           {fee.payment_status === 'paid' && (
             <details className="fee-more-menu">
               <summary aria-label={`更多${fee.student?.name ?? ''}的已缴操作`}>⋯</summary>
@@ -164,11 +190,11 @@ export function MonthlyFeeCard({ fee: incoming, showClass = true, showStudent = 
             <small className="field-hint">正常月费：{formatMoney(fee.normal_amount)}。只修改这一月份。</small>
           </label>
           <div className="inline-actions">
-            <button className="button button-primary button-small" type="submit" disabled={mutation.isPending || fee.payment_status !== 'unpaid'}>{mutation.isPending ? '保存中…' : '保存金额'}</button>
+            <button className="button button-primary button-small" type="submit" disabled={mutation.isPending || !isFeeReceivable(fee)}>{mutation.isPending ? '保存中…' : '保存金额'}</button>
             <button className="button button-text button-small" type="button" disabled={mutation.isPending} onClick={() => { setEditing(false); setAmount(String(fee.actual_amount)); setError(''); setSavedWithDraft(false) }}>取消</button>
           </div>
           {savedWithDraft && dirty && <p className="notice inline-notice" role="status">本次提交已保存，后续修改尚未保存</p>}
-          {fee.payment_status !== 'unpaid' && <p className="form-error" role="alert">缴费状态已更新，无法继续修改金额。请核对后取消编辑。</p>}
+          {!isFeeReceivable(fee) && <p className="form-error" role="alert">缴费或收费资格已更新，无法继续修改金额。请核对后取消编辑。</p>}
         </form>
       )}
       {error && <p className="form-error fee-card-error" role="alert">{error}</p>}

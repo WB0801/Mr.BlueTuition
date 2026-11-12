@@ -1,19 +1,22 @@
 import type { MonthlyFee, MonthlyFeeDetails } from '../../types/domain'
+import { feeInapplicableReason, isFeeReceivable } from './billingEligibility'
 
 export function getFeeStatusLabel(fee: MonthlyFee) {
   if (fee.payment_status === 'waived') return '不再追缴'
+  if (fee.payment_status === 'unpaid' && fee.billing_cancelled_at) return '已取消收费'
+  if (feeInapplicableReason(fee)) return fee.payment_status === 'paid' ? '已缴 · 月份不适用，需核对' : feeInapplicableReason(fee)!
   if (fee.payment_status === 'unpaid') return '未缴'
   return fee.receipt_status === 'completed' ? '已缴 · 收据已处理' : '已缴 · 收据待处理'
 }
 
 export function canWaiveFinalMonth(fee: MonthlyFee & { enrollment?: { end_date: string | null; status: string } | null }) {
-  return fee.payment_status === 'unpaid'
+  return isFeeReceivable(fee)
     && fee.enrollment?.status === 'ended'
     && fee.enrollment.end_date?.slice(0, 7) === fee.fee_month.slice(0, 7)
 }
 
 export function getFeePriority(fee: MonthlyFee) {
-  if (fee.payment_status === 'unpaid') return 0
+  if (isFeeReceivable(fee)) return 0
   if (fee.payment_status === 'paid' && fee.receipt_status === 'pending') return 1
   if (fee.payment_status === 'paid') return 2
   return 3
@@ -35,6 +38,7 @@ export type FeeStatusFilter = 'unpaid' | 'paid' | 'all'
 
 export function matchesFeeStatus(fee: MonthlyFee, status: FeeStatusFilter) {
   if (status === 'all') return true
+  if (status === 'unpaid') return isFeeReceivable(fee)
   return fee.payment_status === status
 }
 

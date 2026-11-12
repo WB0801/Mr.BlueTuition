@@ -1,4 +1,5 @@
 import type { MonthlyFeeDetails } from '../../types/domain'
+import { isFeeReceivable } from './billingEligibility'
 
 export function buildReminderMessage(name: string | null | undefined, feeMonth: string, now = new Date()): string | null {
   const characters = Array.from(name?.trim() ?? '')
@@ -35,7 +36,7 @@ export function buildWhatsAppUrl(phone: string | null | undefined, message: stri
 }
 
 export function summarizeUnpaidMonth(fees: MonthlyFeeDetails[], studentId: string, feeMonth: string) {
-  const candidates = fees.filter(fee => fee.student_id === studentId && fee.payment_status === 'unpaid')
+  const candidates = fees.filter(fee => fee.student_id === studentId && isFeeReceivable(fee))
   if (candidates.some(fee => !Number.isFinite(fee.actual_amount) || fee.actual_amount < 0 || !/^\d{4}-(0[1-9]|1[0-2])-01$/.test(fee.fee_month))) throw new Error('未缴资料无法核对，请重试。')
   const unpaid = candidates.filter(fee => fee.actual_amount > 0)
   const records = unpaid.filter(fee => fee.fee_month === feeMonth)

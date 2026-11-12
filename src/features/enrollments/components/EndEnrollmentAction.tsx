@@ -29,7 +29,7 @@ export function EndEnrollmentAction({ enrollmentId, studentName, onSuccess }: En
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!window.confirm(`确定结束 ${studentName} 的这段报读吗？历史资料会保留。`)) return
+    if (!window.confirm(`确定结束 ${studentName} 的这段报读吗？历史资料会保留。\n结束月份后的未缴费用将不再计入应收；已有缴费及收据仍保留，请核对，不会自动撤销或退费。`)) return
     setError('')
     try {
       await mutation.mutateAsync()

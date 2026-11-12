@@ -5,9 +5,9 @@ import { readAllPages } from '../../../utils/readAllPages'
 const feeSelection = `
   *,
   enrollment:enrollments!inner(
-    id,class_id,join_date,end_date,status,
+    id,class_id,join_date,end_date,status,transferred_from_enrollment_id,
     student:students(id,name,school_class,phone),
-    class:classes(id,name,status)
+    class:classes(id,name,status,start_date,end_date)
   )
 `
 
@@ -174,6 +174,14 @@ export async function waiveMonthlyFee(feeId: string) {
   return callFeeRpc('waive_monthly_fee', { p_fee_id: feeId })
 }
 
+export async function cancelMonthlyFee(feeId: string) {
+  return callFeeRpc('cancel_monthly_fee_charge', { p_fee_id: feeId })
+}
+
+export async function restoreMonthlyFee(feeId: string) {
+  return callFeeRpc('restore_monthly_fee_charge', { p_fee_id: feeId })
+}
+
 export async function completeMonthlyFeeReceipts(feeIds: string[]): Promise<number> {
   const { data, error } = await requireSupabase().rpc('complete_monthly_fee_receipts', {
     p_fee_ids: feeIds,
@@ -213,6 +221,7 @@ export function mapMonthlyFeeDetails(row: FeeQueryRow): MonthlyFeeDetails {
         join_date: nestedEnrollment.join_date,
         end_date: nestedEnrollment.end_date,
         status: nestedEnrollment.status,
+        transferred_from_enrollment_id: nestedEnrollment.transferred_from_enrollment_id,
         class: nestedEnrollment.class,
       }
     : null

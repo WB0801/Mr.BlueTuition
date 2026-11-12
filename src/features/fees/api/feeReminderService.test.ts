@@ -1,6 +1,6 @@
 import { loadFeeReminder } from './feeReminderService'
 
-const fake = vi.hoisted(() => ({ calls: [] as { table: string; filters: [string, unknown][]; range?: number[] }[], failPage: false }))
+const fake = vi.hoisted(() => ({ calls: [] as { table: string; filters: [string, unknown][]; range?: number[] }[], failPage: false, cancelFirstPage: false }))
 vi.mock('../../../lib/requireSupabase', () => ({ requireSupabase: () => ({
   from(table: string) {
     const call = { table, filters: [] as [string, unknown][], range: undefined as number[] | undefined }; fake.calls.push(call)
@@ -10,14 +10,14 @@ vi.mock('../../../lib/requireSupabase', () => ({ requireSupabase: () => ({
       single: async () => ({ data: { id: 'a', name: '蓝炜滨', phone: '012-0000001' }, error: null }),
       then(resolve: (response: unknown) => unknown) {
         const offset = call.range?.[0] ?? 0
-        const rows = Array.from({ length: offset === 0 ? 200 : 1 }, (_, i) => ({ id: `fee-${offset + i}`, student_id: 'a', fee_month: '2026-09-01', actual_amount: '100', normal_amount: '120', payment_status: 'unpaid', enrollment: null }))
+        const rows = Array.from({ length: offset === 0 ? 200 : 1 }, (_, i) => ({ id: `fee-${offset + i}`, student_id: 'a', fee_month: '2026-09-01', actual_amount: '100', normal_amount: '120', payment_status: 'unpaid', enrollment: null, billing_cancelled_at: fake.cancelFirstPage && offset === 0 ? '2026-11-01T00:00:00Z' : null }))
         return Promise.resolve(resolve({ data: rows, error: fake.failPage && offset > 0 ? new Error('second page failed') : null }))
       },
     }; return builder
   },
   rpc: () => { throw new Error('Reminders must not generate or write records') },
 }) }))
-beforeEach(() => { fake.calls = []; fake.failPage = false })
+beforeEach(() => { fake.calls = []; fake.failPage = false; fake.cancelFirstPage=false })
 it('reads fresh identity and every page for this student without a class filter, writes or RPC', async () => {
   const result = await loadFeeReminder('a', new AbortController().signal)
   expect(result.student.name).toBe('蓝炜滨')
@@ -30,6 +30,12 @@ it('reads fresh identity and every page for this student without a class filter,
 it('fails closed if a later page fails, rather than returning an incomplete summary', async () => {
   fake.failPage = true
   await expect(loadFeeReminder('a')).rejects.toThrow('second page failed')
+})
+it('filters inapplicable and manual cancelled fees only after complete raw pagination, without skipping later debts',async()=>{
+  fake.cancelFirstPage=true
+  const result=await loadFeeReminder('a')
+  expect(result.fees).toHaveLength(1)
+  expect(fake.calls.filter(call=>call.table==='monthly_fees').map(call=>call.range)).toEqual([[0,199],[200,399]])
 })
 it('does not read records when already cancelled', async () => {
   const controller = new AbortController(); controller.abort()

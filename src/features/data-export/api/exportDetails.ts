@@ -4,6 +4,8 @@ import { formatQuizPercentage } from '../../grades/quizScoreDisplay'
 import { exportDateIncluded, exportMonthIncluded, type ExportSheet } from '../exportRules'
 import { atEnrollmentDate, required, type ExportScope } from './dataExportService'
 import type { ExportReader } from './exportReader'
+import { getFeeStatusLabel } from '../../fees/feePresentation'
+import { feeInapplicableReason } from '../../fees/billingEligibility'
 
 const paymentLabels: Record<string,string> = {unpaid:'未缴',paid:'已缴',waived:'免缴'}
 const receiptLabels: Record<string,string> = {not_applicable:'不适用',pending:'待处理',completed:'已处理'}
@@ -23,7 +25,10 @@ export async function buildFeeSheet(scope: ExportScope, read: ExportReader): Pro
     const e = required(scope.enrollments.find(e=>e.id===fee.enrollment_id),'报读')
     if (e.student_id!==fee.student_id) throw new Error('月费学生与报读不匹配。')
     if (!exportMonthIncluded(fee.fee_month,scope.options)) continue
-    sheet.rows.push(['常态班',required(scope.regular.find(c=>c.id===e.class_id),'班级').name,required(scope.students.get(e.student_id),'学生').name,fee.fee_month.slice(0,7),amount(fee.actual_amount),required(paymentLabels[fee.payment_status],'缴费状态'),fee.paid_at?formatMalaysiaDateTime(fee.paid_at):null,required(receiptLabels[fee.receipt_status],'收据状态'),null,null,null,null])
+    const c = required(scope.regular.find(c=>c.id===e.class_id),'班级')
+    const billing = { ...fee, enrollment: { ...e, class: c } }
+    const label = fee.payment_status === 'waived' ? '免缴' : fee.payment_status === 'paid' && !feeInapplicableReason(billing) ? '已缴' : getFeeStatusLabel(billing)
+    sheet.rows.push(['常态班',c.name,required(scope.students.get(e.student_id),'学生').name,fee.fee_month.slice(0,7),amount(fee.actual_amount),label,fee.paid_at?formatMalaysiaDateTime(fee.paid_at):null,required(receiptLabels[fee.receipt_status],'收据状态'),null,fee.billing_cancelled_at?formatMalaysiaDateTime(fee.billing_cancelled_at):null,null,null])
   }
   const temporary = await read<TemporaryClassPayment>('temporary_class_payments',{column:'temporary_class_enrollment_id',ids:scope.temporaryEnrollments.map(e=>e.id)})
   for (const fee of temporary) {

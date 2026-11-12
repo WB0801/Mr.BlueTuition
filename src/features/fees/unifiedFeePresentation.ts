@@ -1,6 +1,6 @@
 import type { MonthlyFeeDetails } from '../../types/domain'
 import type { TemporaryFeeRecord } from './api/temporaryFeesService'
-import { getFeePriority, type FeeStatusFilter } from './feePresentation'
+import { getFeePriority, matchesFeeStatus, type FeeStatusFilter } from './feePresentation'
 
 export type UnifiedFeeRecord = { source: 'monthly_fee'; fee: MonthlyFeeDetails } | { source: 'temporary_class_payment'; record: TemporaryFeeRecord }
 export type FeeClassScope = { kind: 'all' | 'invalid' } | { kind: 'monthly' | 'temporary'; id: string }
@@ -19,7 +19,7 @@ export const unifiedFeeKey = (item: UnifiedFeeRecord) => `${item.source}:${item.
 export const unifiedPayment = (item: UnifiedFeeRecord) => item.source === 'monthly_fee' ? item.fee : item.record.payment
 const studentName = (item: UnifiedFeeRecord) => item.source === 'monthly_fee' ? item.fee.student?.name ?? '' : item.record.enrollment.student?.name ?? ''
 const className = (item: UnifiedFeeRecord) => item.source === 'monthly_fee' ? item.fee.enrollment?.class?.name ?? '' : item.record.class.name
-export function selectUnifiedFees(rows: UnifiedFeeRecord[], options: { month: string; status: FeeStatusFilter; search: string; feeId?: string }) {
+export function selectUnifiedFees(rows: readonly UnifiedFeeRecord[], options: Readonly<{ month: string; status: FeeStatusFilter; search: string; feeId?: string }>) {
   const keyword = options.search.trim().toLocaleLowerCase(), seen = new Set<string>()
   const bounds = options.month === 'all' ? null : malaysiaFeeMonthBounds(options.month)
   return rows.filter(item => {
@@ -29,7 +29,7 @@ export function selectUnifiedFees(rows: UnifiedFeeRecord[], options: { month: st
     seen.add(identity)
     const payment = unifiedPayment(item)
     if (options.feeId && (item.source !== 'monthly_fee' || item.fee.id !== options.feeId)) return false
-    if (options.status !== 'all' && payment.payment_status !== options.status) return false
+    if (item.source === 'monthly_fee' ? !matchesFeeStatus(item.fee, options.status) : options.status !== 'all' && payment.payment_status !== options.status) return false
     if (bounds && item.source === 'temporary_class_payment' && payment.payment_status === 'paid') {
       const paid = Date.parse(payment.paid_at ?? '')
       if (!Number.isFinite(paid) || paid < Date.parse(bounds[0]) || paid >= Date.parse(bounds[1])) return false
@@ -45,4 +45,8 @@ export function selectUnifiedFees(rows: UnifiedFeeRecord[], options: { month: st
     }
     return className(a).localeCompare(className(b), 'zh-Hans') || studentName(a).localeCompare(studentName(b), 'zh-Hans') || unifiedFeeKey(a).localeCompare(unifiedFeeKey(b))
   })
+}
+
+export function matchesUnifiedFeeStatus(item: UnifiedFeeRecord, status: FeeStatusFilter) {
+  return item.source === 'monthly_fee' ? matchesFeeStatus(item.fee, status) : status === 'all' || item.record.payment.payment_status === status
 }

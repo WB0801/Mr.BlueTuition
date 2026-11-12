@@ -32,6 +32,20 @@ beforeEach(() => {
   }
 })
 describe('read-only export scope and completeness', () => {
+  it('exports original amounts and IDs with manual-cancel/inapplicable/paid conflict labels; no extra reads',async()=>{
+    db.rows.enrollments=[enrollment('e1','s1','c1',{status:'ended',end_date:'2026-10-31'})]
+    db.rows.monthly_fees=[
+      {id:'inapplicable',student_id:'s1',enrollment_id:'e1',fee_month:'2026-11-01',actual_amount:30.25,payment_status:'unpaid',receipt_status:'not_applicable'},
+      {id:'manual',student_id:'s1',enrollment_id:'e1',fee_month:'2026-10-01',actual_amount:0,payment_status:'unpaid',receipt_status:'not_applicable',billing_cancelled_at:'2026-10-20T00:00:00Z'},
+      {id:'paid',student_id:'s1',enrollment_id:'e1',fee_month:'2026-11-01',actual_amount:40,payment_status:'paid',paid_at:'2026-11-01T00:00:00Z',receipt_status:'completed'},
+    ].map(r=>({...base,...r}))
+    const result=await prepareDataExport(owner,{...options,history:true,details:['fees']},()=>{},undefined,now)
+    const rows=result.sheets[1].rows
+    expect(rows.find(r=>r[4]===30.25)?.[5]).toContain('报读已结束')
+    expect(rows.find(r=>r[4]===0)?.[5]).toBe('已取消收费')
+    expect(rows.find(r=>r[4]===40)?.[5]).toContain('需核对')
+    expect([...new Set(db.requests.map(r=>r.table))].sort()).toEqual(['classes','enrollments','monthly_fees','students'])
+  })
   it('cancelled registrations do not become attendance/absence; historical fee export preserves original payment and refund separately', async () => {
     db.rows.temporary_classes=[{...base,id:'t',name:'虚构取消班',subject_id:'math',status:'active',start_at:'2026-10-01T06:00:00Z',end_at:'2026-10-01T08:00:00Z'}]
     db.rows.temporary_class_enrollments=[{...base,id:'cancelled',temporary_class_id:'t',student_id:'s1',status:'cancelled',joined_at:'2026-10-01',cancelled_at:'2026-10-02T01:00:00Z'}]

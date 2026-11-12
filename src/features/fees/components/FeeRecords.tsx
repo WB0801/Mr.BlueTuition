@@ -6,7 +6,7 @@ import { currentMonthInMalaysia, formatFeeMonth, formatMalaysiaDateTime, formatM
 import type { MonthlyFeeDetails } from '../../../types/domain'
 import { completeReceipts, ensureMonthlyFees, listMonthlyFees, readReceiptStates, restoreReceipt } from '../api/feesService'
 import { useState } from 'react'
-import { matchesFeeStatus, sortFeesForWorkflow, type FeeStatusFilter } from '../feePresentation'
+import { getFeeStatusLabel, matchesFeeStatus, sortFeesForWorkflow, type FeeStatusFilter } from '../feePresentation'
 import { MonthlyFeeCard } from './MonthlyFeeCard'
 import { getErrorMessage } from '../../../utils/errors'
 import { FeeReminderButton } from './FeeReminderButton'
@@ -69,7 +69,7 @@ export function FeeRecordList({ records, studentScoped, onSelect }: { records: M
     <span className="record-main"><strong>{formatFeeMonth(fee.fee_month)}{!studentScoped && ` · ${fee.student?.name ?? '学生资料不可用'}`}</strong>
       {!studentScoped && <small>{[fee.student?.school_class, fee.student?.phone].filter(Boolean).join(' · ')}</small>}
       <span className="record-meta">{fee.enrollment?.class?.name ?? '班级资料不可用'}</span><span className="sr-only">查看记录</span></span>
-    <span className="context-record-status"><strong>{formatMoney(fee.actual_amount)}</strong><span>{fee.payment_status === 'paid' ? fee.receipt_status === 'pending' ? '已缴 · 待开收据' : '已缴 · 收据已处理' : fee.payment_status === 'waived' ? '本月不再追缴' : '未缴'}</span></span><span aria-hidden="true">›</span>
+    <span className="context-record-status"><strong>{formatMoney(fee.actual_amount)}</strong><span>{getFeeStatusLabel(fee)}</span></span><span aria-hidden="true">›</span>
   </button>{studentScoped && <FeeReminderButton fee={fee} />}</div>)}</div>
 }
 

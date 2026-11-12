@@ -242,6 +242,7 @@ export interface MonthlyFee {
   fee_month: string
   normal_amount: number
   actual_amount: number
+  billing_cancelled_at?: string | null
   payment_status: MonthlyFeePaymentStatus
   paid_at: string | null
   receipt_status: MonthlyFeeReceiptStatus
@@ -252,8 +253,8 @@ export interface MonthlyFee {
 
 export interface MonthlyFeeDetails extends MonthlyFee {
   student: Pick<Student, 'id' | 'name' | 'school_class' | 'phone'> | null
-  enrollment: (Pick<Enrollment, 'id' | 'class_id' | 'join_date' | 'end_date' | 'status'> & {
-    class: Pick<TuitionClass, 'id' | 'name' | 'status'> | null
+  enrollment: (Pick<Enrollment, 'id' | 'class_id' | 'join_date' | 'end_date' | 'status'> & Partial<Pick<Enrollment, 'transferred_from_enrollment_id'>> & {
+    class: (Pick<TuitionClass, 'id' | 'name' | 'status'> & Partial<Pick<TuitionClass, 'start_date' | 'end_date'>>) | null
   }) | null
 }
 

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../components/feedback/QueryState'
@@ -10,7 +10,7 @@ import { MonthlyFeeCard } from '../components/MonthlyFeeCard'
 import { BatchFeeReminderButton } from '../components/BatchFeeReminderButton'
 import type { FeeStatusFilter } from '../feePresentation'
 import { getTemporaryFeeRecord, listTemporaryFeeClasses, listTemporaryFeeRecords, type TemporaryFeeRecord } from '../api/temporaryFeesService'
-import { parseFeeClassScope, selectUnifiedFees, unifiedFeeKey, unifiedPayment, type UnifiedFeeRecord } from '../unifiedFeePresentation'
+import { matchesUnifiedFeeStatus, parseFeeClassScope, selectUnifiedFees, unifiedFeeKey, unifiedPayment, type UnifiedFeeRecord } from '../unifiedFeePresentation'
 import { TemporaryFeeCard } from '../components/TemporaryFeeCard'
 import { patchTemporaryFeeLists } from '../../temporary-classes/temporaryPaymentCache'
 import type { MonthlyFeeDetails } from '../../../types/domain'
@@ -105,18 +105,16 @@ export function MonthlyFeesPage({ view }: MonthlyFeesPageProps) {
     refetchOnReconnect: true,
   })) })
 
-  const visibleFees = useMemo(() => {
-    const rows: UnifiedFeeRecord[] = [
-      ...(monthlyEnabled ? (fees.data ?? []).map(fee => ({ source: 'monthly_fee' as const, fee })) : []),
-      ...(temporaryEnabled ? (temporaryFees.data ?? []).map(record => ({ source: 'temporary_class_payment' as const, record })) : []),
-    ]
-    return selectUnifiedFees(rows, { month: monthInput, status: 'all', search, feeId })
-  }, [fees.data, temporaryFees.data, monthlyEnabled, temporaryEnabled, monthInput, search, feeId])
+  const rows: UnifiedFeeRecord[] = [
+    ...(monthlyEnabled ? (fees.data ?? []).map(fee => ({ source: 'monthly_fee' as const, fee })) : []),
+    ...(temporaryEnabled ? (temporaryFees.data ?? []).map(record => ({ source: 'temporary_class_payment' as const, record })) : []),
+  ]
+  const visibleFees = selectUnifiedFees(rows, { month: monthInput, status: 'all', search, feeId })
   const complete = scope.kind !== 'invalid' && (!monthlyEnabled || (ensure.isSuccess && fees.isSuccess)) && (!temporaryEnabled || temporaryFees.isSuccess)
-  const counts = { unpaid: complete ? visibleFees.filter(fee => unifiedPayment(fee).payment_status === 'unpaid').length : '—', paid: complete ? visibleFees.filter(fee => unifiedPayment(fee).payment_status === 'paid').length : '—', all: complete ? visibleFees.length : '—' }
+  const counts = { unpaid: complete ? visibleFees.filter(fee => matchesUnifiedFeeStatus(fee, 'unpaid')).length : '—', paid: complete ? visibleFees.filter(fee => unifiedPayment(fee).payment_status === 'paid').length : '—', all: complete ? visibleFees.length : '—' }
   const displayed: UnifiedFeeRecord[] = [
-    ...visibleFees.filter(item => (status === 'all' || unifiedPayment(item).payment_status === status) && (item.source !== 'temporary_class_payment' || !busyRows.has(item.record.payment.id))),
-    ...[...monthlyEditors.values()].filter(({ fee }) => !visibleFees.some(item => item.source === 'monthly_fee' && item.fee.id === fee.id && (status === 'all' || item.fee.payment_status === status)))
+    ...visibleFees.filter(item => matchesUnifiedFeeStatus(item, status) && (item.source !== 'temporary_class_payment' || !busyRows.has(item.record.payment.id))),
+    ...[...monthlyEditors.values()].filter(({ fee }) => !visibleFees.some(item => item.source === 'monthly_fee' && item.fee.id === fee.id && matchesUnifiedFeeStatus(item, status)))
       .map(({ fee }) => ({ source: 'monthly_fee' as const, fee: fees.data?.find(row => row.id === fee.id) ?? fee })),
     ...retainedRows.map((record, index) => ({ source: 'temporary_class_payment' as const, record: retainedReads[index].data ?? record })),
   ]

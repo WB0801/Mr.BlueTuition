@@ -5,6 +5,15 @@ interface DatabaseErrorLike {
 
 export function getErrorMessage(error: unknown, fallback = '操作失败，请稍后重试。') {
   const databaseError = error as DatabaseErrorLike
+  const billingMessages = [
+    '此月收费已取消或不适用，请刷新核对',
+    '此月不符合收费资格，不能恢复收费',
+    '此月已不适用，无需手动取消收费',
+    '此笔费用并非手动取消收费',
+    '仅可取消未缴学费',
+    '仅可恢复手动取消的未缴学费',
+  ]
+  if (databaseError?.code === 'P0001' && billingMessages.includes(databaseError.message ?? '')) return databaseError.message!
 
   if (databaseError?.message?.includes('Temporary enrollment cancelled')) {
     return '此临时班报名已取消，不能再操作原付款。请刷新核对取消记录。'

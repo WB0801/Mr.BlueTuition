@@ -1,6 +1,7 @@
 import type { MonthlyFeeDetails, Student } from '../../../types/domain'
 import { getStudent } from '../../students/api/studentsService'
 import { listMonthlyFees, type FeeFilters } from './feesService'
+import { isFeeReceivable } from '../billingEligibility'
 
 export interface FeeReminderSnapshot {
   student: Pick<Student, 'id' | 'name' | 'phone'>
@@ -31,5 +32,5 @@ export async function readUnpaidFees(filters: Pick<FeeFilters, 'studentId' | 'st
     fees.push(...page)
     if (page.length < pageSize) break
   }
-  return fees
+  return fees.filter(isFeeReceivable)
 }
