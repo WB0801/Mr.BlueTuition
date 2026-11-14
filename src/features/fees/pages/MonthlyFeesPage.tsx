@@ -16,6 +16,7 @@ import { patchTemporaryFeeLists } from '../../temporary-classes/temporaryPayment
 import type { MonthlyFeeDetails } from '../../../types/domain'
 import { FormLeaveGuard } from '../../../components/navigation/FormLeaveGuard'
 import { CollectionList } from '../collection/CollectionList'
+import { useFeeSearchInput } from '../useFeeSearchInput'
 
 type FeesView = 'current' | 'unpaid' | 'history'
 
@@ -54,7 +55,9 @@ export function MonthlyFeesPage({ view }: MonthlyFeesPageProps) {
     if (value) next.set(key, value)
     else next.delete(key)
     setSearchParams(next, { replace: true, state: location.state })
+    return next.size ? `?${next}` : ''
   }
+  const searchInput = useFeeSearchInput(search, location, value => updateFilter('q', value))
   const allMonths = monthInput === 'all'
   const feeMonth = allMonths ? currentMonthInMalaysia() : normalizeMonthInput(monthInput)
   const monthlyEnabled = scope.kind === 'all' || scope.kind === 'monthly'
@@ -148,7 +151,7 @@ export function MonthlyFeesPage({ view }: MonthlyFeesPageProps) {
         </label>
         <label className="field fees-search-field">
           <span>搜索学生</span>
-          <input type="search" value={search} onChange={(event) => updateFilter('q', event.target.value)} placeholder="输入姓名" />
+          <input type="search" {...searchInput} placeholder="输入姓名" />
         </label>
         </div>
         <div className="segmented-control fee-status-tabs" aria-label="缴费状态">
